@@ -33,7 +33,7 @@ func processResources(workloadPath string, resources []string) (*[]SourceFile, *
 		// capture entire resource manifest file content
 		manifestContent, err := ioutil.ReadFile(filepath.Join(filepath.Dir(workloadPath), manifestFile))
 		if err != nil {
-			return &[]SourceFile{}, &[]RBACRule{}, err
+			return nil, nil, err
 		}
 
 		manifests := extractManifests(manifestContent)
@@ -44,7 +44,7 @@ func processResources(workloadPath string, resources []string) (*[]SourceFile, *
 			var rawContent interface{}
 			err = yaml.Unmarshal([]byte(manifest), &rawContent)
 			if err != nil {
-				return &[]SourceFile{}, &[]RBACRule{}, err
+				return nil, nil, err
 			}
 
 			// determine resource kind and name
@@ -85,13 +85,13 @@ func processResources(workloadPath string, resources []string) (*[]SourceFile, *
 			// generate object source code
 			resourceDefinition, err := generate.Generate([]byte(manifest), "resourceObj")
 			if err != nil {
-				return &[]SourceFile{}, &[]RBACRule{}, err
+				return nil, nil, err
 			}
 
 			// add variables based on commented markers
 			resourceDefinition, err = addVariables(resourceDefinition)
 			if err != nil {
-				return &[]SourceFile{}, &[]RBACRule{}, err
+				return nil, nil, err
 			}
 
 			resource := ChildResource{
