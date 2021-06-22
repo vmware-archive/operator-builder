@@ -1,5 +1,8 @@
 #!/bin/bash
 
+mkdir .test/tenancy
+mkdir .test/ingress
+
 cat > .test/cnp-workload-collection.yaml <<EOF
 name: cloud-native-platform
 kind: WorkloadCollection
@@ -13,12 +16,12 @@ spec:
     name: cnpctl
     description: Manage platform stuff like a boss
   componentFiles:
-  - tenancy-common-component.yaml
-  - ns-operator-component.yaml
-  - contour-component.yaml
+  - tenancy/tenancy-common-component.yaml
+  - tenancy/ns-operator-component.yaml
+  - ingress/contour-component.yaml
 EOF
 
-cat > .test/tenancy-common-component.yaml <<EOF
+cat > .test/tenancy/tenancy-common-component.yaml <<EOF
 name: tenancy-common-component
 kind: ComponentWorkload
 spec:
@@ -30,10 +33,10 @@ spec:
     name: tenancy-common
     description: Manage common tenancy component
   resources:
-  - tenancy/ns-operator-ns.yaml
+  - ns-operator-ns.yaml
 EOF
 
-cat > .test/ns-operator-component.yaml <<EOF
+cat > .test/tenancy/ns-operator-component.yaml <<EOF
 name: ns-operator-component
 kind: ComponentWorkload
 spec:
@@ -45,13 +48,13 @@ spec:
     name: ns-operator
     description: Manage namespace operator component
   resources:
-  - tenancy/ns-operator-crd.yaml
-  - tenancy/ns-operator-deploy.yaml
+  - ns-operator-crd.yaml
+  - ns-operator-deploy.yaml
   dependencies:
   - tenancy-common-component
 EOF
 
-cat > .test/contour-component.yaml <<EOF
+cat > .test/ingress/contour-component.yaml <<EOF
 name: contour-component
 kind: ComponentWorkload
 spec:
@@ -63,16 +66,15 @@ spec:
     name: contour
     description: Manage contour component
   resources:
-  - ingress/ingress-ns.yaml
-  - ingress/contour-config.yaml
-  - ingress/contour-deploy.yaml
-  - ingress/contour-svc.yaml
-  - ingress/envoy-ds.yaml
+  - ingress-ns.yaml
+  - contour-config.yaml
+  - contour-deploy.yaml
+  - contour-svc.yaml
+  - envoy-ds.yaml
   dependencies:
   - ns-operator-component
 EOF
 
-mkdir .test/tenancy
 cat > .test/tenancy/ns-operator-ns.yaml <<EOF
 apiVersion: v1
 kind: Namespace
@@ -313,7 +315,6 @@ spec:
           image: nginx:1.17  # +workload:nsOperatorImage:type=string
 EOF
 
-mkdir .test/ingress
 cat > .test/ingress/ingress-ns.yaml <<EOF
 apiVersion: v1
 kind: Namespace
