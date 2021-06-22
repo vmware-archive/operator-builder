@@ -13,8 +13,24 @@ spec:
     name: cnpctl
     description: Manage platform stuff like a boss
   componentFiles:
+  - tenancy-common-component.yaml
   - ns-operator-component.yaml
   - contour-component.yaml
+EOF
+
+cat > .test/tenancy-common-component.yaml <<EOF
+name: tenancy-common-component
+kind: ComponentWorkload
+spec:
+  apiGroup: tenancy
+  apiVersion: v1alpha1
+  apiKind: TenancyCommon
+  clusterScoped: true
+  companionCliSubcmd:
+    name: tenancy-common
+    description: Manage common tenancy component
+  resources:
+  - tenancy/ns-operator-ns.yaml
 EOF
 
 cat > .test/ns-operator-component.yaml <<EOF
@@ -29,9 +45,10 @@ spec:
     name: ns-operator
     description: Manage namespace operator component
   resources:
-  - tenancy/ns-operator-ns.yaml
   - tenancy/ns-operator-crd.yaml
   - tenancy/ns-operator-deploy.yaml
+  dependencies:
+  - tenancy-common-component
 EOF
 
 cat > .test/contour-component.yaml <<EOF
