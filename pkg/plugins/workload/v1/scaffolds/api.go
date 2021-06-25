@@ -156,6 +156,7 @@ func (s *apiScaffolder) Scaffold() error {
 							s.config.GetRepository(),
 							s.workload.IsClusterScoped(),
 						),
+						Collection: s.workload.(*workloadv1.WorkloadCollection),
 					},
 				); err != nil {
 					return err
@@ -181,12 +182,14 @@ func (s *apiScaffolder) Scaffold() error {
 				PackageName:     s.workload.GetPackageName(),
 				CreateFuncNames: createFuncNames,
 				SpecFields:      s.workload.GetAPISpecFields(),
+				IsComponent:     s.workload.IsComponent(),
 			},
 			&controller.Controller{
 				PackageName:       s.workload.GetPackageName(),
 				RBACRules:         s.workload.GetRBACRules(),
 				HasChildResources: s.workload.HasChildResources(),
 				IsStandalone:      s.workload.IsStandalone(),
+				IsComponent:       s.workload.IsComponent(),
 			},
 			&controller.Common{
 				IsStandalone: s.workload.IsStandalone(),
@@ -232,6 +235,7 @@ func (s *apiScaffolder) Scaffold() error {
 				RBACRules:         &[]workloadv1.RBACRule{},
 				HasChildResources: s.workload.HasChildResources(),
 				IsStandalone:      s.workload.IsStandalone(),
+				IsComponent:       s.workload.IsComponent(),
 			},
 			&controller.Common{
 				IsStandalone: s.workload.IsStandalone(),
@@ -253,6 +257,9 @@ func (s *apiScaffolder) Scaffold() error {
 			&dependencies.Component{},
 			&mutate.Component{},
 			&wait.Component{},
+			&samples.CRDSample{
+				SpecFields: s.workload.GetAPISpecFields(),
+			},
 			&crd.Kustomization{
 				CRDSampleFilenames: crdSampleFilenames,
 			},
@@ -305,12 +312,16 @@ func (s *apiScaffolder) Scaffold() error {
 					PackageName:     component.GetPackageName(),
 					CreateFuncNames: createFuncNames,
 					SpecFields:      component.GetAPISpecFields(),
+					IsComponent:     component.IsComponent(),
+					Collection:      s.workload.(*workloadv1.WorkloadCollection),
 				},
 				&controller.Controller{
 					PackageName:       component.GetPackageName(),
 					RBACRules:         component.GetRBACRules(),
 					HasChildResources: component.HasChildResources(),
 					IsStandalone:      component.IsStandalone(),
+					IsComponent:       component.IsComponent(),
+					Collection:        s.workload.(*workloadv1.WorkloadCollection),
 				},
 				&dependencies.Component{},
 				&mutate.Component{},
@@ -344,6 +355,8 @@ func (s *apiScaffolder) Scaffold() error {
 						SourceFile:    sourceFile,
 						PackageName:   component.GetPackageName(),
 						SpecFields:    component.GetAPISpecFields(),
+						IsComponent:   component.IsComponent(),
+						Collection:    s.workload.(*workloadv1.WorkloadCollection),
 					},
 				); err != nil {
 					return err
@@ -368,6 +381,7 @@ func (s *apiScaffolder) Scaffold() error {
 				SourceFile:    sourceFile,
 				PackageName:   s.workload.GetPackageName(),
 				SpecFields:    s.workload.GetAPISpecFields(),
+				IsComponent:   s.workload.IsComponent(),
 			},
 		); err != nil {
 			return err

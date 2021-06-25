@@ -45,7 +45,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var workloadManifest string
+var (
+	workloadManifest string
+	collectionManifest string
+)
 
 // generateCmd represents the generate command
 var generateCmd = &cobra.Command{
@@ -57,6 +60,7 @@ var generateCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(generateCmd)
 
-	generateCmd.PersistentFlags().StringVarP(&workloadManifest, "workload-manifest", "w", "", "Filepath to the workload manifest to generate child resources for.")
+	generateCmd.PersistentFlags().StringVarP(&workloadManifest, "workload-manifest", "w", "", "Filepath to the workload manifest to generate child resources for")
+	generateCmd.PersistentFlags().StringVarP(&collectionManifest, "collection-manifest", "c", "", "Filepath to the workload collection manifest")
 }
 `

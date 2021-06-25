@@ -181,8 +181,11 @@ func addVariables(resourceContent string) (string, error) {
 
 	lines := strings.Split(string(resourceContent), "\n")
 	for i, line := range lines {
-		if containsMarker(line) {
-			markedLine := processMarkedComments(line)
+		if containsMarker(line, workloadMarkerStr) {
+			markedLine := processMarkedComments(line, workloadMarkerStr)
+			lines[i] = markedLine
+		} else if containsMarker(line, collectionMarkerStr) {
+			markedLine := processMarkedComments(line, collectionMarkerStr)
 			lines[i] = markedLine
 		}
 	}
@@ -205,8 +208,8 @@ func addTemplating(rawContent string) (string, error) {
 
 	lines := strings.Split(string(rawContent), "\n")
 	for i, line := range lines {
-		if containsMarker(line) {
-			marker, err := processMarker(line)
+		if containsMarker(line, workloadMarkerStr) {
+			marker, err := processMarker(line, workloadMarkerStr)
 			if err != nil {
 				return "", err
 			}
