@@ -8,7 +8,7 @@ import (
 
 var _ machinery.Template = &ResourceCreateInMemory{}
 
-// ResourceCreateInMemory scaffolds the create resource in memory phase methods
+// ResourceCreateInMemory scaffolds the create resource in memory phase methods.
 type ResourceCreateInMemory struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
@@ -16,7 +16,6 @@ type ResourceCreateInMemory struct {
 }
 
 func (f *ResourceCreateInMemory) SetTemplateDefaults() error {
-
 	f.Path = filepath.Join("controllers", "phases", "resource_create_in_memory.go")
 
 	f.TemplateBody = resourceCreateInMemoryTemplate
@@ -24,7 +23,7 @@ func (f *ResourceCreateInMemory) SetTemplateDefaults() error {
 	return nil
 }
 
-var resourceCreateInMemoryTemplate = `{{ .Boilerplate }}
+const resourceCreateInMemoryTemplate = `{{ .Boilerplate }}
 
 package phases
 

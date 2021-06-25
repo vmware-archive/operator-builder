@@ -11,7 +11,7 @@ import (
 
 var _ machinery.Template = &Component{}
 
-// Component scaffolds the workload's mutate function
+// Component scaffolds the workload's mutate function.
 type Component struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
@@ -20,7 +20,6 @@ type Component struct {
 }
 
 func (f *Component) SetTemplateDefaults() error {
-
 	f.Path = filepath.Join(
 		"pkg",
 		"mutate",

@@ -8,7 +8,7 @@ import (
 
 var _ machinery.Template = &CheckReady{}
 
-// CheckReady scaffolds the check ready phase methods
+// CheckReady scaffolds the check ready phase methods.
 type CheckReady struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
@@ -16,7 +16,6 @@ type CheckReady struct {
 }
 
 func (f *CheckReady) SetTemplateDefaults() error {
-
 	f.Path = filepath.Join("controllers", "phases", "check_ready.go")
 
 	f.TemplateBody = checkReadyTemplate
@@ -24,7 +23,7 @@ func (f *CheckReady) SetTemplateDefaults() error {
 	return nil
 }
 
-var checkReadyTemplate = `{{ .Boilerplate }}
+const checkReadyTemplate = `{{ .Boilerplate }}
 
 package phases
 

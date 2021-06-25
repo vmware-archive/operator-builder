@@ -8,7 +8,7 @@ import (
 
 var _ machinery.Template = &Types{}
 
-// Types scaffolds the phase interfaces and types
+// Types scaffolds the phase interfaces and types.
 type Types struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
@@ -16,7 +16,6 @@ type Types struct {
 }
 
 func (f *Types) SetTemplateDefaults() error {
-
 	f.Path = filepath.Join("controllers", "phases", "types.go")
 
 	f.TemplateBody = typesTemplate
@@ -24,7 +23,7 @@ func (f *Types) SetTemplateDefaults() error {
 	return nil
 }
 
-var typesTemplate = `{{ .Boilerplate }}
+const typesTemplate = `{{ .Boilerplate }}
 
 package phases
 

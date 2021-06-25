@@ -11,7 +11,7 @@ import (
 
 var _ machinery.Template = &Resources{}
 
-// Types scaffolds child resource creation functions
+// Types scaffolds child resource creation functions.
 type Resources struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
@@ -26,7 +26,6 @@ type Resources struct {
 }
 
 func (f *Resources) SetTemplateDefaults() error {
-
 	f.Path = filepath.Join(
 		"apis",
 		f.Resource.Group,
@@ -41,18 +40,20 @@ func (f *Resources) SetTemplateDefaults() error {
 	return nil
 }
 
-func (f Resources) GetFuncMap() template.FuncMap {
-
+func (f *Resources) GetFuncMap() template.FuncMap {
 	funcMap := machinery.DefaultFuncMap()
 	funcMap["quotestr"] = func(value string) string {
 		if string(value[0]) != `"` {
 			value = `"` + value
 		}
+
 		if string(value[len(value)-1]) != `"` {
-			value = value + `"`
+			value += `"`
 		}
+
 		return value
 	}
+
 	return funcMap
 }
 

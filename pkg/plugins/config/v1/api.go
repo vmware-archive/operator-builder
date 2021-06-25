@@ -17,12 +17,10 @@ type createAPISubcommand struct {
 var _ plugin.CreateAPISubcommand = &createAPISubcommand{}
 
 func (p *createAPISubcommand) BindFlags(fs *pflag.FlagSet) {
-
 	fs.StringVar(&p.workloadConfigPath, "workload-config", "", "path to workload config file")
 }
 
 func (p *createAPISubcommand) InjectConfig(c config.Config) error {
-
 	taxi := workloadv1.ConfigTaxi{
 		WorkloadConfigPath: p.workloadConfigPath,
 	}
@@ -35,7 +33,6 @@ func (p *createAPISubcommand) InjectConfig(c config.Config) error {
 }
 
 func (p *createAPISubcommand) InjectResource(res *resource.Resource) error {
-
 	workload, err := workloadv1.ProcessAPIConfig(
 		p.workloadConfigPath,
 	)
@@ -47,9 +44,11 @@ func (p *createAPISubcommand) InjectResource(res *resource.Resource) error {
 	if res.Group == "" {
 		res.Group = workload.GetAPIGroup()
 	}
+
 	if res.Version == "" {
 		res.Version = workload.GetAPIVersion()
 	}
+
 	if res.Kind == "" {
 		res.Kind = workload.GetAPIKind()
 		res.Plural = resource.RegularPlural(workload.GetAPIKind())

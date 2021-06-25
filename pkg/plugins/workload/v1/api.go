@@ -27,7 +27,6 @@ type createAPISubcommand struct {
 var _ plugin.CreateAPISubcommand = &createAPISubcommand{}
 
 func (p *createAPISubcommand) UpdateMetadata(cliMeta plugin.CLIMetadata, subcmdMeta *plugin.SubcommandMetadata) {
-
 	subcmdMeta.Description = `Build a new API that can capture state for workloads
 `
 	subcmdMeta.Examples = fmt.Sprintf(`  # Add API attributes defined by a workload config file
@@ -36,7 +35,6 @@ func (p *createAPISubcommand) UpdateMetadata(cliMeta plugin.CLIMetadata, subcmdM
 }
 
 func (p *createAPISubcommand) InjectConfig(c config.Config) error {
-
 	p.config = c
 
 	var taxi workloadv1.ConfigTaxi
@@ -50,14 +48,12 @@ func (p *createAPISubcommand) InjectConfig(c config.Config) error {
 }
 
 func (p *createAPISubcommand) InjectResource(res *resource.Resource) error {
-
 	p.resource = res
 
 	return nil
 }
 
 func (p *createAPISubcommand) PreScaffold(machinery.Filesystem) error {
-
 	// load the workload config
 	workload, err := workloadv1.ProcessAPIConfig(
 		p.workloadConfigPath,
@@ -67,7 +63,8 @@ func (p *createAPISubcommand) PreScaffold(machinery.Filesystem) error {
 	}
 
 	// validate the workload config
-	if err := workload.Validate(); err != nil {
+	err = workload.Validate()
+	if err != nil {
 		return err
 	}
 
@@ -78,6 +75,7 @@ func (p *createAPISubcommand) PreScaffold(machinery.Filesystem) error {
 	if err != nil {
 		return err
 	}
+
 	err = yaml.Unmarshal(projectFile, &p.project)
 	if err != nil {
 		return err
@@ -87,7 +85,6 @@ func (p *createAPISubcommand) PreScaffold(machinery.Filesystem) error {
 }
 
 func (p *createAPISubcommand) Scaffold(fs machinery.Filesystem) error {
-
 	scaffolder := scaffolds.NewAPIScaffolder(
 		p.config,
 		*p.resource,
@@ -95,8 +92,8 @@ func (p *createAPISubcommand) Scaffold(fs machinery.Filesystem) error {
 		&p.project,
 	)
 	scaffolder.InjectFS(fs)
-	err := scaffolder.Scaffold()
-	if err != nil {
+
+	if err := scaffolder.Scaffold(); err != nil {
 		return err
 	}
 

@@ -51,7 +51,6 @@ func processCollectionMarkers(workloadPath string, components []ComponentWorkloa
 }
 
 func processMarkers(workloadPath, markerStr string, resources []string) (*[]APISpecField, error) {
-
 	var specFields []APISpecField
 
 	for _, manifestFile := range resources {
@@ -107,7 +106,6 @@ func processMarkers(workloadPath, markerStr string, resources []string) (*[]APIS
 }
 
 func processManifest(manifest, markerStr string) ([]Marker, error) {
-
 	var markers []Marker
 	lines := strings.Split(string(manifest), "\n")
 	for _, line := range lines {
@@ -124,7 +122,6 @@ func processManifest(manifest, markerStr string) ([]Marker, error) {
 }
 
 func processMarkedComments(line, markerStr string) (processed string) {
-
 	codeCommentSplit := strings.Split(line, "//")
 	code := codeCommentSplit[0]
 	comment := codeCommentSplit[1]
@@ -150,7 +147,6 @@ func processMarkedComments(line, markerStr string) (processed string) {
 }
 
 func processMarker(line, markerStr string) (Marker, error) {
-
 	var marker Marker
 
 	// count leading spaces
@@ -212,7 +208,6 @@ func processMarker(line, markerStr string) (Marker, error) {
 	}
 
 	return marker, nil
-
 }
 
 // zeroValue returns the zero value for the data type as a string.

@@ -8,7 +8,7 @@ import (
 
 var _ machinery.Template = &Complete{}
 
-// Complete scaffolds the complete phase methods
+// Complete scaffolds the complete phase methods.
 type Complete struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
@@ -16,7 +16,6 @@ type Complete struct {
 }
 
 func (f *Complete) SetTemplateDefaults() error {
-
 	f.Path = filepath.Join("controllers", "phases", "complete.go")
 
 	f.TemplateBody = completeTemplate
@@ -24,7 +23,7 @@ func (f *Complete) SetTemplateDefaults() error {
 	return nil
 }
 
-var completeTemplate = `{{ .Boilerplate }}
+const completeTemplate = `{{ .Boilerplate }}
 
 package phases
 

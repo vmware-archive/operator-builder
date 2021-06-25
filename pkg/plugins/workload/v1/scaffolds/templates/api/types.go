@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"text/template"
 
 	"sigs.k8s.io/kubebuilder/v3/pkg/machinery"
 
@@ -12,7 +13,7 @@ import (
 
 var _ machinery.Template = &Types{}
 
-// Types scaffolds a workload's API type
+// Types scaffolds a workload's API type.
 type Types struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
@@ -25,9 +26,8 @@ type Types struct {
 	IsStandalone  bool
 }
 
-// SetTemplateDefaults implements file.Template
+// SetTemplateDefaults implements file.Template.
 func (f *Types) SetTemplateDefaults() error {
-
 	f.Path = filepath.Join(
 		"apis",
 		f.Resource.Group,
@@ -41,7 +41,16 @@ func (f *Types) SetTemplateDefaults() error {
 	return nil
 }
 
-var typesTemplate = `{{ .Boilerplate }}
+func (f Types) GetFuncMap() template.FuncMap {
+
+	funcMap := machinery.DefaultFuncMap()
+	funcMap["containsString"] = func(value string, in string) bool {
+		return strings.Contains(in, value)
+	}
+	return funcMap
+}
+
+const typesTemplate = `{{ .Boilerplate }}
 
 package {{ .Resource.Version }}
 
@@ -50,9 +59,12 @@ import (
 	{{ if not .IsStandalone }}"k8s.io/apimachinery/pkg/runtime/schema"{{ end }}
 
 	common "{{ .Repo }}/apis/common"
-	{{- $Repo := .Repo }}{{- range .Dependencies }}
+	{{- $Repo := .Repo }}{{- $Added := "" }}{{- range .Dependencies }}
 	{{- if ne .Spec.APIGroup $.Resource.Group }}
+	{{- if not (containsString (printf "%s%s" .Spec.APIGroup .Spec.APIVersion) $Added) }}
+	{{- $Added = (printf "%s%s" $Added (printf "%s%s" .Spec.APIGroup .Spec.APIVersion)) }}
 	{{ .Spec.APIGroup }}{{ .Spec.APIVersion }} "{{ $Repo }}/apis/{{ .Spec.APIGroup }}/{{ .Spec.APIVersion }}"
+	{{ end }}
 	{{ end }}
 	{{ end }}
 )

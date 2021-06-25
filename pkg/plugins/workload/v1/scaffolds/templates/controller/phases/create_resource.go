@@ -8,7 +8,7 @@ import (
 
 var _ machinery.Template = &CreateResource{}
 
-// CreateResource scaffolds the create resource phase methods
+// CreateResource scaffolds the create resource phase methods.
 type CreateResource struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
@@ -18,7 +18,6 @@ type CreateResource struct {
 }
 
 func (f *CreateResource) SetTemplateDefaults() error {
-
 	f.Path = filepath.Join("controllers", "phases", "create_resource.go")
 
 	f.TemplateBody = createResourceTemplate
@@ -26,7 +25,7 @@ func (f *CreateResource) SetTemplateDefaults() error {
 	return nil
 }
 
-var createResourceTemplate = `{{ .Boilerplate }}
+const createResourceTemplate = `{{ .Boilerplate }}
 
 package phases
 

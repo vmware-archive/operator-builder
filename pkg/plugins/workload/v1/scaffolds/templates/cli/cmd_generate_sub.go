@@ -35,7 +35,6 @@ type CliCmdGenerateSub struct {
 }
 
 func (f *CliCmdGenerateSub) SetTemplateDefaults() error {
-
 	if f.IsComponent {
 		f.Path = filepath.Join(
 			"cmd", f.CliRootCmd, "commands",
@@ -54,7 +53,7 @@ func (f *CliCmdGenerateSub) SetTemplateDefaults() error {
 	return nil
 }
 
-var cliCmdGenerateSubTemplate = `{{ .Boilerplate }}
+const cliCmdGenerateSubTemplate = `{{ .Boilerplate }}
 
 package commands
 
@@ -171,7 +170,13 @@ func init() {
 	{{- else -}}
 	rootCmd.AddCommand({{ .CliSubCmdVarName }}GenerateCmd)
 
-	{{ .CliSubCmdVarName }}GenerateCmd.Flags().StringVarP(&workloadManifest, "workload-manifest", "w", "", "Filepath to the workload manifest to generate child resources for")
+	{{ .CliSubCmdVarName }}GenerateCmd.Flags().StringVarP(
+		&workloadManifest,
+		"workload-manifest",
+		"w",
+		"",
+		"Filepath to the workload manifest to generate child resources for."
+	)
 	{{- end -}}
 }
 `
