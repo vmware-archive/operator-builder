@@ -65,14 +65,14 @@ func init() {
 		"workload-manifest",
 		"w",
 		"",
-		"Filepath to the workload manifest to generate child resources for."
+		"Filepath to the workload manifest to generate child resources for.",
 	)
 	generateCmd.PersistentFlags().StringVarP(
 		&collectionManifest,
 		"collection-manifest",
 		"c",
 		"",
-		"Filepath to the workload collection manifest."
+		"Filepath to the workload collection manifest.",
 	)
 }
 `
