@@ -175,7 +175,7 @@ func init() {
 		"workload-manifest",
 		"w",
 		"",
-		"Filepath to the workload manifest to generate child resources for."
+		"Filepath to the workload manifest to generate child resources for.",
 	)
 	{{- end -}}
 }

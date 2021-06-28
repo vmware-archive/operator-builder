@@ -427,7 +427,8 @@ EOF
 go mod init acme.com/operator-builder-test
 
 operator-builder init \
-    --workload-config .test/cnp-workload-collection.yaml
+    --workload-config .test/cnp-workload-collection.yaml \
+    --skip-go-version-check
 
 operator-builder create api \
     --workload-config .test/cnp-workload-collection.yaml \
