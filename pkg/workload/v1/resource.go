@@ -177,11 +177,8 @@ func extractManifests(manifestContent []byte) []string {
 func addVariables(resourceContent string) (string, error) {
 	lines := strings.Split(string(resourceContent), "\n")
 	for i, line := range lines {
-		if containsMarker(line, workloadMarkerStr) {
-			markedLine := processMarkedComments(line, workloadMarkerStr)
-			lines[i] = markedLine
-		} else if containsMarker(line, collectionMarkerStr) {
-			markedLine := processMarkedComments(line, collectionMarkerStr)
+		if containsMarker(line) {
+			markedLine := processMarkedComments(line)
 			lines[i] = markedLine
 		}
 	}
@@ -202,8 +199,8 @@ func groupResourceRecorded(rbacRules *[]RBACRule, newRBACRule *RBACRule) bool {
 func addTemplating(rawContent string) (string, error) {
 	lines := strings.Split(string(rawContent), "\n")
 	for i, line := range lines {
-		if containsMarker(line, workloadMarkerStr) {
-			marker, err := processMarker(line, workloadMarkerStr)
+		if containsMarker(line) {
+			marker, err := processMarkerLine(line)
 			if err != nil {
 				return "", err
 			}
