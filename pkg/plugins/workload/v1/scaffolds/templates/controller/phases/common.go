@@ -8,7 +8,7 @@ import (
 
 var _ machinery.Template = &Common{}
 
-// Common scaffolds common phase operations
+// Common scaffolds common phase operations.
 type Common struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
@@ -16,7 +16,6 @@ type Common struct {
 }
 
 func (f *Common) SetTemplateDefaults() error {
-
 	f.Path = filepath.Join("controllers", "phases", "common.go")
 
 	f.TemplateBody = commonTemplate
@@ -24,7 +23,7 @@ func (f *Common) SetTemplateDefaults() error {
 	return nil
 }
 
-var commonTemplate = `{{ .Boilerplate }}
+const commonTemplate = `{{ .Boilerplate }}
 
 package phases
 

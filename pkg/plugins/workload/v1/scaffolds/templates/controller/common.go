@@ -8,7 +8,7 @@ import (
 
 var _ machinery.Template = &Common{}
 
-// Common scaffolds controller utilities common to all controllers
+// Common scaffolds controller utilities common to all controllers.
 type Common struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
@@ -19,7 +19,6 @@ type Common struct {
 }
 
 func (f *Common) SetTemplateDefaults() error {
-
 	f.Path = filepath.Join("controllers", "common.go")
 
 	f.TemplateBody = controllerCommonTemplate
@@ -28,7 +27,7 @@ func (f *Common) SetTemplateDefaults() error {
 	return nil
 }
 
-var controllerCommonTemplate = `{{ .Boilerplate }}
+const controllerCommonTemplate = `{{ .Boilerplate }}
 
 package controllers
 

@@ -8,7 +8,7 @@ import (
 
 var _ machinery.Template = &ResourceWait{}
 
-// ResourceWait scaffolds the resource wait phase methods
+// ResourceWait scaffolds the resource wait phase methods.
 type ResourceWait struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
@@ -16,7 +16,6 @@ type ResourceWait struct {
 }
 
 func (f *ResourceWait) SetTemplateDefaults() error {
-
 	f.Path = filepath.Join("controllers", "phases", "resource_wait.go")
 
 	f.TemplateBody = resourceWaitTemplate
@@ -24,7 +23,7 @@ func (f *ResourceWait) SetTemplateDefaults() error {
 	return nil
 }
 
-var resourceWaitTemplate = `{{ .Boilerplate }}
+const resourceWaitTemplate = `{{ .Boilerplate }}
 
 package phases
 

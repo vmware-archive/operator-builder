@@ -8,7 +8,7 @@ import (
 
 var _ machinery.Template = &Common{}
 
-// Common scaffolds the helper functions
+// Common scaffolds the helper functions.
 type Common struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
@@ -18,7 +18,6 @@ type Common struct {
 }
 
 func (f *Common) SetTemplateDefaults() error {
-
 	f.Path = filepath.Join("pkg", "helpers", "common.go")
 	f.TemplateBody = commonTemplate
 

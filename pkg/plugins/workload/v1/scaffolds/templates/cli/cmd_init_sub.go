@@ -33,7 +33,6 @@ type CliCmdInitSub struct {
 }
 
 func (f *CliCmdInitSub) SetTemplateDefaults() error {
-
 	if f.IsComponent {
 		f.Path = filepath.Join(
 			"cmd", f.CliRootCmd, "commands",
@@ -52,7 +51,7 @@ func (f *CliCmdInitSub) SetTemplateDefaults() error {
 	return nil
 }
 
-var cliCmdInitSubTemplate = `{{ .Boilerplate }}
+const cliCmdInitSubTemplate = `{{ .Boilerplate }}
 
 package commands
 

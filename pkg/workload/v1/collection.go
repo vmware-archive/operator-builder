@@ -10,7 +10,6 @@ import (
 )
 
 func (c WorkloadCollection) Validate() error {
-
 	missingFields := []string{}
 
 	// required fields
@@ -133,7 +132,14 @@ func (c WorkloadCollection) IsCollection() bool {
 }
 
 func (c *WorkloadCollection) SetSpecFields(workloadPath string) error {
-	return errors.New("Workload collections do not have API spec fields to be set")
+
+	apiSpecFields, err := processCollectionMarkers(workloadPath, c.Spec.Components)
+	if err != nil {
+		return err
+	}
+	c.Spec.APISpecFields = *apiSpecFields
+
+	return nil
 }
 
 func (c *WorkloadCollection) SetResources(workloadPath string) error {
@@ -163,7 +169,7 @@ func (c WorkloadCollection) GetSourceFiles() *[]SourceFile {
 }
 
 func (c WorkloadCollection) GetAPISpecFields() *[]APISpecField {
-	return &[]APISpecField{}
+	return &c.Spec.APISpecFields
 }
 
 func (c WorkloadCollection) GetRBACRules() *[]RBACRule {

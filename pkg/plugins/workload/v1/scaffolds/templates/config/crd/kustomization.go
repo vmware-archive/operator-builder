@@ -8,7 +8,7 @@ import (
 
 var _ machinery.Template = &Kustomization{}
 
-// Kustomization scaffolds the CRD kustomization.yaml file
+// Kustomization scaffolds the CRD kustomization.yaml file.
 type Kustomization struct {
 	machinery.TemplateMixin
 	machinery.ResourceMixin
@@ -17,7 +17,6 @@ type Kustomization struct {
 }
 
 func (f *Kustomization) SetTemplateDefaults() error {
-
 	f.Path = filepath.Join("config", "crd", "kustomization.yaml")
 	f.TemplateBody = kustomizationTemplate
 	f.IfExistsAction = machinery.OverwriteFile

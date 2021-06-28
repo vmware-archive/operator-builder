@@ -8,7 +8,7 @@ import (
 
 var _ machinery.Template = &PreFlight{}
 
-// PreFlight scaffolds the pre-flight phase methods
+// PreFlight scaffolds the pre-flight phase methods.
 type PreFlight struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
@@ -16,7 +16,6 @@ type PreFlight struct {
 }
 
 func (f *PreFlight) SetTemplateDefaults() error {
-
 	f.Path = filepath.Join("controllers", "phases", "pre_flight.go")
 
 	f.TemplateBody = preFlightTemplate
@@ -24,7 +23,7 @@ func (f *PreFlight) SetTemplateDefaults() error {
 	return nil
 }
 
-var preFlightTemplate = `{{ .Boilerplate }}
+const preFlightTemplate = `{{ .Boilerplate }}
 
 package phases
 

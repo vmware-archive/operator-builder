@@ -14,8 +14,7 @@ import (
 var _ plugin.InitSubcommand = &initSubcommand{}
 
 type initSubcommand struct {
-	config      config.Config
-	commandName string
+	config config.Config
 
 	// license files
 	projectLicensePath string
@@ -23,7 +22,6 @@ type initSubcommand struct {
 }
 
 func (p *initSubcommand) UpdateMetadata(cliMeta plugin.CLIMetadata, subcmdMeta *plugin.SubcommandMetadata) {
-
 	subcmdMeta.Description = `Add a project license file and license headers to source code files
 `
 	subcmdMeta.Examples = fmt.Sprintf(`  # Add a project license file from a sample on the local filesystem
@@ -35,7 +33,6 @@ func (p *initSubcommand) UpdateMetadata(cliMeta plugin.CLIMetadata, subcmdMeta *
 }
 
 func (p *initSubcommand) BindFlags(fs *pflag.FlagSet) {
-
 	fs.StringVar(&p.projectLicensePath, "project-license", "", "path to project license file")
 	fs.StringVar(&p.sourceHeaderPath, "source-header-license", "", "path to file with source code header license text")
 }
@@ -46,16 +43,15 @@ func (p *initSubcommand) InjectConfig(c config.Config) {
 }
 
 func (p *initSubcommand) Scaffold(fs machinery.Filesystem) error {
-
 	// project license
-	if len(p.projectLicensePath) != 0 {
+	if p.projectLicensePath != "" {
 		if err := license.UpdateProjectLicense(p.projectLicensePath); err != nil {
 			return err
 		}
 	}
 
 	// source header license
-	if len(p.sourceHeaderPath) != 0 {
+	if p.sourceHeaderPath != "" {
 		if err := license.UpdateSourceHeader(p.sourceHeaderPath); err != nil {
 			return err
 		}

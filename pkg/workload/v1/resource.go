@@ -13,7 +13,6 @@ import (
 )
 
 func processResources(workloadPath string, resources []string) (*[]SourceFile, *[]RBACRule, error) {
-
 	// each sourceFile is a source code file that contains one or more child
 	// resource definition
 	var sourceFiles []SourceFile
@@ -153,7 +152,6 @@ func isStaticType(manifestContent string, kind string) bool {
 }
 
 func extractManifests(manifestContent []byte) []string {
-
 	var manifests []string
 
 	lines := strings.Split(string(manifestContent), "\n")
@@ -165,7 +163,6 @@ func extractManifests(manifestContent []byte) []string {
 				manifests = append(manifests, manifest)
 				manifest = ""
 			}
-
 		} else {
 			manifest = manifest + "\n" + line
 		}
@@ -178,11 +175,13 @@ func extractManifests(manifestContent []byte) []string {
 }
 
 func addVariables(resourceContent string) (string, error) {
-
 	lines := strings.Split(string(resourceContent), "\n")
 	for i, line := range lines {
-		if containsMarker(line) {
-			markedLine := processMarkedComments(line)
+		if containsMarker(line, workloadMarkerStr) {
+			markedLine := processMarkedComments(line, workloadMarkerStr)
+			lines[i] = markedLine
+		} else if containsMarker(line, collectionMarkerStr) {
+			markedLine := processMarkedComments(line, collectionMarkerStr)
 			lines[i] = markedLine
 		}
 	}
@@ -191,7 +190,6 @@ func addVariables(resourceContent string) (string, error) {
 }
 
 func groupResourceRecorded(rbacRules *[]RBACRule, newRBACRule *RBACRule) bool {
-
 	for _, r := range *rbacRules {
 		if r.Group == newRBACRule.Group && r.Resource == newRBACRule.Resource {
 			return true
@@ -202,11 +200,10 @@ func groupResourceRecorded(rbacRules *[]RBACRule, newRBACRule *RBACRule) bool {
 }
 
 func addTemplating(rawContent string) (string, error) {
-
 	lines := strings.Split(string(rawContent), "\n")
 	for i, line := range lines {
-		if containsMarker(line) {
-			marker, err := processMarker(line)
+		if containsMarker(line, workloadMarkerStr) {
+			marker, err := processMarker(line, workloadMarkerStr)
 			if err != nil {
 				return "", err
 			}

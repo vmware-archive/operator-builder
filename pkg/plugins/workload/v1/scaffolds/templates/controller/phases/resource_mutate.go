@@ -8,14 +8,13 @@ import (
 
 var _ machinery.Template = &ResourceMutate{}
 
-// ResourceMutate scaffolds the resource mutate phase method
+// ResourceMutate scaffolds the resource mutate phase method.
 type ResourceMutate struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
 }
 
 func (f *ResourceMutate) SetTemplateDefaults() error {
-
 	f.Path = filepath.Join("controllers", "phases", "resource_mutate.go")
 
 	f.TemplateBody = resourceMutateTemplate
@@ -23,7 +22,7 @@ func (f *ResourceMutate) SetTemplateDefaults() error {
 	return nil
 }
 
-var resourceMutateTemplate = `{{ .Boilerplate }}
+const resourceMutateTemplate = `{{ .Boilerplate }}
 
 package phases
 

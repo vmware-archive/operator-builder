@@ -8,7 +8,7 @@ import (
 
 var _ machinery.Template = &ResourcePersist{}
 
-// ResourcePersist scaffolds the resource persist phase methods
+// ResourcePersist scaffolds the resource persist phase methods.
 type ResourcePersist struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
@@ -16,7 +16,6 @@ type ResourcePersist struct {
 }
 
 func (f *ResourcePersist) SetTemplateDefaults() error {
-
 	f.Path = filepath.Join("controllers", "phases", "resource_persist.go")
 
 	f.TemplateBody = resourcePersistTemplate
@@ -24,7 +23,7 @@ func (f *ResourcePersist) SetTemplateDefaults() error {
 	return nil
 }
 
-var resourcePersistTemplate = `{{ .Boilerplate }}
+const resourcePersistTemplate = `{{ .Boilerplate }}
 
 package phases
 

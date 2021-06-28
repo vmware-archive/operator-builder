@@ -11,7 +11,6 @@ import (
 )
 
 func ProcessInitConfig(workloadConfig string) (WorkloadInitializer, error) {
-
 	workloads, err := parseConfig(workloadConfig)
 	if err != nil {
 		return nil, err
@@ -22,7 +21,6 @@ func ProcessInitConfig(workloadConfig string) (WorkloadInitializer, error) {
 	collectionFound := false
 
 	for _, w := range *workloads {
-
 		switch w.GetWorkloadKind() {
 		case WorkloadKindStandalone:
 			if standaloneFound {
@@ -62,7 +60,6 @@ func ProcessInitConfig(workloadConfig string) (WorkloadInitializer, error) {
 }
 
 func ProcessAPIConfig(workloadConfig string) (WorkloadAPIBuilder, error) {
-
 	workloads, err := parseConfig(workloadConfig)
 	if err != nil {
 		return nil, err
@@ -74,7 +71,6 @@ func ProcessAPIConfig(workloadConfig string) (WorkloadAPIBuilder, error) {
 	collectionFound := false
 
 	for _, w := range *workloads {
-
 		switch w.GetWorkloadKind() {
 		case WorkloadKindStandalone:
 			if standaloneFound {
@@ -154,13 +150,15 @@ func ProcessAPIConfig(workloadConfig string) (WorkloadAPIBuilder, error) {
 		if err := workload.SetComponents(&components); err != nil {
 			return nil, err
 		}
+		if err := workload.SetSpecFields(workloadConfig); err != nil {
+			return nil, err
+		}
 	}
 
 	return workload, nil
 }
 
 func parseConfig(workloadConfig string) (*[]WorkloadIdentifier, error) {
-
 	if workloadConfig == "" {
 		return nil, errors.New("No workload config provided - workload config required")
 	}
@@ -181,7 +179,6 @@ func parseConfig(workloadConfig string) (*[]WorkloadIdentifier, error) {
 				configs = append(configs, config)
 				config = ""
 			}
-
 		} else {
 			config = config + "\n" + line
 		}

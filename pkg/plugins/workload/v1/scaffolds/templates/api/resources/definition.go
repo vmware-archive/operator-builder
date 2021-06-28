@@ -10,7 +10,7 @@ import (
 
 var _ machinery.Template = &Definition{}
 
-// Types scaffolds the child resource definition files
+// Types scaffolds the child resource definition files.
 type Definition struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
@@ -21,10 +21,11 @@ type Definition struct {
 	SourceFile    workloadv1.SourceFile
 	PackageName   string
 	SpecFields    *[]workloadv1.APISpecField
+	IsComponent   bool
+	Collection    *workloadv1.WorkloadCollection
 }
 
 func (f *Definition) SetTemplateDefaults() error {
-
 	f.Path = filepath.Join(
 		"apis",
 		f.Resource.Group,
@@ -54,6 +55,9 @@ import (
 	{{ end }}
 
 	{{ .Resource.ImportAlias }} "{{ .Resource.Path }}"
+	{{- if .IsComponent }}
+	{{ .Collection.Spec.APIGroup }}{{ .Collection.Spec.APIVersion }} "{{ .Repo }}/apis/{{ .Collection.Spec.APIGroup }}/{{ .Collection.Spec.APIVersion }}"
+	{{ end -}}
 )
 
 {{ range .SourceFile.Children }}
@@ -63,7 +67,12 @@ const resource{{ .UniqueName }} = ` + "`" + `
 ` + "`" + `
 
 // Create{{ .UniqueName }} creates the {{ .Name }} {{ .Kind }} resource
-func Create{{ .UniqueName }}(parent *{{ $.Resource.ImportAlias }}.{{ $.Resource.Kind }}) (metav1.Object, error) {
+func Create{{ .UniqueName }}(
+	parent *{{ $.Resource.ImportAlias }}.{{ $.Resource.Kind }},
+	{{- if $.IsComponent }}
+	collection *{{ $.Collection.Spec.APIGroup }}{{ $.Collection.Spec.APIVersion }}.{{ $.Collection.Spec.APIKind }},
+	{{ end -}}
+) (metav1.Object, error) {
 
 	fmap := template.FuncMap{
 		{{ range $.SpecFields }}
@@ -88,7 +97,12 @@ func Create{{ .UniqueName }}(parent *{{ $.Resource.ImportAlias }}.{{ $.Resource.
 
 {{ else }}
 // Create{{ .UniqueName }} creates the {{ .Name }} {{ .Kind }} resource
-func Create{{ .UniqueName }} (parent *{{ $.Resource.ImportAlias }}.{{ $.Resource.Kind }}) (metav1.Object, error) {
+func Create{{ .UniqueName }} (
+	parent *{{ $.Resource.ImportAlias }}.{{ $.Resource.Kind }},
+	{{- if $.IsComponent }}
+	collection *{{ $.Collection.Spec.APIGroup }}{{ $.Collection.Spec.APIVersion }}.{{ $.Collection.Spec.APIKind }},
+	{{ end -}}
+) (metav1.Object, error) {
 
 	{{ .SourceCode }}
 

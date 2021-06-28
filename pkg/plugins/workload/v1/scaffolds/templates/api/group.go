@@ -8,7 +8,7 @@ import (
 
 var _ machinery.Template = &Group{}
 
-// Group scaffolds the file that defines the registration methods for a certain group and version
+// Group scaffolds the file that defines the registration methods for a certain group and version.
 type Group struct {
 	machinery.TemplateMixin
 	machinery.MultiGroupMixin
@@ -17,7 +17,6 @@ type Group struct {
 }
 
 func (f *Group) SetTemplateDefaults() error {
-
 	f.Path = filepath.Join(
 		"apis",
 		f.Resource.Group,

@@ -11,7 +11,7 @@ import (
 
 var _ machinery.Template = &Resources{}
 
-// Types scaffolds child resource creation functions
+// Types scaffolds child resource creation functions.
 type Resources struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
@@ -21,10 +21,11 @@ type Resources struct {
 	PackageName     string
 	CreateFuncNames []string
 	SpecFields      *[]workloadv1.APISpecField
+	IsComponent     bool
+	Collection      *workloadv1.WorkloadCollection
 }
 
 func (f *Resources) SetTemplateDefaults() error {
-
 	f.Path = filepath.Join(
 		"apis",
 		f.Resource.Group,
@@ -39,18 +40,20 @@ func (f *Resources) SetTemplateDefaults() error {
 	return nil
 }
 
-func (f Resources) GetFuncMap() template.FuncMap {
-
+func (f *Resources) GetFuncMap() template.FuncMap {
 	funcMap := machinery.DefaultFuncMap()
 	funcMap["quotestr"] = func(value string) string {
 		if string(value[0]) != `"` {
 			value = `"` + value
 		}
+
 		if string(value[len(value)-1]) != `"` {
-			value = value + `"`
+			value += `"`
 		}
+
 		return value
 	}
+
 	return funcMap
 }
 
@@ -66,9 +69,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	{{ .Resource.ImportAlias }} "{{ .Resource.Path }}"
+	{{- if .IsComponent }}
+	{{ .Collection.Spec.APIGroup }}{{ .Collection.Spec.APIVersion }} "{{ .Repo }}/apis/{{ .Collection.Spec.APIGroup }}/{{ .Collection.Spec.APIVersion }}"
+	{{ end -}}
 )
 
-var CreateFuncs = []func(*{{ .Resource.ImportAlias }}.{{ .Resource.Kind }}) (metav1.Object, error){
+var CreateFuncs = []func(
+	*{{ .Resource.ImportAlias }}.{{ .Resource.Kind }},
+	{{- if $.IsComponent }}
+	*{{ .Collection.Spec.APIGroup }}{{ .Collection.Spec.APIVersion }}.{{ .Collection.Spec.APIKind }},
+	{{ end -}}
+) (metav1.Object, error){
+
 	{{ range .CreateFuncNames }}
 		{{- . -}},
 	{{ end }}
