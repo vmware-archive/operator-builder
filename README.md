@@ -1,6 +1,6 @@
 # Operator Builder
 
-Accelerate the development of Kubernetes Operators.
+**Accelerate the development of Kubernetes Operators.**
 
 Operator Builder extends [Kubebuilder](https://github.com/kubernetes-sigs/kubebuilder)
 to facilitate development and maintenance of Kubernetes operators.  It is especially
@@ -8,6 +8,7 @@ helpful if you need to take large numbers of resources defined with static or
 templated yaml and migrate to managing those resources with a custom Kubernetes operator.
 
 An operator built with Operator Builder has the following features:
+
 - A defined API for a custom resource based on [workload
   markers](docs/workload-markers.md) in static Kubernetes manifests.
 - A functioning controller that will create, update and delete child resources
@@ -45,26 +46,27 @@ resources and will be configured with a single custom resource.
 
 ### Prerequisites
 
-* An available test cluster.  A local kind or minikube cluster will work just
+- An available test cluster. A local kind or minikube cluster will work just
   fine in many cases.
-* Operator Builder [installed](#installation).
-* [kubectl installed](https://kubernetes.io/docs/tasks/tools/#kubectl).
-* A set of static Kubernetes manifests that can be used to deploy
+- Operator Builder [installed](#installation).
+- [kubectl installed](https://kubernetes.io/docs/tasks/tools/#kubectl).
+- A set of static Kubernetes manifests that can be used to deploy
   your workload.  It is highly recommended that you apply these manifests to a
   test cluster and verify the resulting resources work as expected.
   If you don't have a workload of your own to use, you can use the examples
   provided in this guide.
 
 This guide consists of the following steps:
-1. Create a repository.
+
+1. [Create a repository](#step-1).
 1. Determine what fields in your static manifests will need to be configurable for
-   deployment into different environments.  Add commented markers to the
-   manifests.  These will serve as instructions to Operator Builder.
-1. Create a workload configuration for your project.
-1. Use the Operator Builder CLI to generate the source code for your operator.
-1. Test the operator against your test cluster.
-1. Build and install your operator's controller manager in your test cluster.
-1. Build and test the operator's companion CLI.
+   deployment into different environments. [Add commented markers to the
+   manifests](#step-2). These will serve as instructions to Operator Builder.
+1. [Create a workload configuration for your project](#step-3).
+1. [Use the Operator Builder CLI to generate the source code for your operator](#step-4).
+1. [Test the operator against your test cluster](#step-5).
+1. [Build and install your operator's controller manager in your test cluster](#step-6).
+1. [Build and test the operator's companion CLI](#step-7).
 
 ### Step 1
 
@@ -93,6 +95,7 @@ can be in one or more files.  And you can have one or more manifests (separated
 by `---`) in each file.  Just organize them in a way that makes sense to you.
 
 ### Step 2
+
 Look through your static manifests and determine which fields will need to be
 configurable for deployment into different environments.  Let's look at a simple
 example to illustrate.  Following is a Deployment, Ingress and Service that may
@@ -149,11 +152,11 @@ be used to deploy a workload.
         targetPort: 8080
 
 There are two fields in the Deployment manifest that will need to be
-configurable.  They are noted with comments.  The Deployment's replicas and the
+configurable. They are noted with comments. The Deployment's replicas and the
 Pod's container image will change between different environments.  For example,
 in a dev environment the number of replicas will be low and a development
 version of the app will be run.  In production, there will be more replicas and
-a stable release of the app will be used.  In this example we don't have any
+a stable release of the app will be used. In this example we don't have any
 configurable fields in the Ingress or Service.
 
 Next we need to use `+workload` markers in comments to inform Operator Builder
@@ -194,13 +197,14 @@ become clear shortly.
 
 The other required field is the `type` field which specifies the data type for
 the value.  The supported data types are:
-* bool
-* string
-* int
-* int32
-* int64
-* float32
-* float64
+
+- bool
+- string
+- int
+- int32
+- int64
+- float32
+- float64
 
 You may also add a `default` field.  This will make configuration optional for
 your operator's end user and, if not given, will use the supplied default value.
@@ -214,8 +218,8 @@ field will be use for two different label values on the Deployment.
 
 Operator Builder uses a workload configuration to provide important details for
 your operator project.  This guide uses a [standalone
-workload](docs/standlone-workloads.md).  Save this file to your
-`.source-manifests` direcotry.
+workload](docs/standalone-workloads.md). Save this file to your
+`.source-manifests` directory.
 
     name: webstore
     kind: StandaloneWorkload
@@ -235,14 +239,15 @@ For a standalone workload the `kind` must be `StandaloneWorkload`.  The `name`
 is arbitrary and can be whatever you like.
 
 In the `spec`, the following fields are required:
-* `domain`: This must be a globally unique name that will not be used by other
+
+- `domain`: This must be a globally unique name that will not be used by other
   organizations or groups.  It will contain groups of API types.
-* `apiGroup`: This is a logical group of API types used as a namespacing
+- `apiGroup`: This is a logical group of API types used as a namespacing
   mechanism for your APIs.
-* `apiVersion`: Provide the intiial version for your API.
-* `apiKind`: The name of the API type that will represent the workload you are
+- `apiVersion`: Provide the intiial version for your API.
+- `apiKind`: The name of the API type that will represent the workload you are
   managing with this operator.
-* `resources`: An array of filenames where your static manifests live.  List the
+- `resources`: An array of filenames where your static manifests live.  List the
   relative path from the workload manifest to all the files that contain the
   static manifests we talked about in step 2.
 
@@ -250,20 +255,22 @@ For more info about API groups, versions and kinds, checkout the [Kubebuilder
 docs](https://kubebuilder.io/cronjob-tutorial/gvks.html).
 
 The following fields in the `spec` are optional:
-* `clusterScoped`: If your workload includes cluster-scoped resources like
+
+- `clusterScoped`: If your workload includes cluster-scoped resources like
   namespaces, this will need to be `true`.  The default is `false`.
-* `companionCLIRootcmd`: If you wish to generate source code for a companion CLI
+- `companionCLIRootcmd`: If you wish to generate source code for a companion CLI
   for your operator, include this field.  We recommend you do.  Your end users
   will appreciate it.
-  * `name`: The root command your end users will type when using the companion
+  - `name`: The root command your end users will type when using the companion
     CLI.
-  * `description`: The general information your end users will get if they use
+  - `description`: The general information your end users will get if they use
     the `help` subcommand of your companion CLI.
 
 At this point in our example, our `.source-manifests` directory looks as
 follows:
 
     tree .source-manifests
+
     .source-manifests
     ├── app.yaml
     └── workload.yaml
@@ -295,7 +302,7 @@ We again provide the same workload config file.  Here we also added the
 `--controller` and `--resource` arguments.  These indicate that we want both a
 new controller and new custom resource created.
 
-You now have a new working Kubernetes operater!  Next, we will test it out.
+You now have a new working Kubernetes Operator!  Next, we will test it out.
 
 ### Step 5
 
@@ -331,7 +338,7 @@ the provided sample manifest.
     kubectl apply -f config/samples/
 
 You should see your custom resource sample get created.  Now use `kubectl` to
-inspct your cluster to confirm the workload's resources got created.  You should
+inspect your cluster to confirm the workload's resources got created.  You should
 find all the resources that were defined in your static manifests.
 
     kubectl get all
@@ -386,7 +393,7 @@ Now let's build and test the companion CLI.
 You will have a make target that includes the name of your CLI.  For this
 example it is:
 
-    make build-westorectl
+    make build-webstorectl
 
 We can view the help info as follows.
 
@@ -415,7 +422,7 @@ tool or written to disk and modified before applying to a cluster.
 
 That's it!  You have a working operator without manually writing a single line
 of code.  If you'd like to make any changes to your workload's API, you'll find
-the code in the `api` directory.  The controller's source code is in
+the code in the `apis` directory.  The controller's source code is in
 `controllers` directory.  And the companion CLI code is in `cmd`.
 
 Don't forget to clean up.  Remove the controller, CRD and the workload's
@@ -434,9 +441,8 @@ workloads.  See [collections](docs/collections.md) for more info.
 ## Licensing
 
 Operator Builder can help manage licensing for the resulting project.  More
-info [here](docs/licensing.md).
+info [here](docs/license.md).
 
 ## Testing
 
 Testing of Operator Builder is documented [here](docs/testing.md).
-
