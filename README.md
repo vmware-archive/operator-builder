@@ -436,7 +436,7 @@ well as the [Kubebuilder docs](https://kubebuilder.io/).
 ## Collections
 
 Operator Builder can generate source code for operators that manage multiple
-workloads.  See [collections](docs/collections.md) for more info.
+workloads.  See [collections](docs/workload-collections.md) for more info.
 
 ## Licensing
 
