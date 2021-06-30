@@ -139,7 +139,7 @@ func ProcessAPIConfig(workloadConfig string) (WorkloadAPIBuilder, error) {
 		}
 		if len(missingDependencies) > 0 {
 			msg := fmt.Sprintf(
-				"%s component/s listed in dependencies for %s but no component workload config for %s provied",
+				"%s component/s listed in dependencies for %s but no component workload config for %s provided",
 				missingDependencies,
 				component.Name,
 				missingDependencies,
