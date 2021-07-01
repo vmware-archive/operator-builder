@@ -229,6 +229,7 @@ your operator project.  This guide uses a [standalone
 workload](docs/standalone-workloads.md). Save this file to your
 `.source-manifests` directory.
 
+    # .source-manifests/workload.yaml
     name: webstore
     kind: StandaloneWorkload
     spec:
