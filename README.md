@@ -44,7 +44,7 @@ Build the binary.
 
 Put the binary on your path.
 
-    sudo mv bin/operator-builder /usr/local/bin/
+    mv bin/operator-builder /usr/local/bin/
 
 ## Getting Started
 
