@@ -544,6 +544,8 @@ github.com/vmware-tanzu-labs/object-code-generator-for-k8s v0.2.0 h1:gpnh3oDjwBf
 github.com/vmware-tanzu-labs/object-code-generator-for-k8s v0.2.0/go.mod h1:m2CdLMRa/73/zncShmdRYmn7RDZKq42Gqqgzn4oQQNE=
 github.com/vmware-tanzu-labs/object-code-generator-for-k8s v0.2.1 h1:KCX19oRHTSA5C9Jr7NUb+v30YiDkGF1tzpxte+RIPK8=
 github.com/vmware-tanzu-labs/object-code-generator-for-k8s v0.2.1/go.mod h1:Cf1te3B0f1QfeXuquaasWxH+Xv6TCDvPMx6AOYkiH2I=
+github.com/vmware-tanzu-labs/object-code-generator-for-k8s v0.2.2 h1:zkgKmGRdjqp9lP5QLlXFS28Vd1XlxGqbwDtYJMat1iI=
+github.com/vmware-tanzu-labs/object-code-generator-for-k8s v0.2.2/go.mod h1:Cf1te3B0f1QfeXuquaasWxH+Xv6TCDvPMx6AOYkiH2I=
 github.com/weppos/publicsuffix-go v0.4.0/go.mod h1:z3LCPQ38eedDQSwmsSRW4Y7t2L8Ln16JPQ02lHAdn5k=
 github.com/weppos/publicsuffix-go v0.13.0 h1:0Tu1uzLBd1jPn4k6OnMmOPZH/l/9bj9kUOMMkoRs6Gg=
 github.com/weppos/publicsuffix-go v0.13.0/go.mod h1:z3LCPQ38eedDQSwmsSRW4Y7t2L8Ln16JPQ02lHAdn5k=
