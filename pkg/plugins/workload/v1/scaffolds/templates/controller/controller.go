@@ -25,6 +25,7 @@ type Controller struct {
 	IsStandalone      bool
 	IsComponent       bool
 	Collection        *workloadv1.WorkloadCollection
+	SourceFiles       *[]workloadv1.SourceFile
 }
 
 func (f *Controller) SetTemplateDefaults() error {
@@ -54,6 +55,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	{{ if .HasChildResources -}}
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	{{ end }}
 
 	"{{ .Repo }}/apis/common"
 	{{ .Resource.ImportAlias }} "{{ .Resource.Path }}"
@@ -172,11 +176,7 @@ func (r *{{ .Resource.Kind }}Reconciler) SetRefAndCreateIfNotPresent(
 		return err
 	}
 
-	//objectKey, err := client.ObjectKeyFromObject(resource.(runtime.Object))
 	objectKey := client.ObjectKeyFromObject(resource.(client.Object))
-	//if err != nil {
-	//	return err
-	//}
 	if err := r.Get(r.Context, objectKey, resource.(client.Object)); err != nil {
 		if errors.IsNotFound(err) {
 			r.GetLogger().V(0).Info("creating resource with name: [" + resource.GetName() + "] of kind: [" + resource.(runtime.Object).GetObjectKind().GroupVersionKind().Kind + "]")
@@ -256,6 +256,15 @@ func (r *{{ .Resource.Kind }}Reconciler) Wait(
 func (r *{{ .Resource.Kind }}Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&{{ .Resource.ImportAlias }}.{{ .Resource.Kind }}{}).
+		{{- range .SourceFiles }}
+		{{- range .Children }}
+		{{- if eq .Group "core" }}
+		Owns(&unstructured.Unstructured{Object: map[string]interface{}{"kind": "{{ .Kind }}", "apiVersion": "{{ .Version }}"}}).
+		{{- else }}
+		Owns(&unstructured.Unstructured{Object: map[string]interface{}{"kind": "{{ .Kind }}", "apiVersion": "{{ .Group }}/{{ .Version }}"}}).
+		{{ end -}}
+		{{ end -}}
+		{{ end -}}
 		Complete(r)
 }
 `

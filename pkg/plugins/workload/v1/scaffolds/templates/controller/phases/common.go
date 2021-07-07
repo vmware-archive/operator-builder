@@ -98,7 +98,7 @@ func HandlePhaseExit(
 		result = DefaultReconcileResult()
 	case !phaseIsReady:
 		condition = phaseHandler.GetPendingCondition()
-		result = phaseHandler.Requeue()
+		result = Requeue()
 	default:
 		condition = phaseHandler.GetSuccessCondition()
 		result = DefaultReconcileResult()
