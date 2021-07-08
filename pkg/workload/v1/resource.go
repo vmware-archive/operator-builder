@@ -12,11 +12,12 @@ import (
 	"github.com/vmware-tanzu-labs/operator-builder/pkg/utils"
 )
 
-func processResources(workloadPath string, resources []string) (*[]SourceFile, *[]RBACRule, error) {
+func processResources(workloadPath string, resources []string) (*[]SourceFile, *[]RBACRule, *[]OwnershipRule, error) {
 	// each sourceFile is a source code file that contains one or more child
 	// resource definition
 	var sourceFiles []SourceFile
 	var rbacRules []RBACRule
+	var ownershipRules []OwnershipRule
 
 	for _, manifestFile := range resources {
 
@@ -32,7 +33,7 @@ func processResources(workloadPath string, resources []string) (*[]SourceFile, *
 		// capture entire resource manifest file content
 		manifestContent, err := ioutil.ReadFile(filepath.Join(filepath.Dir(workloadPath), manifestFile))
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 
 		manifests := extractManifests(manifestContent)
@@ -43,7 +44,7 @@ func processResources(workloadPath string, resources []string) (*[]SourceFile, *
 			var rawContent interface{}
 			err = yaml.Unmarshal([]byte(manifest), &rawContent)
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, nil, err
 			}
 
 			// determine resource kind and name
@@ -62,6 +63,7 @@ func processResources(workloadPath string, resources []string) (*[]SourceFile, *
 
 			var resourceGroup string
 			var resourceVersion string
+
 			if len(apiVersionElements) == 1 {
 				resourceGroup = "core"
 				resourceVersion = apiVersionElements[0]
@@ -76,9 +78,19 @@ func processResources(workloadPath string, resources []string) (*[]SourceFile, *
 				Group:    resourceGroup,
 				Resource: resourcePlural,
 			}
-			exists := groupResourceRecorded(&rbacRules, &newRBACRule)
-			if !exists {
+			rbacExists := groupResourceRecorded(&rbacRules, &newRBACRule)
+			if !rbacExists {
 				rbacRules = append(rbacRules, newRBACRule)
+			}
+
+			// determine group and kind for ownership rule generation
+			newOwnershipRule := OwnershipRule{
+				Version: apiVersion,
+				Kind:    resourceKind,
+			}
+			ownershipExists := versionKindRecorded(&ownershipRules, &newOwnershipRule)
+			if !ownershipExists {
+				ownershipRules = append(ownershipRules, newOwnershipRule)
 			}
 
 			resource := ChildResource{
@@ -92,13 +104,13 @@ func processResources(workloadPath string, resources []string) (*[]SourceFile, *
 			// generate the object source code
 			resourceDefinition, err := generate.Generate([]byte(manifest), "resourceObj")
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, nil, err
 			}
 
 			// add variables based on commented markers
 			resourceDefinition, err = addVariables(resourceDefinition)
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, nil, err
 			}
 
 			// add the source code to the resource
@@ -112,7 +124,7 @@ func processResources(workloadPath string, resources []string) (*[]SourceFile, *
 		sourceFiles = append(sourceFiles, sourceFile)
 	}
 
-	return &sourceFiles, &rbacRules, nil
+	return &sourceFiles, &rbacRules, &ownershipRules, nil
 }
 
 func extractManifests(manifestContent []byte) []string {
@@ -153,6 +165,16 @@ func addVariables(resourceContent string) (string, error) {
 func groupResourceRecorded(rbacRules *[]RBACRule, newRBACRule *RBACRule) bool {
 	for _, r := range *rbacRules {
 		if r.Group == newRBACRule.Group && r.Resource == newRBACRule.Resource {
+			return true
+		}
+	}
+
+	return false
+}
+
+func versionKindRecorded(ownershipRules *[]OwnershipRule, newOwnershipRule *OwnershipRule) bool {
+	for _, r := range *ownershipRules {
+		if r.Version == newOwnershipRule.Version && r.Kind == newOwnershipRule.Kind {
 			return true
 		}
 	}
