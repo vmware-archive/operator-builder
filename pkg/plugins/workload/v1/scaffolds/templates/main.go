@@ -36,6 +36,14 @@ func (f *Main) SetTemplateDefaults() error {
 	return nil
 }
 
+func (*Main) GetPath() string {
+	return defaultMainPath
+}
+
+func (*Main) GetIfExistsAction() machinery.IfExistsAction {
+	return machinery.OverwriteFile
+}
+
 var _ machinery.Inserter = &MainUpdater{}
 
 type MainUpdater struct {
@@ -172,6 +180,7 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
+	"k8s.io/client-go/rest"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -216,6 +225,13 @@ func main() {
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+
+	// only print a given warning the first time we receive it
+	rest.SetDefaultWarningHandler(
+		rest.NewWarningWriter(os.Stderr, rest.WarningWriterOptions{
+			Deduplicate: true,
+		}),
+	)
 
 {{ if not .ComponentConfig }}
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
