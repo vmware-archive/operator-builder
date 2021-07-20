@@ -16,18 +16,23 @@ func (c WorkloadCollection) Validate() error {
 	if c.Name == "" {
 		missingFields = append(missingFields, "name")
 	}
+
 	if c.Spec.Domain == "" {
 		missingFields = append(missingFields, "spec.domain")
 	}
+
 	if c.Spec.APIGroup == "" {
 		missingFields = append(missingFields, "spec.apiGroup")
 	}
+
 	if c.Spec.APIVersion == "" {
 		missingFields = append(missingFields, "spec.apiVersion")
 	}
+
 	if c.Spec.APIKind == "" {
 		missingFields = append(missingFields, "spec.apiKind")
 	}
+
 	if len(missingFields) > 0 {
 		msg := fmt.Sprintf("Missing required fields: %s", missingFields)
 		return errors.New(msg)
@@ -40,17 +45,13 @@ func (c WorkloadCollection) GetWorkloadKind() WorkloadKind {
 	return c.Kind
 }
 
-// methods that implement WorkloadInitializer
+// methods that implement WorkloadInitializer.
 func (c WorkloadCollection) GetDomain() string {
 	return c.Spec.Domain
 }
 
 func (c WorkloadCollection) HasRootCmdName() bool {
-	if c.Spec.CompanionCliRootcmd.Name != "" {
-		return true
-	} else {
-		return false
-	}
+	return c.Spec.CompanionCliRootcmd.Name != ""
 }
 
 func (c WorkloadCollection) HasSubCmdName() bool {
@@ -66,7 +67,7 @@ func (c WorkloadCollection) GetRootCmdDescr() string {
 	return c.Spec.CompanionCliRootcmd.Description
 }
 
-// methods that implement WorkloadAPIBuilder
+// methods that implement WorkloadAPIBuilder.
 func (c WorkloadCollection) GetName() string {
 	return c.Name
 }
@@ -112,11 +113,7 @@ func (c WorkloadCollection) GetRootcommandName() string {
 }
 
 func (c WorkloadCollection) IsClusterScoped() bool {
-	if c.Spec.ClusterScoped {
-		return true
-	} else {
-		return false
-	}
+	return c.Spec.ClusterScoped
 }
 
 func (c WorkloadCollection) IsStandalone() bool {
@@ -147,11 +144,13 @@ func (c *WorkloadCollection) SetSpecFields(workloadPath string) error {
 		// add to spec fields if not present
 		for _, csf := range *componentSpecFields {
 			fieldPresent := false
+
 			for _, sf := range specFields {
 				if csf == sf {
 					fieldPresent = true
 				}
 			}
+
 			if !fieldPresent {
 				specFields = append(specFields, csf)
 			}
@@ -173,6 +172,7 @@ func (c WorkloadCollection) GetDependencies() *[]ComponentWorkload {
 
 func (c *WorkloadCollection) SetComponents(components *[]ComponentWorkload) error {
 	c.Spec.Components = *components
+
 	return nil
 }
 

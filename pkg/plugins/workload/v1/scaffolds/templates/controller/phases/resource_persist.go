@@ -44,10 +44,8 @@ func persistExitSuccessCondition(objectName string, objectKind string) *common.C
 	}
 }
 
-// PersistResourcePhase.Execute executes persisting resources to the Kubernetes database
-func (phase *PersistResourcePhase) Execute(
-	resource *ComponentResource,
-) (ctrl.Result, bool, error) {
+// PersistResourcePhase.Execute executes persisting resources to the Kubernetes database.
+func (phase *PersistResourcePhase) Execute(resource *ComponentResource) (ctrl.Result, bool, error) {
 	// if we are skipping resource creation, return immediately
 	if resource.Skip {
 		return ctrl.Result{}, true, nil
@@ -75,7 +73,7 @@ func (phase *PersistResourcePhase) Execute(
 	return ctrl.Result{}, true, nil
 }
 
-// persistResource persists a single resource to the Kubernetes database
+// persistResource persists a single resource to the Kubernetes database.
 func persistResource(
 	r common.ComponentReconciler,
 	resource metav1.Object,
@@ -87,6 +85,7 @@ func persistResource(
 	err := r.SetRefAndCreateIfNotPresent(resource)
 	if err != nil {
 		r.GetLogger().V(0).Info("failed creating object of kind: " + objectKind + " with name: " + objectName)
+
 		return err
 	}
 

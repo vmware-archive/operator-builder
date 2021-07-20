@@ -74,7 +74,8 @@ const (
 `
 	addschemeCodeFragment = `utilruntime.Must(%s.AddToScheme(scheme))
 `
-	reconcilerSetupCodeFragment = `if err = (&controllers.%sReconciler{
+	reconcilerSetupCodeFragment = `
+if err = (&controllers.%sReconciler{
 		Client: mgr.GetClient(),
 		Log: ctrl.Log.WithName("controllers").WithName("%s"),
 		Scheme: mgr.GetScheme(),
@@ -83,7 +84,8 @@ const (
 		os.Exit(1)
 	}
 `
-	multiGroupReconcilerSetupCodeFragment = `if err = (&%scontrollers.%sReconciler{
+	multiGroupReconcilerSetupCodeFragment = `
+if err = (&%scontrollers.%sReconciler{
 		Client: mgr.GetClient(),
 		Log: ctrl.Log.WithName("controllers").WithName("%s").WithName("%s"),
 		Scheme: mgr.GetScheme(),
@@ -92,7 +94,8 @@ const (
 		os.Exit(1)
 	}
 `
-	webhookSetupCodeFragment = `if err = (&%s.%s{}).SetupWebhookWithManager(mgr); err != nil {
+	webhookSetupCodeFragment = `
+if err = (&%s.%s{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "%s")
 		os.Exit(1)
 	}
@@ -198,8 +201,11 @@ func init() {
 func main() {
 {{- if not .ComponentConfig }}
 	var metricsAddr string
+
 	var enableLeaderElection bool
+
 	var probeAddr string
+
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
@@ -212,6 +218,7 @@ func main() {
 		"Omit this flag to use the default configuration values. " +
 		"Command-line flags override configuration from this file.")
 {{- end }}
+
 	opts := zap.Options{
 		Development: true,
 	}
@@ -260,6 +267,7 @@ func main() {
 		setupLog.Error(err, "unable to set up health check")
 		os.Exit(1)
 	}
+
 	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)

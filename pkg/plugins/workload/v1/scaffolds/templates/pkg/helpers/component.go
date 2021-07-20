@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/vmware-tanzu-labs/operator-builder/pkg/utils"
 	"sigs.k8s.io/kubebuilder/v3/pkg/machinery"
+
+	"github.com/vmware-tanzu-labs/operator-builder/pkg/utils"
 )
 
 var _ machinery.Template = &Common{}
@@ -41,7 +42,7 @@ import (
 	{{ .Resource.ImportAlias }} "{{ .Resource.Path }}"
 )
 
-// {{ .Resource.Kind }}Unique returns only one {{ .Resource.Kind }} and returns an error if more than one are found
+// {{ .Resource.Kind }}Unique returns only one {{ .Resource.Kind }} and returns an error if more than one are found.
 func {{ .Resource.Kind }}Unique(
 	reconciler common.ComponentReconciler,
 ) (
@@ -62,7 +63,7 @@ func {{ .Resource.Kind }}Unique(
 	return &component, nil
 }
 
-// {{ .Resource.Kind }}List gets a {{ .Resource.Kind }}List from the cluster
+// {{ .Resource.Kind }}List gets a {{ .Resource.Kind }}List from the cluster.
 func {{ .Resource.Kind }}List(
 	reconciler common.ComponentReconciler,
 ) (
@@ -72,6 +73,7 @@ func {{ .Resource.Kind }}List(
 	components := &{{ .Resource.ImportAlias }}.{{ .Resource.Kind }}List{}
 	if err := reconciler.List(reconciler.GetContext(), components); err != nil {
 		reconciler.GetLogger().V(0).Info("unable to retrieve {{ .Resource.Kind }}List from cluster")
+
 		return nil, err
 	}
 

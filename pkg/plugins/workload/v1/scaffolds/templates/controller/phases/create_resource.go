@@ -37,7 +37,7 @@ import (
 	"{{ .Repo }}/apis/common"
 )
 
-// GetSuccessCondition defines the success condition for the phase
+// GetSuccessCondition defines the success condition for the phase.
 func (phase *CreateResourcesPhase) GetSuccessCondition() common.Condition {
 	return common.Condition{
 		Phase:   common.ConditionPhaseCreateResources,
@@ -47,7 +47,7 @@ func (phase *CreateResourcesPhase) GetSuccessCondition() common.Condition {
 	}
 }
 
-// GetPendingCondition defines the pending condition for the phase
+// GetPendingCondition defines the pending condition for the phase.
 func (phase *CreateResourcesPhase) GetPendingCondition() common.Condition {
 	return common.Condition{
 		Phase:   common.ConditionPhaseCreateResources,
@@ -57,7 +57,7 @@ func (phase *CreateResourcesPhase) GetPendingCondition() common.Condition {
 	}
 }
 
-// GetFailCondition defines the fail condition for the phase
+// GetFailCondition defines the fail condition for the phase.
 func (phase *CreateResourcesPhase) GetFailCondition() common.Condition {
 	return common.Condition{
 		Phase:   common.ConditionPhaseCreateResources,
@@ -67,12 +67,12 @@ func (phase *CreateResourcesPhase) GetFailCondition() common.Condition {
 	}
 }
 
-// GetDefaultRequeueResult defines the result return when a requeue is needed
+// Requeue defines the result return when a requeue is needed.
 func (phase *CreateResourcesPhase) Requeue() ctrl.Result {
 	return Requeue()
 }
 
-// createResourcePhases defines the phases for resource creation and the order in which they run during the reconcile process
+// createResourcePhases defines the phases for resource creation and the order in which they run during the reconcile process.
 func createResourcePhases() []ResourcePhase {
 	return []ResourcePhase{
 		{{- if not .IsStandalone }}
@@ -87,7 +87,7 @@ func createResourcePhases() []ResourcePhase {
 	}
 }
 
-// CreateResourcesPhase.Execute executes executes sub-phases which are required to create the resources
+// CreateResourcesPhase.Execute executes executes sub-phases which are required to create the resources.
 func (phase *CreateResourcesPhase) Execute(
 	r common.ComponentReconciler,
 ) (proceedToNextPhase bool, err error) {
@@ -95,6 +95,7 @@ func (phase *CreateResourcesPhase) Execute(
 
 	// get the resources which we will act upon
 	r.GetLogger().V(2).Info("constructing resources in memory")
+
 	proceed, err := new(ConstructPhase).Execute(r, phase)
 	if err != nil || !proceed {
 		return false, err
@@ -108,6 +109,7 @@ func (phase *CreateResourcesPhase) Execute(
 			Context:             r.GetContext(),
 			OriginalResource:    &resource,
 		}
+
 		for _, resourcePhase := range createResourcePhases() {
 			r.GetLogger().V(7).Info(fmt.Sprintf("enter resource phase: %T", resourcePhase))
 			_, proceed, err := resourcePhase.Execute(componentResource)
@@ -116,6 +118,7 @@ func (phase *CreateResourcesPhase) Execute(
 			if err != nil || !proceed {
 				return false, err
 			}
+
 			r.GetLogger().V(5).Info(fmt.Sprintf("completed resource phase: %T", resourcePhase))
 		}
 	}

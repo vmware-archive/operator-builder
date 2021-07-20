@@ -16,18 +16,23 @@ func (s StandaloneWorkload) Validate() error {
 	if s.Name == "" {
 		missingFields = append(missingFields, "name")
 	}
+
 	if s.Spec.Domain == "" {
 		missingFields = append(missingFields, "spec.domain")
 	}
+
 	if s.Spec.APIGroup == "" {
 		missingFields = append(missingFields, "spec.apiGroup")
 	}
+
 	if s.Spec.APIVersion == "" {
 		missingFields = append(missingFields, "spec.apiVersion")
 	}
+
 	if s.Spec.APIKind == "" {
 		missingFields = append(missingFields, "spec.apiKind")
 	}
+
 	if len(missingFields) > 0 {
 		msg := fmt.Sprintf("Missing required fields: %s", missingFields)
 		return errors.New(msg)
@@ -40,17 +45,13 @@ func (s StandaloneWorkload) GetWorkloadKind() WorkloadKind {
 	return s.Kind
 }
 
-// methods that implement WorkloadInitializer
+// methods that implement WorkloadInitializer.
 func (s StandaloneWorkload) GetDomain() string {
 	return s.Spec.Domain
 }
 
 func (s StandaloneWorkload) HasRootCmdName() bool {
-	if s.Spec.CompanionCliRootcmd.Name != "" {
-		return true
-	} else {
-		return false
-	}
+	return s.Spec.CompanionCliRootcmd.Name != ""
 }
 
 func (s StandaloneWorkload) HasSubCmdName() bool {
@@ -66,7 +67,7 @@ func (s StandaloneWorkload) GetRootCmdDescr() string {
 	return s.Spec.CompanionCliRootcmd.Description
 }
 
-// methods that implement WorkloadAPIBuilder
+// methods that implement WorkloadAPIBuilder.
 func (s StandaloneWorkload) GetName() string {
 	return s.Name
 }
@@ -112,11 +113,7 @@ func (s StandaloneWorkload) GetRootcommandName() string {
 }
 
 func (s StandaloneWorkload) IsClusterScoped() bool {
-	if s.Spec.ClusterScoped {
-		return true
-	} else {
-		return false
-	}
+	return s.Spec.ClusterScoped
 }
 
 func (s StandaloneWorkload) IsStandalone() bool {
@@ -136,6 +133,7 @@ func (s *StandaloneWorkload) SetSpecFields(workloadPath string) error {
 	if err != nil {
 		return err
 	}
+
 	s.Spec.APISpecFields = *apiSpecFields
 
 	return nil
@@ -146,6 +144,7 @@ func (s *StandaloneWorkload) SetResources(workloadPath string) error {
 	if err != nil {
 		return err
 	}
+
 	s.Spec.SourceFiles = *sourceFiles
 	s.Spec.RBACRules = *rbacRules
 	s.Spec.OwnershipRules = *ownershipRules
@@ -162,10 +161,7 @@ func (s *StandaloneWorkload) SetComponents(components *[]ComponentWorkload) erro
 }
 
 func (s StandaloneWorkload) HasChildResources() bool {
-	if len(s.Spec.Resources) > 0 {
-		return true
-	}
-	return false
+	return len(s.Spec.Resources) > 0
 }
 
 func (s StandaloneWorkload) GetComponents() *[]ComponentWorkload {

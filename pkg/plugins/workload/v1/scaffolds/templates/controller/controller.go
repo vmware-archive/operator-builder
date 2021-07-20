@@ -82,7 +82,7 @@ import (
 	{{ end }}
 )
 
-// {{ .Resource.Kind }}Reconciler reconciles a {{ .Resource.Kind }} object
+// {{ .Resource.Kind }}Reconciler reconciles a {{ .Resource.Kind }} object.
 type {{ .Resource.Kind }}Reconciler struct {
 	client.Client
 	Log        logr.Logger
@@ -116,21 +116,27 @@ func (r *{{ .Resource.Kind }}Reconciler) Reconcile(ctx context.Context, req ctrl
 	r.Component = &{{ .Resource.ImportAlias }}.{{ .Resource.Kind }}{}
 	if err := r.Get(r.Context, req.NamespacedName, r.Component); err != nil {
 		log.V(0).Info("unable to fetch {{ .Resource.Kind }}")
+
 		return ctrl.Result{}, controllers.IgnoreNotFound(err)
 	}
 
-	{{- if .IsComponent }}
+	{{ if .IsComponent }}
 	var collectionList {{ .Collection.Spec.APIGroup }}{{ .Collection.Spec.APIVersion }}.{{ .Collection.Spec.APIKind }}List
+	
 	if err := r.List(r.Context, &collectionList); err != nil {
 		return ctrl.Result{}, err
 	}
+
 	if len(collectionList.Items) == 0 {
 		log.V(0).Info("no collections available - will try again in 10 seconds")
+
 		return ctrl.Result{Requeue: true}, nil
 	} else if len(collectionList.Items) > 1 {
 		log.V(0).Info("multiple collections found - cannot proceed")
+
 		return ctrl.Result{}, nil
 	}
+
 	r.Collection = &collectionList.Items[0]
 	{{ end }}
 
@@ -143,29 +149,28 @@ func (r *{{ .Resource.Kind }}Reconciler) Reconcile(ctx context.Context, req ctrl
 		// return only if we have an error or are told not to proceed
 		if err != nil || !proceed {
 			log.V(4).Info(fmt.Sprintf("not ready; requeuing phase: %T", phase))
+
 			return result, err
 		}
+
 		r.GetLogger().V(5).Info(fmt.Sprintf("completed phase: %T", phase))
 	}
 
 	return phases.DefaultReconcileResult(), nil
 }
 
-// GetResources will create and return the resources in memory
+// GetResources will create and return the resources in memory.
 func (r *{{ .Resource.Kind }}Reconciler) GetResources(parent common.Component) ([]metav1.Object, error) {
 {{ if .HasChildResources }}
 	var resourceObjects []metav1.Object
 
 	// create resources in memory
 	for _, f := range {{ .PackageName }}.CreateFuncs {
-		{{- if .IsComponent }}
-		resource, err := f(r.Component, r.Collection)
-		{{ else }}
-		resource, err := f(r.Component)
-		{{ end }}
+		resource, err := f(r.Component{{ if .IsComponent }}, r.Collection){{ else }}){{ end }}
 		if err != nil {
 			return nil, err
 		}
+
 		resourceObjects = append(resourceObjects, resource)
 	}
 
@@ -175,12 +180,13 @@ func (r *{{ .Resource.Kind }}Reconciler) GetResources(parent common.Component) (
 {{ end -}}
 }
 
-// SetRefAndCreateIfNotPresent creates a resource if does not already exist
+// SetRefAndCreateIfNotPresent creates a resource if does not already exist.
 func (r *{{ .Resource.Kind }}Reconciler) SetRefAndCreateIfNotPresent(
 	resource metav1.Object,
 ) error {
 	if err := ctrl.SetControllerReference(r.Component, resource, r.Scheme); err != nil {
 		r.GetLogger().V(0).Info("unable to set owner reference on resource")
+
 		return err
 	}
 
@@ -188,15 +194,19 @@ func (r *{{ .Resource.Kind }}Reconciler) SetRefAndCreateIfNotPresent(
 	if err := r.Get(r.Context, objectKey, resource.(client.Object)); err != nil {
 		if errors.IsNotFound(err) {
 			r.GetLogger().V(0).Info("creating resource with name: [" + resource.GetName() + "] of kind: [" + resource.(runtime.Object).GetObjectKind().GroupVersionKind().Kind + "]")
+
 			if err := r.Create(r.Context, resource.(client.Object)); err != nil {
 				r.GetLogger().V(0).Info("unable to create resource")
+
 				return err
 			}
 		// TODO: this is bad logic that needs to be fixed for resources that are being updated
 		} else {
 			r.GetLogger().V(0).Info("updating resource with name: [" + resource.GetName() + "] of kind: [" + resource.(runtime.Object).GetObjectKind().GroupVersionKind().Kind + "]")
+
 			if err := r.Update(r.Context, resource.(client.Object)); err != nil {
 				r.GetLogger().V(0).Info("unable to update resource")
+
 				return err
 			}
 		}
@@ -205,32 +215,32 @@ func (r *{{ .Resource.Kind }}Reconciler) SetRefAndCreateIfNotPresent(
 	return nil
 }
 
-// GetLogger returns the logger from the reconciler
+// GetLogger returns the logger from the reconciler.
 func (r *{{ .Resource.Kind }}Reconciler) GetLogger() logr.Logger {
 	return r.Log
 }
 
-// GetClient returns the client from the reconciler
+// GetClient returns the client from the reconciler.
 func (r *{{ .Resource.Kind }}Reconciler) GetClient() client.Client {
 	return r.Client
 }
 
-// GetScheme returns the scheme from the reconciler
+// GetScheme returns the scheme from the reconciler.
 func (r *{{ .Resource.Kind }}Reconciler) GetScheme() *runtime.Scheme {
 	return r.Scheme
 }
 
-// GetContext returns the context from the reconciler
+// GetContext returns the context from the reconciler.
 func (r *{{ .Resource.Kind }}Reconciler) GetContext() context.Context {
 	return r.Context
 }
 
-// GetComponent returns the component the reconciler is operating against
+// GetComponent returns the component the reconciler is operating against.
 func (r *{{ .Resource.Kind }}Reconciler) GetComponent() common.Component {
 	return r.Component
 }
 
-// UpdateStatus updates the status for a component
+// UpdateStatus updates the status for a component.
 func (r *{{ .Resource.Kind }}Reconciler) UpdateStatus(
 	ctx context.Context,
 	parent common.Component,
@@ -238,23 +248,24 @@ func (r *{{ .Resource.Kind }}Reconciler) UpdateStatus(
 	if err := r.Status().Update(ctx, r.Component); err != nil {
 		return err
 	}
+
 	return nil
 }
 
 {{- if not .IsStandalone }}
-// CheckReady will return whether a component is ready
+// CheckReady will return whether a component is ready.
 func (r *{{ .Resource.Kind }}Reconciler) CheckReady() (bool, error) {
 	return dependencies.{{ .Resource.Kind }}CheckReady(r)
 }
 
-// Mutate will run the mutate phase of a resource
+// Mutate will run the mutate phase of a resource.
 func (r *{{ .Resource.Kind }}Reconciler) Mutate(
 	object *metav1.Object,
 ) ([]metav1.Object, bool, error) {
 	return mutate.{{ .Resource.Kind }}Mutate(r, object)
 }
 
-// Wait will run the wait phase of a resource
+// Wait will run the wait phase of a resource.
 func (r *{{ .Resource.Kind }}Reconciler) Wait(
 	object *metav1.Object,
 ) (bool, error) {

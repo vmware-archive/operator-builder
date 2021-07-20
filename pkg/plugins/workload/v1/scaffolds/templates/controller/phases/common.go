@@ -40,31 +40,31 @@ import (
 
 const optimisticLockErrorMsg = "the object has been modified; please apply your changes to the latest version and try again"
 
-// Requeue will return the default result to requeue a reconciler request when needed
+// Requeue will return the default result to requeue a reconciler request when needed.
 func Requeue() ctrl.Result {
 	return ctrl.Result{Requeue: true}
 }
 
-// DefaultReconcileResult will return the default reconcile result when requeuing is not needed
+// DefaultReconcileResult will return the default reconcile result when requeuing is not needed.
 func DefaultReconcileResult() ctrl.Result {
 	return ctrl.Result{}
 }
 
-// conditionExists will return whether or not a specific condition already exists on the object
+// conditionExists will return whether or not a specific condition already exists on the object.
 func conditionExists(
 	currentConditions []common.Condition,
 	condition *common.Condition,
 ) bool {
-
 	for _, currentCondition := range currentConditions {
 		if reflect.DeepEqual(currentCondition, *condition) {
 			return true
 		}
 	}
+
 	return false
 }
 
-// updateStatusConditions updates the status.conditions field of the parent custom resource
+// updateStatusConditions updates the status.conditions field of the parent custom resource.
 func updateStatusConditions(
 	r common.ComponentReconciler,
 	condition *common.Condition,
@@ -82,7 +82,7 @@ func updateStatusConditions(
 	return nil
 }
 
-// handlePhaseExit will perform the steps required to exit a phase
+// handlePhaseExit will perform the steps required to exit a phase.
 func HandlePhaseExit(
 	reconciler common.ComponentReconciler,
 	phaseHandler PhaseHandler,
@@ -90,6 +90,7 @@ func HandlePhaseExit(
 	phaseError error,
 ) (ctrl.Result, error) {
 	var condition common.Condition
+
 	var result ctrl.Result
 
 	switch {
@@ -115,20 +116,17 @@ func HandlePhaseExit(
 	return result, phaseError
 }
 
-// isOptimisticLockError checks to see if the error is a locking error
+// isOptimisticLockError checks to see if the error is a locking error.
 func isOptimisticLockError(err error) bool {
 	return strings.Contains(err.Error(), optimisticLockErrorMsg)
 }
 
-// setResources will set the resources against a CreateResourcePhase
-func setResources(
-	parent *CreateResourcesPhase,
-	resources []metav1.Object,
-) {
+// setResources will set the resources against a CreateResourcePhase.
+func setResources(parent *CreateResourcesPhase, resources []metav1.Object) {
 	parent.Resources = resources
 }
 
-// getResources will get the resources from a CreateResourcePhase
+// getResources will get the resources from a CreateResourcePhase.
 func getResources(
 	parent *CreateResourcesPhase,
 ) []metav1.Object {

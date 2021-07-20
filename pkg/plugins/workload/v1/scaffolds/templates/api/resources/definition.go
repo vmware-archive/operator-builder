@@ -40,6 +40,7 @@ func (f *Definition) SetTemplateDefaults() error {
 	return nil
 }
 
+//nolint:lll
 const definitionTemplate = `{{ .Boilerplate }}
 
 package {{ .PackageName }}
@@ -61,15 +62,14 @@ import (
 )
 
 {{ range .SourceFile.Children }}
-// Create{{ .UniqueName }} creates the {{ .Name }} {{ .Kind }} resource
+// Create{{ .UniqueName }} creates the {{ .Name }} {{ .Kind }} resource.
 func Create{{ .UniqueName }} (
 	parent *{{ $.Resource.ImportAlias }}.{{ $.Resource.Kind }},
 	{{- if $.IsComponent }}
 	collection *{{ $.Collection.Spec.APIGroup }}{{ $.Collection.Spec.APIVersion }}.{{ $.Collection.Spec.APIKind }},
 	{{ end -}}
 ) (metav1.Object, error) {
-
-	{{ .SourceCode }}
+	{{- .SourceCode }}
 
 	{{ if not $.ClusterScoped }}
 	resourceObj.SetNamespace(parent.Namespace)

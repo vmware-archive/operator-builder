@@ -16,17 +16,22 @@ func (c ComponentWorkload) Validate() error {
 	if c.Name == "" {
 		missingFields = append(missingFields, "name")
 	}
+
 	if c.Spec.APIGroup == "" {
 		missingFields = append(missingFields, "spec.apiGroup")
 	}
+
 	if c.Spec.APIVersion == "" {
 		missingFields = append(missingFields, "spec.apiVersion")
 	}
+
 	if c.Spec.APIKind == "" {
 		missingFields = append(missingFields, "spec.apiKind")
 	}
+
 	if len(missingFields) > 0 {
 		msg := fmt.Sprintf("Missing required fields: %s", missingFields)
+
 		return errors.New(msg)
 	}
 
@@ -37,7 +42,7 @@ func (c ComponentWorkload) GetWorkloadKind() WorkloadKind {
 	return c.Kind
 }
 
-// methods that implement WorkloadAPIBuilder
+// methods that implement WorkloadAPIBuilder.
 func (c ComponentWorkload) GetName() string {
 	return c.Name
 }
@@ -80,11 +85,7 @@ func (c ComponentWorkload) GetRootcommandName() string {
 }
 
 func (c ComponentWorkload) IsClusterScoped() bool {
-	if c.Spec.ClusterScoped {
-		return true
-	} else {
-		return false
-	}
+	return c.Spec.ClusterScoped
 }
 
 func (c ComponentWorkload) IsStandalone() bool {
@@ -104,6 +105,7 @@ func (c *ComponentWorkload) SetSpecFields(workloadPath string) error {
 	if err != nil {
 		return err
 	}
+
 	c.Spec.APISpecFields = *apiSpecFields
 
 	return nil
@@ -114,6 +116,7 @@ func (c *ComponentWorkload) SetResources(workloadPath string) error {
 	if err != nil {
 		return err
 	}
+
 	c.Spec.SourceFiles = *sourceFiles
 	c.Spec.RBACRules = *rbacRules
 	c.Spec.OwnershipRules = *ownershipRules
@@ -130,10 +133,7 @@ func (c *ComponentWorkload) SetComponents(components *[]ComponentWorkload) error
 }
 
 func (c ComponentWorkload) HasChildResources() bool {
-	if len(c.Spec.Resources) > 0 {
-		return true
-	}
-	return false
+	return len(c.Spec.Resources) > 0
 }
 
 func (c ComponentWorkload) GetComponents() *[]ComponentWorkload {
@@ -163,10 +163,12 @@ func (c ComponentWorkload) GetComponentResource(domain, repo string, clusterScop
 	} else {
 		namespaced = true
 	}
+
 	api := resource.API{
 		CRDVersion: "v1",
 		Namespaced: namespaced,
 	}
+
 	return &resource.Resource{
 		GVK: resource.GVK{
 			Domain:  domain,
@@ -187,11 +189,7 @@ func (c ComponentWorkload) GetComponentResource(domain, repo string, clusterScop
 }
 
 func (c ComponentWorkload) HasSubCmdName() bool {
-	if c.Spec.CompanionCliSubcmd.Name != "" {
-		return true
-	} else {
-		return false
-	}
+	return c.Spec.CompanionCliSubcmd.Name != ""
 }
 
 func (c *ComponentWorkload) SetNames() {
