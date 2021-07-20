@@ -214,7 +214,3 @@ func zeroValue(val interface{}) (string, error) {
 func containsMarker(line string) bool {
 	return strings.Contains(line, markerStr)
 }
-
-func containsDefault(line string) bool {
-	return strings.Contains(line, "default=")
-}
