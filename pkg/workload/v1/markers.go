@@ -10,7 +10,7 @@ import (
 
 const (
 	markerStr    = "+workload"
-	docMarkerStr = "+docs:"
+	docMarkerStr = "+workload-docs:"
 )
 
 // SupportedMarkerDataTypes returns the supported data types that can be used in
@@ -257,12 +257,12 @@ func zeroValue(val interface{}) (string, error) {
 	case "int", "int32", "int64", "float32", "float64":
 		return "0", nil
 	default:
-		return "", fmt.Errorf("unsupported data type in workload marker.  Support data types: %v", SupportedMarkerDataTypes())
+		return "", fmt.Errorf("unsupported data type in workload marker; supported data types: %v", SupportedMarkerDataTypes())
 	}
 }
 
 func containsMarker(line string) bool {
-	return strings.Contains(line, markerStr)
+	return strings.Contains(line, markerStr+":")
 }
 
 func containsDocumentMarker(line string) bool {
