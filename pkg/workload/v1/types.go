@@ -95,7 +95,7 @@ type APISpecField struct {
 	DataType           string
 	DefaultVal         string
 	ZeroVal            string
-	ApiSpecContent     string
+	APISpecContent     string
 	SampleField        string
 	DocumentationLines []string
 }
