@@ -4,6 +4,9 @@ go 1.15
 
 require (
 	github.com/gertd/go-pluralize v0.1.7
+	github.com/go-playground/universal-translator v0.17.0 // indirect
+	github.com/go-playground/validator v9.31.0+incompatible
+	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/afero v1.2.2
 	github.com/spf13/cobra v1.1.3

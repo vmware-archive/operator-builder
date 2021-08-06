@@ -7,6 +7,7 @@ import (
 	"io"
 	"path/filepath"
 
+	"github.com/go-playground/validator"
 	"gopkg.in/yaml.v3"
 )
 
@@ -28,31 +29,17 @@ func ProcessInitConfig(workloadConfig string) (WorkloadInitializer, error) {
 
 	var workload WorkloadInitializer
 
-	standalonesFound := 0
-	collectionsFound := 0
-	componentsFound := 0
-
-	for _, w := range *workloads {
-		switch v := w.(type) {
-		case *StandaloneWorkload:
-			standalonesFound++
-
-			workload = v
-		case *WorkloadCollection:
-			collectionsFound++
-
-			workload = v
-		case *ComponentWorkload:
-			componentsFound++
+	for k := range workloads {
+		for _, w := range workloads[k] {
+			switch v := w.(type) {
+			case *StandaloneWorkload:
+				workload = v
+			case *WorkloadCollection:
+				workload = v
+			case *ComponentWorkload:
+				continue
+			}
 		}
-	}
-
-	if componentsFound != 0 && collectionsFound != 1 {
-		return nil, fmt.Errorf("no %s found - %w", WorkloadKindCollection, ErrCollectionRequired)
-	}
-
-	if collectionsFound+standalonesFound > 1 {
-		return nil, ErrMultipleConfigs
 	}
 
 	workload.SetNames()
@@ -70,40 +57,33 @@ func ProcessAPIConfig(workloadConfig string) (WorkloadAPIBuilder, error) {
 
 	var components []ComponentWorkload
 
-	standalonesFound := 0
-	collectionsFound := 0
-	componentsFound := 0
+	for kind := range workloads {
+		for _, w := range workloads[kind] {
+			switch v := w.(type) {
+			case *StandaloneWorkload:
+				workload = v
+				if err := workload.SetSpecFields(workloadConfig); err != nil {
+					return nil, fmt.Errorf("%w", err)
+				}
 
-	for _, w := range *workloads {
-		switch v := w.(type) {
-		case *StandaloneWorkload:
-			standalonesFound++
+				if err := workload.SetResources(workloadConfig); err != nil {
+					return nil, fmt.Errorf("%w", err)
+				}
+			case *WorkloadCollection:
+				workload = v
+				workload.SetNames()
+			case *ComponentWorkload:
+				if err := v.SetSpecFields(v.Spec.ConfigPath); err != nil {
+					return nil, err
+				}
 
-			workload = v
-			if err := workload.SetSpecFields(workloadConfig); err != nil {
-				return nil, fmt.Errorf("%w", err)
+				if err := v.SetResources(v.Spec.ConfigPath); err != nil {
+					return nil, err
+				}
+
+				v.SetNames()
+				components = append(components, *v)
 			}
-
-			if err := workload.SetResources(workloadConfig); err != nil {
-				return nil, fmt.Errorf("%w", err)
-			}
-		case *WorkloadCollection:
-			collectionsFound++
-
-			workload = v
-			workload.SetNames()
-		case *ComponentWorkload:
-			if err := v.SetSpecFields(v.Spec.ConfigPath); err != nil {
-				return nil, err
-			}
-
-			if err := v.SetResources(v.Spec.ConfigPath); err != nil {
-				return nil, err
-			}
-
-			v.SetNames()
-			components = append(components, *v)
-			componentsFound++
 		}
 	}
 
@@ -111,15 +91,7 @@ func ProcessAPIConfig(workloadConfig string) (WorkloadAPIBuilder, error) {
 		return nil, err
 	}
 
-	if componentsFound != 0 && collectionsFound != 1 {
-		return nil, fmt.Errorf("no %s found - %w", WorkloadKindCollection, ErrCollectionRequired)
-	}
-
-	if collectionsFound+standalonesFound > 1 {
-		return nil, ErrMultipleConfigs
-	}
-
-	if collectionsFound == 1 {
+	if len(workloads[WorkloadKindCollection]) == 1 {
 		if err := workload.SetComponents(&components); err != nil {
 			return nil, fmt.Errorf("%w", err)
 		}
@@ -154,7 +126,7 @@ func missingDependencies(expected, actual []string) []string {
 	return missing
 }
 
-func parseConfig(workloadConfig string) (*[]WorkloadIdentifier, error) {
+func parseConfig(workloadConfig string) (map[WorkloadKind][]WorkloadIdentifier, error) {
 	if workloadConfig == "" {
 		return nil, ErrConfigMustExist
 	}
@@ -174,7 +146,7 @@ func parseConfig(workloadConfig string) (*[]WorkloadIdentifier, error) {
 	kindDecoder := yaml.NewDecoder(&kindReader)
 	kindDecoder.KnownFields(true)
 
-	var workloads []WorkloadIdentifier
+	workloads := make(map[WorkloadKind][]WorkloadIdentifier)
 
 	workloadMap := make(map[string]bool)
 
@@ -202,19 +174,23 @@ func parseConfig(workloadConfig string) (*[]WorkloadIdentifier, error) {
 			return nil, fmt.Errorf("failed to read file %s: %w", workloadConfig, err)
 		}
 
-		workloads = append(workloads, workload)
+		workloads[workload.GetWorkloadKind()] = append(workloads[workload.GetWorkloadKind()], workload)
 
-		if collection, ok := workload.(WorkloadCollection); ok {
-			cws, err := parseCollectionComponents(&collection, workloadConfig)
-			if err != nil {
+		if collection, ok := workload.(*WorkloadCollection); ok {
+			cws, err := parseCollectionComponents(collection, workloadConfig)
+			if err != nil && !errors.Is(err, ErrCollectionRequired) {
 				return nil, err
 			}
 
-			workloads = append(workloads, cws...)
+			workloads[WorkloadKindComponent] = append(workloads[WorkloadKindComponent], cws...)
 		}
 	}
 
-	return &workloads, nil
+	if err := validateConfigs(workloads); err != nil {
+		return nil, err
+	}
+
+	return workloads, nil
 }
 
 func parseCollectionComponents(workload *WorkloadCollection, workloadConfig string) ([]WorkloadIdentifier, error) {
@@ -223,12 +199,12 @@ func parseCollectionComponents(workload *WorkloadCollection, workloadConfig stri
 	for _, componentFile := range workload.Spec.ComponentFiles {
 		componentPath := filepath.Join(filepath.Dir(workloadConfig), componentFile)
 
-		componentWorkloads, err := parseConfig(componentPath)
+		w, err := parseConfig(componentPath)
 		if err != nil {
 			return nil, err
 		}
 
-		for _, component := range *componentWorkloads {
+		for _, component := range w[WorkloadKindComponent] {
 			if cw, ok := component.(ComponentWorkload); ok {
 				cw.Spec.ConfigPath = componentPath
 				workloads = append(workloads, cw)
@@ -310,6 +286,28 @@ func handleDependencies(components *[]ComponentWorkload) error {
 	}
 
 	*components = c
+
+	return nil
+}
+
+func validateConfigs(workloads map[WorkloadKind][]WorkloadIdentifier) error {
+	if len(workloads[WorkloadKindComponent]) != 0 && len(workloads[WorkloadKindCollection]) != 1 {
+		return fmt.Errorf("no %s found - %w", WorkloadKindCollection, ErrCollectionRequired)
+	}
+
+	if len(workloads[WorkloadKindCollection])+len(workloads[WorkloadKindStandalone]) > 1 {
+		return ErrMultipleConfigs
+	}
+
+	validate := validator.New()
+
+	for kind := range workloads {
+		for _, w := range workloads[kind] {
+			if err := validate.Struct(w); err != nil {
+				return fmt.Errorf("%w", err)
+			}
+		}
+	}
 
 	return nil
 }
