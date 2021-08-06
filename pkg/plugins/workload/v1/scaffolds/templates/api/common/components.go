@@ -62,7 +62,7 @@ type ComponentReconciler interface {
 	GetLogger() logr.Logger
 	GetResources(Component) ([]metav1.Object, error)
 	SetRefAndCreateIfNotPresent(metav1.Object) error
-	UpdateStatus(context.Context, Component) error
+	UpdateStatus() error
 	{{- if not .IsStandalone }}
 	Get(context.Context, types.NamespacedName, client.Object) error
 	GetClient() client.Client
