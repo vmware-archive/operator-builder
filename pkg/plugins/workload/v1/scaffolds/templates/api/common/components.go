@@ -68,7 +68,8 @@ type ComponentReconciler interface {
 	GetResources(Component) ([]metav1.Object, error)
 
 	CreateOrUpdate(metav1.Object) error
-	UpdateStatus(context.Context, Component) error
+	UpdateStatus() error
+
 	{{- if not .IsStandalone }}
 	Get(context.Context, types.NamespacedName, client.Object) error
 	List(context.Context, client.ObjectList, ...client.ListOption) error

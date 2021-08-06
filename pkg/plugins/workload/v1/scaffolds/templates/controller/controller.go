@@ -58,14 +58,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	{{ if .HasChildResources -}}
-	{{- $Added := false }}
-	{{- range .OwnershipRules }}
-	{{- if .CoreAPI }}{{- if not $Added }}{{- $Added = true }}
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	{{ end }}{{ end }}
-	{{ end }}
-	{{ end }}
 
 	"{{ .Repo }}/apis/common"
 	{{ .Resource.ImportAlias }} "{{ .Resource.Path }}"
@@ -194,26 +187,35 @@ func (r *{{ .Resource.Kind }}Reconciler) CreateOrUpdate(
 		return err
 	}
 
+	// create a stub object to store the current resource in the cluster so that we do not affect
+	// the desired state of the resource object in memory
+	resourceGVK := resource.(runtime.Object).GetObjectKind().GroupVersionKind()
+	currentResource := &unstructured.Unstructured{}
+	currentResource.SetGroupVersionKind(resourceGVK)
+
 	objectKey := client.ObjectKeyFromObject(resource.(client.Object))
-	if err := r.Get(r.Context, objectKey, resource.(client.Object)); err != nil {
+	if err := r.Get(r.Context, objectKey, currentResource); err != nil {
 		if errors.IsNotFound(err) {
-			r.GetLogger().V(0).Info("creating resource with name: [" + resource.GetName() + "] of kind: [" + resource.(runtime.Object).GetObjectKind().GroupVersionKind().Kind + "]")
+			r.GetLogger().V(0).Info(fmt.Sprintf("creating resource with name: [%s] in namespace: [%s] of kind: [%s]",
+				resource.GetName(), resource.GetNamespace(), resourceGVK.Kind))
 
 			if err := r.Create(r.Context, resource.(client.Object)); err != nil {
 				r.GetLogger().V(0).Info("unable to create resource")
 
 				return err
 			}
-		// TODO: this is bad logic that needs to be fixed for resources that are being updated
 		} else {
-			r.GetLogger().V(0).Info("updating resource with name: [" + resource.GetName() + "] of kind: [" + resource.(runtime.Object).GetObjectKind().GroupVersionKind().Kind + "]")
+			return err
+		}
+	} else {
+		r.GetLogger().V(0).Info(fmt.Sprintf("updating resource with name: [%s] in namespace: [%s] of kind: [%s]",
+			resource.GetName(), resource.GetNamespace(), resourceGVK.Kind))
 
-			resource.SetResourceVersion(currentResource.GetResourceVersion())
-			if err := r.Update(r.Context, resource.(client.Object)); err != nil {
-				r.GetLogger().V(0).Info("unable to update resource")
+		resource.SetResourceVersion(currentResource.GetResourceVersion())
+		if err := r.Update(r.Context, resource.(client.Object)); err != nil {
+			r.GetLogger().V(0).Info("unable to update resource")
 
-				return err
-			}
+			return err
 		}
 	}
 
@@ -246,15 +248,8 @@ func (r *{{ .Resource.Kind }}Reconciler) GetComponent() common.Component {
 }
 
 // UpdateStatus updates the status for a component.
-func (r *{{ .Resource.Kind }}Reconciler) UpdateStatus(
-	ctx context.Context,
-	parent common.Component,
-) error {
-	if err := r.Status().Update(ctx, r.Component); err != nil {
-		return err
-	}
-
-	return nil
+func (r *{{ .Resource.Kind }}Reconciler) UpdateStatus() error {
+	return r.Status().Update(r.Context, r.Component)
 }
 
 {{- if not .IsStandalone }}
