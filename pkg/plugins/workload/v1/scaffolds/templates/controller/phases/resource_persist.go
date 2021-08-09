@@ -82,7 +82,7 @@ func persistResource(
 	objectKind := resource.(runtime.Object).GetObjectKind().GroupVersionKind().Kind
 
 	// persist resource
-	err := r.SetRefAndCreateIfNotPresent(resource)
+	err := r.CreateOrUpdate(resource)
 	if err != nil {
 		r.GetLogger().V(0).Info("failed creating object of kind: " + objectKind + " with name: " + objectName)
 

@@ -124,7 +124,7 @@ func (r *{{ .Resource.Kind }}Reconciler) Reconcile(ctx context.Context, req ctrl
 
 	{{ if .IsComponent }}
 	var collectionList {{ .Collection.Spec.APIGroup }}{{ .Collection.Spec.APIVersion }}.{{ .Collection.Spec.APIKind }}List
-	
+
 	if err := r.List(r.Context, &collectionList); err != nil {
 		return ctrl.Result{}, err
 	}
@@ -182,10 +182,12 @@ func (r *{{ .Resource.Kind }}Reconciler) GetResources(parent common.Component) (
 {{ end -}}
 }
 
-// SetRefAndCreateIfNotPresent creates a resource if does not already exist.
-func (r *{{ .Resource.Kind }}Reconciler) SetRefAndCreateIfNotPresent(
+// CreateOrUpdate creates a resource if it does not already exist or updates a resource
+// if it does already exist.
+func (r *{{ .Resource.Kind }}Reconciler) CreateOrUpdate(
 	resource metav1.Object,
 ) error {
+	// set ownership on the underlying resource being created or updated
 	if err := ctrl.SetControllerReference(r.Component, resource, r.Scheme); err != nil {
 		r.GetLogger().V(0).Info("unable to set owner reference on resource")
 
@@ -206,6 +208,7 @@ func (r *{{ .Resource.Kind }}Reconciler) SetRefAndCreateIfNotPresent(
 		} else {
 			r.GetLogger().V(0).Info("updating resource with name: [" + resource.GetName() + "] of kind: [" + resource.(runtime.Object).GetObjectKind().GroupVersionKind().Kind + "]")
 
+			resource.SetResourceVersion(currentResource.GetResourceVersion())
 			if err := r.Update(r.Context, resource.(client.Object)); err != nil {
 				r.GetLogger().V(0).Info("unable to update resource")
 
@@ -276,10 +279,6 @@ func (r *{{ .Resource.Kind }}Reconciler) Wait(
 {{ end }}
 
 func (r *{{ .Resource.Kind }}Reconciler) SetupWithManager(mgr ctrl.Manager) error {
-	// TODO: only resources which belong to the kubernetes core api are able to be owned, as custom resource definitions and their
-	// associated custom resources cannot be owned because they do not exist yet; comment out non-core resources for now and find
-	// a way to own them at a later time.  This means that we cannot reconcile updates or child resource deletion against objects
-	// that are not part of the core api group.
 	options := controller.Options{
 		RateLimiter: controllers.NewDefaultRateLimiter(5*time.Microsecond, 5*time.Minute),
 	}
@@ -287,13 +286,6 @@ func (r *{{ .Resource.Kind }}Reconciler) SetupWithManager(mgr ctrl.Manager) erro
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(&{{ .Resource.ImportAlias }}.{{ .Resource.Kind }}{}).
-		{{- range .OwnershipRules }}
-		{{- if .CoreAPI }}
-		Owns(&unstructured.Unstructured{Object: map[string]interface{}{"kind": "{{ .Kind }}", "apiVersion": "{{ .Version }}"}}).
-		{{- else }}
-		// Owns(&unstructured.Unstructured{Object: map[string]interface{}{"kind": "{{ .Kind }}", "apiVersion": "{{ .Version }}"}}).
-		{{- end -}}
-		{{ end }}
 		Complete(r)
 }
 `

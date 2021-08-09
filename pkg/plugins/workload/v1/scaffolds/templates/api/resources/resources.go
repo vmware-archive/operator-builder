@@ -20,6 +20,7 @@ type Resources struct {
 
 	PackageName     string
 	CreateFuncNames []string
+	InitFuncNames   []string
 	SpecFields      *[]workloadv1.APISpecField
 	IsComponent     bool
 	Collection      *workloadv1.WorkloadCollection
@@ -75,6 +76,9 @@ import (
 	{{ end -}}
 )
 
+// CreateFuncs is an array of functions that are called to create the child resources for the controller
+// in memroy during the reconciliation loop prior to persisting the changes or updates to the Kubernetes
+// database.
 var CreateFuncs = []func(
 	*{{ .Resource.ImportAlias }}.{{ .Resource.Kind }},
 	{{- if $.IsComponent }}
@@ -82,6 +86,23 @@ var CreateFuncs = []func(
 	{{ end -}}
 ) (metav1.Object, error){
 	{{ range .CreateFuncNames }}
+		{{- . -}},
+	{{ end }}
+}
+
+// InitFuncs is an array of functions that are called prior to starting the controller manager.  This is
+// necessary in instances which the controller needs to "own" objects which depend on resources to
+// pre-exist in the cluster. A common use case for this is a CustomResourceDefinition and a resource
+// created as part of that CRD.  In this case, we cannot create and own the CRD and its affiliated resource
+// as part of the reconciliation loop.  Because the CRD does not exist, the API has not been extended
+// properly for the controller to own the affiliated resource, and it will fail with an error.
+var InitFuncs = []func(
+	*{{ .Resource.ImportAlias }}.{{ .Resource.Kind }},
+	{{- if $.IsComponent }}
+	*{{ .Collection.Spec.APIGroup }}{{ .Collection.Spec.APIVersion }}.{{ .Collection.Spec.APIKind }},
+	{{ end -}}
+) (metav1.Object, error){
+	{{ range .InitFuncNames }}
 		{{- . -}},
 	{{ end }}
 }

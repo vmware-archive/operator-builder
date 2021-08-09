@@ -44,30 +44,35 @@ import (
 )
 
 type Component interface {
-	GetReadyStatus() bool
-	GetStatusConditions() []Condition
-	SetStatusConditions(Condition)
 	{{- if not .IsStandalone }}
-	GetDependencyStatus() bool
-	GetDependencies() []Component
 	GetComponentGVK() schema.GroupVersionKind
-	SetDependencyStatus(bool)
-	SetReadyStatus(bool)
+	GetDependencies() []Component
 	{{ end -}}
+	GetReadyStatus() bool
+	GetDependencyStatus() bool
+	GetStatusConditions() []Condition
+
+	{{- if not .IsStandalone }}
+	SetReadyStatus(bool)
+	SetDependencyStatus(bool)
+	{{ end -}}
+	SetStatusConditions(Condition)
 }
 
 type ComponentReconciler interface {
-	GetContext() context.Context
+	GetClient() client.Client
 	GetComponent() Component
+	GetContext() context.Context
 	GetLogger() logr.Logger
+	GetScheme() *runtime.Scheme
 	GetResources(Component) ([]metav1.Object, error)
-	SetRefAndCreateIfNotPresent(metav1.Object) error
+
+	CreateOrUpdate(metav1.Object) error
 	UpdateStatus(context.Context, Component) error
 	{{- if not .IsStandalone }}
 	Get(context.Context, types.NamespacedName, client.Object) error
-	GetClient() client.Client
-	GetScheme() *runtime.Scheme
 	List(context.Context, client.ObjectList, ...client.ListOption) error
+
 	CheckReady() (bool, error)
 	Mutate(*metav1.Object) ([]metav1.Object, bool, error)
 	Wait(*metav1.Object) (bool, error)
