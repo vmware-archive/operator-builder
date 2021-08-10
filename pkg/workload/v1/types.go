@@ -37,7 +37,7 @@ type CliCommand struct {
 type StandaloneWorkloadSpec struct {
 	WorkloadSharedSpec  `yaml:",inline"`
 	Domain              string     `json:"domain" yaml:"domain" validate:"required"`
-	CompanionCliRootcmd CliCommand `json:"companionCliRootcmd" yaml:"companionCliRootCmd" validate:"omitempty"`
+	CompanionCliRootcmd CliCommand `json:"companionCliRootcmd" yaml:"companionCliRootcmd" validate:"omitempty"`
 	Resources           []string   `json:"resources" yaml:"resources"`
 	APISpecFields       []APISpecField
 	SourceFiles         []SourceFile
@@ -55,7 +55,7 @@ type StandaloneWorkload struct {
 // component of a collection.
 type ComponentWorkloadSpec struct {
 	WorkloadSharedSpec    `yaml:",inline"`
-	CompanionCliSubcmd    CliCommand `json:"companionCliSubcmd" yaml:"companionCliSubcmd"`
+	CompanionCliSubcmd    CliCommand `json:"companionCliSubcmd" yaml:"companionCliSubcmd" validate:"omitempty"`
 	Resources             []string   `json:"resources" yaml:"resources"`
 	Dependencies          []string   `json:"dependencies" yaml:"dependencies"`
 	ConfigPath            string

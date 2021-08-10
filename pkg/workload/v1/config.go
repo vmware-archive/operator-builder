@@ -291,14 +291,6 @@ func handleDependencies(components *[]ComponentWorkload) error {
 }
 
 func validateConfigs(workloads map[WorkloadKind][]WorkloadIdentifier) error {
-	if len(workloads[WorkloadKindComponent]) != 0 && len(workloads[WorkloadKindCollection]) != 1 {
-		return fmt.Errorf("no %s found - %w", WorkloadKindCollection, ErrCollectionRequired)
-	}
-
-	if len(workloads[WorkloadKindCollection])+len(workloads[WorkloadKindStandalone]) > 1 {
-		return ErrMultipleConfigs
-	}
-
 	validate := validator.New()
 
 	for kind := range workloads {
@@ -307,6 +299,14 @@ func validateConfigs(workloads map[WorkloadKind][]WorkloadIdentifier) error {
 				return fmt.Errorf("%w", err)
 			}
 		}
+	}
+
+	if len(workloads[WorkloadKindComponent]) != 0 && len(workloads[WorkloadKindCollection]) != 1 {
+		return fmt.Errorf("no %s found - %w", WorkloadKindCollection, ErrCollectionRequired)
+	}
+
+	if len(workloads[WorkloadKindCollection])+len(workloads[WorkloadKindStandalone]) > 1 {
+		return ErrMultipleConfigs
 	}
 
 	return nil
