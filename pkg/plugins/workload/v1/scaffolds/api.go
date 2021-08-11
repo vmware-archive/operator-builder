@@ -165,6 +165,10 @@ func (s *apiScaffolder) Scaffold() error {
 	// API types
 	if s.workload.IsStandalone() {
 		err = scaffold.Execute(
+			&templates.MainUpdater{
+				WireResource:   true,
+				WireController: true,
+			},
 			&api.Types{
 				SpecFields:    s.workload.GetAPISpecFields(),
 				ClusterScoped: s.workload.IsClusterScoped(),
@@ -222,6 +226,10 @@ func (s *apiScaffolder) Scaffold() error {
 		)
 
 		err = scaffold.Execute(
+			&templates.MainUpdater{
+				WireResource:   true,
+				WireController: true,
+			},
 			&api.Types{
 				SpecFields:    s.workload.GetAPISpecFields(),
 				ClusterScoped: s.workload.IsClusterScoped(),

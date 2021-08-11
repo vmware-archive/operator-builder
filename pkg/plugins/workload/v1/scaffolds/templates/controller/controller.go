@@ -80,9 +80,12 @@ import (
 // {{ .Resource.Kind }}Reconciler reconciles a {{ .Resource.Kind }} object.
 type {{ .Resource.Kind }}Reconciler struct {
 	client.Client
+	Name       string
 	Log        logr.Logger
 	Scheme     *runtime.Scheme
 	Context    context.Context
+	Controller controller.Controller
+	Watches    []client.Object
 	Component  *{{ .Resource.ImportAlias }}.{{ .Resource.Kind }}
 	{{- if .IsComponent }}
 	Collection *{{ .Collection.Spec.APIGroup }}{{ .Collection.Spec.APIVersion }}.{{ .Collection.Spec.APIKind }}
@@ -189,37 +192,26 @@ func (r *{{ .Resource.Kind }}Reconciler) CreateOrUpdate(
 
 	// create a stub object to store the current resource in the cluster so that we do not affect
 	// the desired state of the resource object in memory
-	resourceGVK := resource.(runtime.Object).GetObjectKind().GroupVersionKind()
-	currentResource := &unstructured.Unstructured{}
-	currentResource.SetGroupVersionKind(resourceGVK)
+	newResource := resource.(client.Object)
+	oldResource := &unstructured.Unstructured{}
+	oldResource.SetGroupVersionKind(newResource.GetObjectKind().GroupVersionKind())
 
-	objectKey := client.ObjectKeyFromObject(resource.(client.Object))
-	if err := r.Get(r.Context, objectKey, currentResource); err != nil {
+	objectKey := client.ObjectKeyFromObject(newResource)
+	if err := r.Get(r.Context, objectKey, oldResource); err != nil {
 		if errors.IsNotFound(err) {
-			r.GetLogger().V(0).Info(fmt.Sprintf("creating resource with name: [%s] in namespace: [%s] of kind: [%s]",
-				resource.GetName(), resource.GetNamespace(), resourceGVK.Kind))
-
-			if err := r.Create(r.Context, resource.(client.Object)); err != nil {
-				r.GetLogger().V(0).Info("unable to create resource")
-
+			if err := controllers.Create(r, newResource); err != nil {
 				return err
 			}
 		} else {
 			return err
 		}
 	} else {
-		r.GetLogger().V(0).Info(fmt.Sprintf("updating resource with name: [%s] in namespace: [%s] of kind: [%s]",
-			resource.GetName(), resource.GetNamespace(), resourceGVK.Kind))
-
-		resource.SetResourceVersion(currentResource.GetResourceVersion())
-		if err := r.Update(r.Context, resource.(client.Object)); err != nil {
-			r.GetLogger().V(0).Info("unable to update resource")
-
+		if err := controllers.Update(r, newResource, oldResource); err != nil {
 			return err
 		}
 	}
 
-	return nil
+	return controllers.Watch(r, newResource)
 }
 
 // GetLogger returns the logger from the reconciler.
@@ -242,9 +234,29 @@ func (r *{{ .Resource.Kind }}Reconciler) GetContext() context.Context {
 	return r.Context
 }
 
+// GetName returns the name of the reconciler.
+func (r *{{ .Resource.Kind }}Reconciler) GetName() string {
+	return r.Name
+}
+
 // GetComponent returns the component the reconciler is operating against.
 func (r *{{ .Resource.Kind }}Reconciler) GetComponent() common.Component {
 	return r.Component
+}
+
+// GetController returns the controller object associated with the reconciler.
+func (r *{{ .Resource.Kind }}Reconciler) GetController() controller.Controller {
+	return r.Controller
+}
+
+// GetWatches returns the objects which are current being watched by the reconciler.
+func (r *{{ .Resource.Kind }}Reconciler) GetWatches() []client.Object {
+	return r.Watches
+}
+
+// SetWatch appends a watch to the list of currently watched objects.
+func (r *{{ .Resource.Kind }}Reconciler) SetWatch(watch client.Object) {
+	r.Watches = append(r.Watches, watch)
 }
 
 // UpdateStatus updates the status for a component.
@@ -278,9 +290,17 @@ func (r *{{ .Resource.Kind }}Reconciler) SetupWithManager(mgr ctrl.Manager) erro
 		RateLimiter: controllers.NewDefaultRateLimiter(5*time.Microsecond, 5*time.Minute),
 	}
 
-	return ctrl.NewControllerManagedBy(mgr).
+	baseController, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
+		WithEventFilter(controllers.ComponentPredicates()).
 		For(&{{ .Resource.ImportAlias }}.{{ .Resource.Kind }}{}).
-		Complete(r)
+		Build(r)
+	if err != nil {
+		return err
+	}
+
+	r.Controller = baseController
+
+	return nil
 }
 `
