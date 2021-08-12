@@ -35,6 +35,7 @@ import (
 )
 
 func main() {
-	commands.Execute()
+	{{ .CliRootCmd }} := commands.New{{ .CliRootCmd }}Command()
+	{{ .CliRootCmd }}.Run()
 }
 `

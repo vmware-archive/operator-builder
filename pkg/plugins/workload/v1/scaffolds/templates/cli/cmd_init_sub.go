@@ -57,6 +57,7 @@ package commands
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -71,27 +72,44 @@ spec:
 {{ end }}
 ` + "`" + `
 
-// {{ .CliSubCmdName }}InitCmd represents the {{ .CliSubCmdName }} init subcommand.
-var {{ .CliSubCmdVarName }}InitCmd = &cobra.Command{
-	{{ if .IsComponent -}}
-	Use:   "{{ .CliSubCmdName }}",
-	Short: "{{ .CliSubCmdDescr }}",
-	Long: "{{ .CliSubCmdDescr }}",
-	{{- else -}}
-	Use:   "{{ .InitCommandName }}",
-	Short: "{{ .InitCommandDescr }}",
-	Long: "{{ .InitCommandDescr }}",
-	{{- end }}
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println(defaultManifest{{ .CliSubCmdVarName }})
-	},
+{{ if not .IsComponent -}}
+type initCommand struct {
+	*cobra.Command
 }
+{{- end }}
 
-func init() {
+{{ if not .IsComponent -}}
+// newInitCommand creates a new instance of the init subcommand.
+func (c *{{ .CliRootCmd }}Command) newInitCommand() {
+{{- else }}
+// new{{ .CliSubCmdVarName }}InitCommand creates a new instance of the {{ .CliSubCmdVarName }} init subcommand.
+func (i *initCommand) new{{ .CliSubCmdVarName }}InitCommand() {
+{{- end }}
+	{{ .CliSubCmdVarName }}InitCmd := &cobra.Command{
+		{{ if .IsComponent -}}
+		Use:   "{{ .CliSubCmdName }}",
+		Short: "{{ .CliSubCmdDescr }}",
+		Long: "{{ .CliSubCmdDescr }}",
+		{{- else -}}
+		Use:   "{{ .InitCommandName }}",
+		Short: "{{ .InitCommandDescr }}",
+		Long: "{{ .InitCommandDescr }}",
+		{{- end }}
+		RunE: func(cmd *cobra.Command, args []string) error {
+			outputStream := os.Stdout
+
+			if _, err := outputStream.WriteString(defaultManifest{{ .CliSubCmdVarName }}); err != nil {
+				return fmt.Errorf("failed to write outout, %w", err)
+			}
+
+			return nil
+		},
+	}
+
 	{{ if .IsComponent -}}
-	initCmd.AddCommand({{ .CliSubCmdVarName }}InitCmd)
+	i.AddCommand({{ .CliSubCmdVarName }}InitCmd)
 	{{- else -}}
-	rootCmd.AddCommand({{ .CliSubCmdVarName }}InitCmd)
+	c.AddCommand({{ .CliSubCmdVarName }}InitCmd)
 	{{- end -}}
 }
 `

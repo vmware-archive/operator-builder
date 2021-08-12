@@ -61,14 +61,13 @@ package commands
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
 	{{ .Resource.ImportAlias }} "{{ .Resource.Path }}"
@@ -79,105 +78,134 @@ import (
 )
 
 {{ if not .IsComponent -}}
-var workloadManifest string
-{{ end }}
-
-// {{ .CliSubCmdVarName }}GenerateCmd represents the {{ .CliSubCmdName }} generate subcommand.
-var {{ .CliSubCmdVarName }}GenerateCmd = &cobra.Command{
-	{{ if .IsComponent -}}
-	Use:   "{{ .CliSubCmdName }}",
-	Short: "{{ .CliSubCmdDescr }}",
-	Long: "{{ .CliSubCmdDescr }}",
-	{{- else -}}
-	Use:   "{{ .GenerateCommandName }}",
-	Short: "{{ .GenerateCommandDescr }}",
-	Long: "{{ .GenerateCommandDescr }}",
-	{{- end }}
-	Run: func(cmd *cobra.Command, args []string) {
-		{{ if .IsComponent }}
-		// component workload
-		wkFilename, _ := filepath.Abs(workloadManifest)
-		wkYamlFile, err := ioutil.ReadFile(wkFilename)
-		if err != nil {
-			panic(err)
-		}
-
-		var workload {{ .Resource.ImportAlias }}.{{ .Resource.Kind }}
-
-		err = yaml.Unmarshal(wkYamlFile, &workload)
-		if err != nil {
-			panic(err)
-		}
-
-		// workload collection
-		colFilename, _ := filepath.Abs(collectionManifest)
-		colYamlFile, err := ioutil.ReadFile(colFilename)
-		if err != nil {
-			panic(err)
-		}
-
-		var collection {{ $.Collection.Spec.APIGroup }}{{ $.Collection.Spec.APIVersion }}.{{ $.Collection.Spec.APIKind }}
-
-		err = yaml.Unmarshal(colYamlFile, &collection)
-		if err != nil {
-			panic(err)
-		}
-
-		var resourceObjects []metav1.Object
-		for _, f := range {{ .PackageName }}.CreateFuncs {
-			resource, err := f(&workload, &collection)
-			if err != nil {
-				log.Fatal(err)
-			}
-			resourceObjects = append(resourceObjects, resource)
-		}
-		{{ else }}
-		filename, _ := filepath.Abs(workloadManifest)
-		yamlFile, err := ioutil.ReadFile(filename)
-		if err != nil {
-			panic(err)
-		}
-
-		var workload {{ .Resource.ImportAlias }}.{{ .Resource.Kind }}
-
-		err = yaml.Unmarshal(yamlFile, &workload)
-		if err != nil {
-			panic(err)
-		}
-
-		var resourceObjects []metav1.Object
-		for _, f := range {{ .PackageName }}.CreateFuncs {
-			resource, err := f(&workload)
-			if err != nil {
-				log.Fatal(err)
-			}
-			resourceObjects = append(resourceObjects, resource)
-		}
-		{{ end }}
-
-		e := json.NewYAMLSerializer(json.DefaultMetaFactory, nil, nil)
-		for _, o := range resourceObjects {
-			fmt.Println("---")
-			err := e.Encode(o.(runtime.Object), os.Stdout)
-			if err != nil {
-				log.Fatal(err)
-			}
-		}
-	},
+type generateCommand struct {
+	*cobra.Command
+	workloadManifest string
 }
-func init() {
+{{- end }}
+
+// generate creates child resource manifests from a workload's custom resource.
+func (g *generateCommand) {{ .CliSubCmdVarName }}generate(cmd *cobra.Command, args []string) error {
+	{{- if .IsComponent }}
+	// component workload
+	wkFilename, _ := filepath.Abs(g.workloadManifest)
+
+	wkYamlFile, err := ioutil.ReadFile(wkFilename)
+	if err != nil {
+		return fmt.Errorf("failed to open file %s, %w", wkFilename, err)
+	}
+
+	var workload {{ .Resource.ImportAlias }}.{{ .Resource.Kind }}
+
+	err = yaml.Unmarshal(wkYamlFile, &workload)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal yaml %s into workload, %w", wkFilename, err)
+	}
+
+	// workload collection
+	colFilename, _ := filepath.Abs(g.collectionManifest)
+
+	colYamlFile, err := ioutil.ReadFile(colFilename)
+	if err != nil {
+		return fmt.Errorf("failed to open file %s, %w", colFilename, err)
+	}
+
+	var collection {{ $.Collection.Spec.APIGroup }}{{ $.Collection.Spec.APIVersion }}.{{ $.Collection.Spec.APIKind }}
+
+	err = yaml.Unmarshal(colYamlFile, &collection)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal yaml %s into workload, %w", colFilename, err)
+	}
+
+	resourceObjects := make([]metav1.Object, len({{ .PackageName }}.CreateFuncs))
+	
+	for i, f := range {{ .PackageName }}.CreateFuncs {
+		resource, err := f(&workload, &collection)
+		if err != nil {
+			return err
+		}
+		
+		resourceObjects[i] = resource
+	}
+	{{ else }}
+	filename, _ := filepath.Abs(g.workloadManifest)
+
+	yamlFile, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return fmt.Errorf("failed to open file %s, %w", filename, err)
+	}
+
+	var workload {{ .Resource.ImportAlias }}.{{ .Resource.Kind }}
+
+	err = yaml.Unmarshal(yamlFile, &workload)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal yaml %s into workload, %w", filename, err)
+	}
+
+	resourceObjects := make([]metav1.Object, len({{ .PackageName }}.CreateFuncs))
+
+	for i, f := range {{ .PackageName }}.CreateFuncs {
+		resource, err := f(&workload)
+		if err != nil {
+			return err
+		}
+
+		resourceObjects[i] = resource
+	}
+	{{ end }}
+
+	e := json.NewYAMLSerializer(json.DefaultMetaFactory, nil, nil)
+
+	outputStream := os.Stdout
+
+	for _, o := range resourceObjects {
+		if _, err := outputStream.WriteString("---"); err != nil {
+			return fmt.Errorf("failed to write output, %w", err)
+		}
+
+		if err := e.Encode(o.(runtime.Object), os.Stdout); err != nil {
+			return fmt.Errorf("failed to write output, %w", err)
+		}
+	}
+
+	return nil
+}
+
+
+{{ if not .IsComponent -}}
+// newGenerateCommand creates a new instance of the generate subcommand.
+func (c *{{ .CliRootCmd }}Command) newGenerateCommand() {
+	g := &generateCommand{}
+{{- else }}
+// new{{ .CliSubCmdVarName }}GenerateCommand creates a new instance of the {{ .CliSubCmdVarName }} generate subcommand.
+func (g *generateCommand) new{{ .CliSubCmdVarName }}GenerateCommand() {
+{{- end }}
+	{{ .CliSubCmdVarName }}GenerateCmd := &cobra.Command{
+		{{ if .IsComponent -}}
+		Use:   "{{ .CliSubCmdName }}",
+		Short: "{{ .CliSubCmdDescr }}",
+		Long: "{{ .CliSubCmdDescr }}",
+		{{- else -}}
+		Use:   "{{ .GenerateCommandName }}",
+		Short: "{{ .GenerateCommandDescr }}",
+		Long: "{{ .GenerateCommandDescr }}",
+		{{- end }}
+		RunE: g.{{ .CliSubCmdVarName }}generate,
+	}
+
 	{{ if .IsComponent -}}
-	generateCmd.AddCommand({{ .CliSubCmdVarName }}GenerateCmd)
+	g.AddCommand({{ .CliSubCmdVarName }}GenerateCmd)
 	{{- else -}}
-	rootCmd.AddCommand({{ .CliSubCmdVarName }}GenerateCmd)
 
 	{{ .CliSubCmdVarName }}GenerateCmd.Flags().StringVarP(
-		&workloadManifest,
+		&g.workloadManifest,
 		"workload-manifest",
 		"w",
 		"",
 		"Filepath to the workload manifest to generate child resources for.",
 	)
+
+	c.AddCommand({{ .CliSubCmdVarName }}GenerateCmd)
 	{{- end -}}
 }
 `

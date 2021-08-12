@@ -4,6 +4,8 @@ import (
 	"path/filepath"
 
 	"sigs.k8s.io/kubebuilder/v3/pkg/machinery"
+
+	workloadv1 "github.com/vmware-tanzu-labs/operator-builder/pkg/workload/v1"
 )
 
 const (
@@ -24,6 +26,8 @@ type CliCmdInit struct {
 
 	InitCommandName  string
 	InitCommandDescr string
+
+	Collection *workloadv1.WorkloadCollection
 }
 
 func (f *CliCmdInit) SetTemplateDefaults() error {
@@ -45,14 +49,27 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// initCmd represents the init command.
-var initCmd = &cobra.Command{
-	Use:   "{{ .InitCommandName }}",
-	Short: "{{ .InitCommandDescr }}",
-	Long: "{{ .InitCommandDescr }}",
+type initCommand struct {
+	*cobra.Command
 }
 
-func init() {
-	rootCmd.AddCommand(initCmd)
+// newInitCommand creates a new instance of the init subcommand.
+func (c *{{ .CliRootCmd }}Command) newInitCommand() {
+	initCmd := &initCommand{}
+
+	initCmd.Command = &cobra.Command{
+		Use:   "{{ .InitCommandName }}",
+		Short: "{{ .InitCommandDescr }}",
+		Long: "{{ .InitCommandDescr }}",
+	}
+
+	initCmd.addCommands()
+	c.AddCommand(initCmd.Command)
+}
+
+func (i *initCommand) addCommands() {
+	{{- range $component := .Collection.Spec.Components }}
+	i.new{{ $component.Spec.CompanionCliSubcmd.VarName }}InitCommand()
+	{{- end }}
 }
 `

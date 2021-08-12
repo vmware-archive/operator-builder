@@ -119,9 +119,11 @@ func (s *apiScaffolder) Scaffold() error {
 		err = scaffold.Execute(
 			&cli.CliCmdInit{
 				CliRootCmd: s.project.CliRootCommandName,
+				Collection: s.workload.(*workloadv1.WorkloadCollection),
 			},
 			&cli.CliCmdGenerate{
 				CliRootCmd: s.project.CliRootCommandName,
+				Collection: s.workload.(*workloadv1.WorkloadCollection),
 			},
 		)
 		if err != nil {
