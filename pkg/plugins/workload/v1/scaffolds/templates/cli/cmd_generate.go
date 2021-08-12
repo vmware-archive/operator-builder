@@ -13,12 +13,12 @@ const (
 	generateCommandDescr = "Generate child resource manifests from a workload's custom resource"
 )
 
-var _ machinery.Template = &CliCmdGenerate{}
+var _ machinery.Template = &CmdGenerate{}
 
-// CliCmdGenerate scaffolds the companion CLI's generate subcommand for
+// CmdGenerate scaffolds the companion CLI's generate subcommand for
 // component workloads.  The generate logic will live in the workload's
 // subcommand to this command; see cmd_generate_sub.go.
-type CliCmdGenerate struct {
+type CmdGenerate struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
 
@@ -30,7 +30,7 @@ type CliCmdGenerate struct {
 	Collection           *workloadv1.WorkloadCollection
 }
 
-func (f *CliCmdGenerate) SetTemplateDefaults() error {
+func (f *CmdGenerate) SetTemplateDefaults() error {
 	f.Path = filepath.Join("cmd", f.CliRootCmd, "commands", "generate.go")
 
 	f.GenerateCommandName = generateCommandName

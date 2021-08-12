@@ -13,12 +13,12 @@ const (
 	initCommandDescr = "Write a sample custom resource manifest for a workload to standard out"
 )
 
-var _ machinery.Template = &CliCmdInit{}
+var _ machinery.Template = &CmdInit{}
 
-// CliCmdInit scaffolds the companion CLI's init subcommand for
+// CmdInit scaffolds the companion CLI's init subcommand for
 // component workloads.  The init logic will live in the workload's
 // subcommand to this command; see cmd_init_sub.go.
-type CliCmdInit struct {
+type CmdInit struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
 
@@ -31,7 +31,7 @@ type CliCmdInit struct {
 	Collection *workloadv1.WorkloadCollection
 }
 
-func (f *CliCmdInit) SetTemplateDefaults() error {
+func (f *CmdInit) SetTemplateDefaults() error {
 	f.Path = filepath.Join("cmd", f.CliRootCmd, "commands", "init.go")
 
 	f.InitCommandName = initCommandName

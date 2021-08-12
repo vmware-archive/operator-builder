@@ -6,10 +6,10 @@ import (
 	"sigs.k8s.io/kubebuilder/v3/pkg/machinery"
 )
 
-var _ machinery.Template = &CliCmdRoot{}
+var _ machinery.Template = &CmdRoot{}
 
-// CliCmdRoot scaffolds the root command file for the companion CLI.
-type CliCmdRoot struct {
+// CmdRoot scaffolds the root command file for the companion CLI.
+type CmdRoot struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
 
@@ -20,7 +20,7 @@ type CliCmdRoot struct {
 	CliRootDescription string
 }
 
-func (f *CliCmdRoot) SetTemplateDefaults() error {
+func (f *CmdRoot) SetTemplateDefaults() error {
 	f.Path = filepath.Join("cmd", f.CliRootCmd, "commands", "root.go")
 
 	f.TemplateBody = cliCmdRootTemplate

@@ -90,13 +90,13 @@ func (s *apiScaffolder) Scaffold() error {
 	if s.workload.IsStandalone() && s.workload.GetRootcommandName() != "" {
 		// build a subcommand for standalone, e.g. `webstorectl init`
 		err = scaffold.Execute(
-			&cli.CliCmdInitSub{
+			&cli.CmdInitSub{
 				CliRootCmd:        s.project.CliRootCommandName,
 				CliRootCmdVarName: utils.ToPascalCase(s.project.CliRootCommandName),
-				CliSubCmdName:     s.workload.GetSubcommandName(),
-				CliSubCmdDescr:    s.workload.GetSubcommandDescr(),
-				CliSubCmdVarName:  s.workload.GetSubcommandVarName(),
-				CliSubCmdFileName: s.workload.GetSubcommandFileName(),
+				CmdCmdName:        s.workload.GetSubcommandName(),
+				CmdCmdDescr:       s.workload.GetSubcommandDescr(),
+				CmdCmdVarName:     s.workload.GetSubcommandVarName(),
+				CmdCmdFileName:    s.workload.GetSubcommandFileName(),
 				SpecFields:        s.workload.GetAPISpecFields(),
 				IsComponent:       s.workload.IsComponent(),
 				ComponentResource: s.workload.GetComponentResource(
@@ -105,12 +105,12 @@ func (s *apiScaffolder) Scaffold() error {
 					s.workload.IsClusterScoped(),
 				),
 			},
-			&cli.CliCmdGenerateSub{
+			&cli.CmdGenerateSub{
 				PackageName:       s.workload.GetPackageName(),
 				CliRootCmd:        s.project.CliRootCommandName,
 				CliRootCmdVarName: utils.ToPascalCase(s.project.CliRootCommandName),
-				CliSubCmdName:     s.workload.GetSubcommandName(),
-				CliSubCmdDescr:    s.workload.GetSubcommandDescr(),
+				CmdCmdName:        s.workload.GetSubcommandName(),
+				CmdCmdDescr:       s.workload.GetSubcommandDescr(),
 				IsComponent:       s.workload.IsComponent(),
 			},
 		)
@@ -119,12 +119,12 @@ func (s *apiScaffolder) Scaffold() error {
 		}
 	} else if s.workload.IsCollection() && s.workload.GetRootcommandName() != "" {
 		err = scaffold.Execute(
-			&cli.CliCmdInit{
+			&cli.CmdInit{
 				CliRootCmd:        s.project.CliRootCommandName,
 				CliRootCmdVarName: utils.ToPascalCase(s.project.CliRootCommandName),
 				Collection:        s.workload.(*workloadv1.WorkloadCollection),
 			},
-			&cli.CliCmdGenerate{
+			&cli.CmdGenerate{
 				CliRootCmd:        s.project.CliRootCommandName,
 				CliRootCmdVarName: utils.ToPascalCase(s.project.CliRootCommandName),
 				Collection:        s.workload.(*workloadv1.WorkloadCollection),
@@ -138,13 +138,13 @@ func (s *apiScaffolder) Scaffold() error {
 			if component.GetSubcommandName() != "" {
 				// build a subcommand for the component, e.g. `cnpctl init ingress`
 				err = scaffold.Execute(
-					&cli.CliCmdInitSub{
+					&cli.CmdInitSub{
 						CliRootCmd:        s.project.CliRootCommandName,
 						CliRootCmdVarName: utils.ToPascalCase(s.project.CliRootCommandName),
-						CliSubCmdName:     component.GetSubcommandName(),
-						CliSubCmdDescr:    component.GetSubcommandDescr(),
-						CliSubCmdVarName:  component.GetSubcommandVarName(),
-						CliSubCmdFileName: component.GetSubcommandFileName(),
+						CmdCmdName:        component.GetSubcommandName(),
+						CmdCmdDescr:       component.GetSubcommandDescr(),
+						CmdCmdVarName:     component.GetSubcommandVarName(),
+						CmdCmdFileName:    component.GetSubcommandFileName(),
 						SpecFields:        component.GetAPISpecFields(),
 						IsComponent:       component.IsComponent(),
 						ComponentResource: component.GetComponentResource(
@@ -153,14 +153,14 @@ func (s *apiScaffolder) Scaffold() error {
 							s.workload.IsClusterScoped(),
 						),
 					},
-					&cli.CliCmdGenerateSub{
+					&cli.CmdGenerateSub{
 						PackageName:       component.GetPackageName(),
 						CliRootCmd:        s.project.CliRootCommandName,
 						CliRootCmdVarName: utils.ToPascalCase(s.project.CliRootCommandName),
-						CliSubCmdName:     component.GetSubcommandName(),
-						CliSubCmdDescr:    component.GetSubcommandDescr(),
-						CliSubCmdVarName:  component.GetSubcommandVarName(),
-						CliSubCmdFileName: component.GetSubcommandFileName(),
+						CmdCmdName:        component.GetSubcommandName(),
+						CmdCmdDescr:       component.GetSubcommandDescr(),
+						CmdCmdVarName:     component.GetSubcommandVarName(),
+						CmdCmdFileName:    component.GetSubcommandFileName(),
 						IsComponent:       component.IsComponent(),
 						ComponentResource: component.GetComponentResource(
 							s.config.GetDomain(),

@@ -6,10 +6,10 @@ import (
 	"sigs.k8s.io/kubebuilder/v3/pkg/machinery"
 )
 
-var _ machinery.Template = &CliMain{}
+var _ machinery.Template = &Main{}
 
-// CliMain scaffolds the main package for the companion CLI.
-type CliMain struct {
+// Main scaffolds the main package for the companion CLI.
+type Main struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
 	machinery.RepositoryMixin
@@ -19,7 +19,7 @@ type CliMain struct {
 	CliRootCmdVarName string
 }
 
-func (f *CliMain) SetTemplateDefaults() error {
+func (f *Main) SetTemplateDefaults() error {
 	f.Path = filepath.Join("cmd", f.CliRootCmd, "main.go")
 
 	f.TemplateBody = cliMainTemplate

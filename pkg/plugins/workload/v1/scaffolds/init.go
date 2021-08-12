@@ -58,11 +58,11 @@ func (s *initScaffolder) Scaffold() error {
 
 	if s.workload.HasRootCmdName() {
 		err = scaffold.Execute(
-			&cli.CliMain{
+			&cli.Main{
 				CliRootCmd:        s.workload.GetRootCmdName(),
 				CliRootCmdVarName: utils.ToPascalCase(s.workload.GetRootCmdName()),
 			},
-			&cli.CliCmdRoot{
+			&cli.CmdRoot{
 				CliRootCmd:         s.workload.GetRootCmdName(),
 				CliRootCmdVarName:  utils.ToPascalCase(s.workload.GetRootCmdName()),
 				CliRootDescription: s.workload.GetRootCmdDescr(),
