@@ -93,7 +93,12 @@ func HandlePhaseExit(
 
 	switch {
 	case phaseError != nil:
-		condition = phaseHandler.GetFailCondition()
+		if isOptimisticLockError(phaseError) {
+			phaseError = nil
+			condition = phaseHandler.GetSuccessCondition()
+		} else {
+			condition = phaseHandler.GetFailCondition()
+		}
 		result = DefaultReconcileResult()
 	case !phaseIsReady:
 		condition = phaseHandler.GetPendingCondition()
@@ -106,8 +111,12 @@ func HandlePhaseExit(
 	// update the status conditions and return any errors
 	if updateError := updateStatusConditions(reconciler, &condition); updateError != nil {
 		// adjust the message if we had both an update error and a phase error
-		if phaseError != nil {
-			phaseError = fmt.Errorf("failed to update status conditions; %v; %v", updateError, phaseError)
+		if !isOptimisticLockError(updateError) {
+			if phaseError != nil {
+				phaseError = fmt.Errorf("failed to update status conditions; %v; %v", updateError, phaseError)
+			} else {
+				phaseError = updateError
+			}
 		}
 	}
 
