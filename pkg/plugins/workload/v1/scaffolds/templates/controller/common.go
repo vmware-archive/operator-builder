@@ -148,8 +148,13 @@ func ResourcePredicates() predicate.Predicate {
 
 			return !justUpdated && numWhitelisted > 0
 		},
+		// TODO: we will prevent deletions from child objects.  This will end up being confusing to the
+		// user, as this will result in a successful "kubectl delete" command with nothing else happening.
+		// Need to add a valdiating webhook to give feedback to the user.
 		DeleteFunc: func(e event.DeleteEvent) bool {
-			return !e.DeleteStateUnknown
+			r.GetLogger().V(0).Info(fmt.Sprintf("WARN: skipping deletion of resource; kind: [%s], name: [%s], namespace: [%s]",
+				resource.GetObjectKind().GroupVersionKind().Kind, resource.GetName(), resource.GetNamespace()))
+			return false
 		},
 		GenericFunc: func(e event.GenericEvent) bool {
 			// do not run reconciliation on unknown events
