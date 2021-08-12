@@ -92,6 +92,7 @@ func (s *apiScaffolder) Scaffold() error {
 		err = scaffold.Execute(
 			&cli.CliCmdInitSub{
 				CliRootCmd:        s.project.CliRootCommandName,
+				CliRootCmdVarName: utils.ToPascalCase(s.project.CliRootCommandName),
 				CliSubCmdName:     s.workload.GetSubcommandName(),
 				CliSubCmdDescr:    s.workload.GetSubcommandDescr(),
 				CliSubCmdVarName:  s.workload.GetSubcommandVarName(),
@@ -105,11 +106,12 @@ func (s *apiScaffolder) Scaffold() error {
 				),
 			},
 			&cli.CliCmdGenerateSub{
-				PackageName:    s.workload.GetPackageName(),
-				CliRootCmd:     s.project.CliRootCommandName,
-				CliSubCmdName:  s.workload.GetSubcommandName(),
-				CliSubCmdDescr: s.workload.GetSubcommandDescr(),
-				IsComponent:    s.workload.IsComponent(),
+				PackageName:       s.workload.GetPackageName(),
+				CliRootCmd:        s.project.CliRootCommandName,
+				CliRootCmdVarName: utils.ToPascalCase(s.project.CliRootCommandName),
+				CliSubCmdName:     s.workload.GetSubcommandName(),
+				CliSubCmdDescr:    s.workload.GetSubcommandDescr(),
+				IsComponent:       s.workload.IsComponent(),
 			},
 		)
 		if err != nil {
@@ -118,12 +120,14 @@ func (s *apiScaffolder) Scaffold() error {
 	} else if s.workload.IsCollection() && s.workload.GetRootcommandName() != "" {
 		err = scaffold.Execute(
 			&cli.CliCmdInit{
-				CliRootCmd: s.project.CliRootCommandName,
-				Collection: s.workload.(*workloadv1.WorkloadCollection),
+				CliRootCmd:        s.project.CliRootCommandName,
+				CliRootCmdVarName: utils.ToPascalCase(s.project.CliRootCommandName),
+				Collection:        s.workload.(*workloadv1.WorkloadCollection),
 			},
 			&cli.CliCmdGenerate{
-				CliRootCmd: s.project.CliRootCommandName,
-				Collection: s.workload.(*workloadv1.WorkloadCollection),
+				CliRootCmd:        s.project.CliRootCommandName,
+				CliRootCmdVarName: utils.ToPascalCase(s.project.CliRootCommandName),
+				Collection:        s.workload.(*workloadv1.WorkloadCollection),
 			},
 		)
 		if err != nil {
@@ -136,6 +140,7 @@ func (s *apiScaffolder) Scaffold() error {
 				err = scaffold.Execute(
 					&cli.CliCmdInitSub{
 						CliRootCmd:        s.project.CliRootCommandName,
+						CliRootCmdVarName: utils.ToPascalCase(s.project.CliRootCommandName),
 						CliSubCmdName:     component.GetSubcommandName(),
 						CliSubCmdDescr:    component.GetSubcommandDescr(),
 						CliSubCmdVarName:  component.GetSubcommandVarName(),
@@ -151,6 +156,7 @@ func (s *apiScaffolder) Scaffold() error {
 					&cli.CliCmdGenerateSub{
 						PackageName:       component.GetPackageName(),
 						CliRootCmd:        s.project.CliRootCommandName,
+						CliRootCmdVarName: utils.ToPascalCase(s.project.CliRootCommandName),
 						CliSubCmdName:     component.GetSubcommandName(),
 						CliSubCmdDescr:    component.GetSubcommandDescr(),
 						CliSubCmdVarName:  component.GetSubcommandVarName(),

@@ -14,7 +14,8 @@ type CliCmdRoot struct {
 	machinery.BoilerplateMixin
 
 	// CliRootCmd is the root command for the companion CLI
-	CliRootCmd string
+	CliRootCmd        string
+	CliRootCmdVarName string
 	// CliRootDescription is the command description given by the CLI help info
 	CliRootDescription string
 }
@@ -35,14 +36,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// {{ .CliRootCmd }}Command represents the base command when called without any subcommands.
-type {{ .CliRootCmd }}Command struct {
+// {{ .CliRootCmdVarName }}Command represents the base command when called without any subcommands.
+type {{ .CliRootCmdVarName }}Command struct {
 	*cobra.Command
 }
 
-// New{{ .CliRootCmd }}Command returns an instance of the {{ .CliRootCmd }}Command.
-func New{{ .CliRootCmd }}Command() *{{ .CliRootCmd }}Command {
-	c := &{{ .CliRootCmd }}Command{
+// New{{ .CliRootCmdVarName }}Command returns an instance of the {{ .CliRootCmdVarName }}Command.
+func New{{ .CliRootCmdVarName }}Command() *{{ .CliRootCmdVarName }}Command {
+	c := &{{ .CliRootCmdVarName }}Command{
 		Command: &cobra.Command{
 			Use:   "{{ .CliRootCmd }}",
 			Short: "{{ .CliRootDescription }}",
@@ -57,12 +58,12 @@ func New{{ .CliRootCmd }}Command() *{{ .CliRootCmd }}Command {
 
 // Run represents the main entry point into the command
 // This is called by main.main() to execute the root command.
-func (c *{{ .CliRootCmd }}Command) Run() {
+func (c *{{ .CliRootCmdVarName }}Command) Run() {
 	cobra.CheckErr(c.Execute())
 }
 
 // addSubCommands adds any additional subCommands to the root command.
-func (c *{{ .CliRootCmd }}Command) addSubCommands() {
+func (c *{{ .CliRootCmdVarName }}Command) addSubCommands() {
 	c.newGenerateCommand()
 	c.newInitCommand()
 }

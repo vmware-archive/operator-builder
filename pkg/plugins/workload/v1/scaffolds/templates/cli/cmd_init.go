@@ -22,7 +22,8 @@ type CliCmdInit struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
 
-	CliRootCmd string
+	CliRootCmd        string
+	CliRootCmdVarName string
 
 	InitCommandName  string
 	InitCommandDescr string
@@ -54,7 +55,7 @@ type initCommand struct {
 }
 
 // newInitCommand creates a new instance of the init subcommand.
-func (c *{{ .CliRootCmd }}Command) newInitCommand() {
+func (c *{{ .CliRootCmdVarName }}Command) newInitCommand() {
 	initCmd := &initCommand{}
 
 	initCmd.Command = &cobra.Command{
@@ -69,7 +70,7 @@ func (c *{{ .CliRootCmd }}Command) newInitCommand() {
 
 func (i *initCommand) addCommands() {
 	{{- range $component := .Collection.Spec.Components }}
-	i.new{{ $component.Spec.CompanionCliSubcmd.VarName }}InitCommand()
+	i.newInit{{ $component.Spec.CompanionCliSubcmd.VarName }}Command()
 	{{- end }}
 }
 `

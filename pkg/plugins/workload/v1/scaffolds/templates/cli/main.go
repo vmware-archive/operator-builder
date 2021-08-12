@@ -15,7 +15,8 @@ type CliMain struct {
 	machinery.RepositoryMixin
 
 	// CliRootCmd is the root command for the companion CLI
-	CliRootCmd string
+	CliRootCmd        string
+	CliRootCmdVarName string
 }
 
 func (f *CliMain) SetTemplateDefaults() error {
@@ -35,7 +36,7 @@ import (
 )
 
 func main() {
-	{{ .CliRootCmd }} := commands.New{{ .CliRootCmd }}Command()
+	{{ .CliRootCmd }} := commands.New{{ .CliRootCmdVarName }}Command()
 	{{ .CliRootCmd }}.Run()
 }
 `

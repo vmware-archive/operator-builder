@@ -20,6 +20,7 @@ type CliCmdInitSub struct {
 	machinery.ResourceMixin
 
 	CliRootCmd        string
+	CliRootCmdVarName string
 	CliSubCmdName     string
 	CliSubCmdDescr    string
 	CliSubCmdVarName  string
@@ -73,19 +74,13 @@ spec:
 ` + "`" + `
 
 {{ if not .IsComponent -}}
-type initCommand struct {
-	*cobra.Command
-}
-{{- end }}
-
-{{ if not .IsComponent -}}
 // newInitCommand creates a new instance of the init subcommand.
-func (c *{{ .CliRootCmd }}Command) newInitCommand() {
+func (c *{{ .CliRootCmdVarName }}Command) newInitCommand() {
 {{- else }}
-// new{{ .CliSubCmdVarName }}InitCommand creates a new instance of the {{ .CliSubCmdVarName }} init subcommand.
-func (i *initCommand) new{{ .CliSubCmdVarName }}InitCommand() {
+// newInit{{ .CliSubCmdVarName }}Command creates a new instance of the  init{{ .CliSubCmdVarName }} subcommand.
+func (i *initCommand) newInit{{ .CliSubCmdVarName }}Command() {
 {{- end }}
-	{{ .CliSubCmdVarName }}InitCmd := &cobra.Command{
+	init{{ .CliSubCmdVarName }}Cmd := &cobra.Command{
 		{{ if .IsComponent -}}
 		Use:   "{{ .CliSubCmdName }}",
 		Short: "{{ .CliSubCmdDescr }}",
@@ -107,9 +102,9 @@ func (i *initCommand) new{{ .CliSubCmdVarName }}InitCommand() {
 	}
 
 	{{ if .IsComponent -}}
-	i.AddCommand({{ .CliSubCmdVarName }}InitCmd)
+	i.AddCommand(init{{ .CliSubCmdVarName }}Cmd)
 	{{- else -}}
-	c.AddCommand({{ .CliSubCmdVarName }}InitCmd)
+	c.AddCommand(init{{ .CliSubCmdVarName }}Cmd)
 	{{- end -}}
 }
 `

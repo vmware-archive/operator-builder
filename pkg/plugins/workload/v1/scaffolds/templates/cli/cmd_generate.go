@@ -22,7 +22,8 @@ type CliCmdGenerate struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
 
-	CliRootCmd string
+	CliRootCmd        string
+	CliRootCmdVarName string
 
 	GenerateCommandName  string
 	GenerateCommandDescr string
@@ -55,7 +56,7 @@ type generateCommand struct{
 }
 
 // newGenerateCommand creates a new instance of the generate subcommand.
-func (c *{{ .CliRootCmd }}Command) newGenerateCommand() {
+func (c *{{ .CliRootCmdVarName }}Command) newGenerateCommand() {
 	generateCmd := &generateCommand{}
 
 	generateCmd.Command = &cobra.Command{
@@ -86,7 +87,7 @@ func (c *{{ .CliRootCmd }}Command) newGenerateCommand() {
 
 func (g *generateCommand) addCommands() {
 	{{- range $component := .Collection.Spec.Components }}
-	g.new{{ $component.Spec.CompanionCliSubcmd.VarName }}GenerateCommand()
+	g.newGenerate{{ $component.Spec.CompanionCliSubcmd.VarName }}Command()
 	{{- end }}
 }
 `
