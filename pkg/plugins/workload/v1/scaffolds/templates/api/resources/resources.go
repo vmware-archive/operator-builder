@@ -77,7 +77,7 @@ import (
 )
 
 // CreateFuncs is an array of functions that are called to create the child resources for the controller
-// in memroy during the reconciliation loop prior to persisting the changes or updates to the Kubernetes
+// in memory during the reconciliation loop prior to persisting the changes or updates to the Kubernetes
 // database.
 var CreateFuncs = []func(
 	*{{ .Resource.ImportAlias }}.{{ .Resource.Kind }},
