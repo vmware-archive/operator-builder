@@ -98,7 +98,6 @@ var CreateFuncs = []func(
 // can own custom resources of that type.  Without the InitFunc the controller will
 // crash loop because when it tries to own a non-existent resource type during manager
 // setup, it will fail.
-// as part of the reconciliation loop.  Because the CRD does not exist, the API has not been extended
 // properly for the controller to own the affiliated resource, and it will fail with an error.
 var InitFuncs = []func(
 	*{{ .Resource.ImportAlias }}.{{ .Resource.Kind }},
