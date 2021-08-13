@@ -28,21 +28,13 @@ const resourcePersistTemplate = `{{ .Boilerplate }}
 package phases
 
 import (
+	"time"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"{{ .Repo }}/apis/common"
 )
-
-func persistExitSuccessCondition(objectName string, objectKind string) *common.Condition {
-	return &common.Condition{
-		Phase:   common.ConditionPhaseCreateResources,
-		Type:    common.ConditionTypeReconciling,
-		Status:  common.ConditionStatusTrue,
-		Message: "Created " + objectName + " " + objectKind,
-	}
-}
 
 // PersistResourcePhase.Execute executes persisting resources to the Kubernetes database.
 func (phase *PersistResourcePhase) Execute(resource *ComponentResource) (ctrl.Result, bool, error) {
@@ -52,14 +44,21 @@ func (phase *PersistResourcePhase) Execute(resource *ComponentResource) (ctrl.Re
 	}
 
 	// if we are replacing resources, use the replaced resources, else use the original resources
+	var resources []metav1.Object
 	if len(resource.ReplacedResources) > 0 {
-		for _, replacedResource := range resource.ReplacedResources {
-			if err := persistResource(resource.ComponentReconciler, replacedResource); err != nil {
-				return ctrl.Result{}, false, err
-			}
-		}
+		resources = resource.ReplacedResources
 	} else {
-		if err := persistResource(resource.ComponentReconciler, resource.OriginalResource); err != nil {
+		resources = []metav1.Object{resource.OriginalResource}
+	}
+
+	// loop through the resources and persist as necessary
+	for _, resourceObject := range resources {
+		if err := persistResource(
+			resource.ComponentReconciler,
+			resourceObject,
+			resource.ResourceCondition,
+			phase,
+		); err != nil {
 			return ctrl.Result{}, false, err
 		}
 	}
@@ -71,22 +70,25 @@ func (phase *PersistResourcePhase) Execute(resource *ComponentResource) (ctrl.Re
 func persistResource(
 	r common.ComponentReconciler,
 	resource metav1.Object,
+	condition common.ResourceCondition,
+	phase *PersistResourcePhase,
 ) error {
-	objectName := resource.(metav1.Object).GetName()
-	objectKind := resource.(runtime.Object).GetObjectKind().GroupVersionKind().Kind
-
 	// persist resource
 	if err := r.CreateOrUpdate(resource); err != nil {
 		if isOptimisticLockError(err) {
 			return nil
 		} else {
-			r.GetLogger().V(0).Info("failed persisting object of kind: " + objectKind + " with name: " + objectName)
-
 			return err
 		}
 	}
 
+	// set attributes related to the persistence of this child resource
+	condition.LastResourcePhase = getResourcePhaseName(phase)
+	condition.LastModified = time.Now().UTC().String()
+	condition.Message = "resource created successfully"
+	condition.Created = true
+
 	// update the condition to notify that we have created a child resource
-	return updateStatusConditions(r, persistExitSuccessCondition(objectName, objectKind))
+	return updateResourceConditions(r, &condition)
 }
 `

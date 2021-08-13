@@ -94,10 +94,10 @@ type {{ .Resource.Kind }}Status struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	Created               bool               ` + "`" + `json:"created,omitempty"` + "`" + `
-	DependenciesSatisfied bool               ` + "`" + `json:"dependenciesSatisfied,omitempty"` + "`" + `
-	Conditions            []common.Condition ` + "`" + `json:"conditions,omitempty"` + "`" + `
-	Resources             []common.Resource  ` + "`" + `json:"resources,omitempty"` + "`" + `
+	Created               bool                       ` + "`" + `json:"created,omitempty"` + "`" + `
+	DependenciesSatisfied bool                       ` + "`" + `json:"dependenciesSatisfied,omitempty"` + "`" + `
+	Conditions            []common.PhaseCondition    ` + "`" + `json:"conditions,omitempty" ` + "`" + `
+	ResourceConditions    []common.ResourceCondition ` + "`" + `json:"resourceConditions,omitempty" ` + "`" + `
 }
 
 // +kubebuilder:object:root=true
@@ -147,14 +147,44 @@ func (component *{{ .Resource.Kind }}) SetDependencyStatus(dependencyStatus bool
 }
 {{ end }}
 
-// GetStatusConditions returns the status conditions for a component.
-func (component {{ .Resource.Kind }}) GetStatusConditions() []common.Condition {
+// GetPhaseConditions returns the phase conditions for a component.
+func (component {{ .Resource.Kind }}) GetPhaseConditions() []common.PhaseCondition {
 	return component.Status.Conditions
 }
 
-// SetStatusConditions sets the status conditions for a component.
-func (component *{{ .Resource.Kind }}) SetStatusConditions(condition common.Condition) {
+// SetPhaseCondition sets the phase conditions for a component.
+func (component *{{ .Resource.Kind }}) SetPhaseCondition(condition common.PhaseCondition) {
 	component.Status.Conditions = append(component.Status.Conditions, condition)
+}
+
+// GetResourceConditions returns the phase conditions for a component.
+func (component {{ .Resource.Kind }}) GetResourceConditions() []common.ResourceCondition {
+	return component.Status.ResourceConditions
+}
+
+// SetResourceCondition sets the phase conditions for a component.
+func (component *{{ .Resource.Kind }}) SetResourceCondition(condition common.ResourceCondition) {
+
+	var found bool
+	var foundIndex int
+
+	for i, currentCondition := range component.GetResourceConditions() {
+		// find a condition with a matching gvk and name/namespace
+		if currentCondition.Group == condition.Group && currentCondition.Version == condition.Version && currentCondition.Kind == condition.Kind {
+			if currentCondition.Name == condition.Name && currentCondition.Namespace == condition.Namespace {
+				found = true
+				foundIndex = i
+
+				break
+			}
+		}
+	}
+
+	if found {
+		component.Status.ResourceConditions[foundIndex] = condition
+	} else {
+		component.Status.ResourceConditions = append(component.Status.ResourceConditions, condition)
+	}
 }
 
 {{- if not .IsStandalone }}

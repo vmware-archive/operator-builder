@@ -51,13 +51,15 @@ type Component interface {
 	{{ end -}}
 	GetReadyStatus() bool
 	GetDependencyStatus() bool
-	GetStatusConditions() []Condition
+	GetPhaseConditions() []PhaseCondition
+	GetResourceConditions() []ResourceCondition
 
 	{{- if not .IsStandalone }}
 	SetReadyStatus(bool)
 	SetDependencyStatus(bool)
 	{{ end -}}
-	SetStatusConditions(Condition)
+	SetPhaseCondition(PhaseCondition)
+	SetResourceCondition(ResourceCondition)
 }
 
 type ComponentReconciler interface {

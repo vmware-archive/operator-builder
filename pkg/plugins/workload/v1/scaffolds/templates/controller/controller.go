@@ -142,7 +142,7 @@ func (r *{{ .Resource.Kind }}Reconciler) Reconcile(ctx context.Context, req ctrl
 	for _, phase := range controllers.Phases(r.Component) {
 		r.GetLogger().V(7).Info(fmt.Sprintf("enter phase: %T", phase))
 		proceed, err := phase.Execute(r)
-		result, err := phases.HandlePhaseExit(r, phase.(phases.PhaseHandler), proceed, err)
+		result, err := phases.HandlePhaseExit(r, phase, proceed, err)
 
 		// return only if we have an error or are told not to proceed
 		if err != nil || !proceed {
