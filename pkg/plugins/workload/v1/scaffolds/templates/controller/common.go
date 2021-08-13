@@ -110,7 +110,7 @@ func reconcileUpdaters() []string {
 
 // ResourcePredicates returns the filters which are used to filter out the common reconcile events
 // prior to reconciling the child resource of a component.
-func ResourcePredicates() predicate.Predicate {
+func ResourcePredicates(r common.ComponentReconciler) predicate.Predicate {
 	return predicate.Funcs{
 		UpdateFunc: func(e event.UpdateEvent) bool {
 			// return immediately if the managed fields are the same
@@ -151,11 +151,11 @@ func ResourcePredicates() predicate.Predicate {
 		// TODO: we will prevent deletions from child objects.  This will end up being confusing to the
 		// user, as this will result in a successful "kubectl delete" command with nothing else happening.
 		// Need to add a valdiating webhook to give feedback to the user.
-		DeleteFunc: func(e event.DeleteEvent) bool {
-			r.GetLogger().V(0).Info(fmt.Sprintf("WARN: skipping deletion of resource; kind: [%s], name: [%s], namespace: [%s]",
-				resource.GetObjectKind().GroupVersionKind().Kind, resource.GetName(), resource.GetNamespace()))
-			return false
-		},
+		// DeleteFunc: func(e event.DeleteEvent) bool {
+		// 	r.GetLogger().V(0).Info(fmt.Sprintf("WARN: skipping deletion of resource; kind: [%s], name: [%s], namespace: [%s]",
+		// 		e.Object.GetObjectKind().GroupVersionKind().Kind, e.Object.GetName(), e.Object.GetNamespace()))
+		// 	return false
+		// },
 		GenericFunc: func(e event.GenericEvent) bool {
 			// do not run reconciliation on unknown events
 			return false
@@ -209,7 +209,7 @@ func Watch(
 				IsController: true,
 				OwnerType:    r.GetComponent().(runtime.Object),
 			},
-			ResourcePredicates(),
+			ResourcePredicates(r),
 		); err != nil {
 			return err
 		}
