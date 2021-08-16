@@ -22,8 +22,8 @@ type CmdInit struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
 
-	CliRootCmd        string
-	CliRootCmdVarName string
+	RootCmd        string
+	RootCmdVarName string
 
 	InitCommandName  string
 	InitCommandDescr string
@@ -32,7 +32,7 @@ type CmdInit struct {
 }
 
 func (f *CmdInit) SetTemplateDefaults() error {
-	f.Path = filepath.Join("cmd", f.CliRootCmd, "commands", "init.go")
+	f.Path = filepath.Join("cmd", f.RootCmd, "commands", "init.go")
 
 	f.InitCommandName = initCommandName
 	f.InitCommandDescr = initCommandDescr
@@ -55,7 +55,7 @@ type initCommand struct {
 }
 
 // newInitCommand creates a new instance of the init subcommand.
-func (c *{{ .CliRootCmdVarName }}Command) newInitCommand() {
+func (c *{{ .RootCmdVarName }}Command) newInitCommand() {
 	initCmd := &initCommand{}
 
 	initCmd.Command = &cobra.Command{

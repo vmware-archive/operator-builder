@@ -59,19 +59,19 @@ func (s *initScaffolder) Scaffold() error {
 	if s.workload.HasRootCmdName() {
 		err = scaffold.Execute(
 			&cli.Main{
-				CliRootCmd:        s.workload.GetRootCmdName(),
-				CliRootCmdVarName: utils.ToPascalCase(s.workload.GetRootCmdName()),
+				RootCmd:        s.workload.GetRootCmdName(),
+				RootCmdVarName: utils.ToPascalCase(s.workload.GetRootCmdName()),
 			},
 			&cli.CmdRoot{
-				CliRootCmd:         s.workload.GetRootCmdName(),
-				CliRootCmdVarName:  utils.ToPascalCase(s.workload.GetRootCmdName()),
-				CliRootDescription: s.workload.GetRootCmdDescr(),
+				RootCmd:            s.workload.GetRootCmdName(),
+				RootCmdVarName:     utils.ToPascalCase(s.workload.GetRootCmdName()),
+				RootCmdDescription: s.workload.GetRootCmdDescr(),
 			},
 			&templates.Makefile{
-				CliRootCmd: s.workload.GetRootCmdName(),
+				RootCmd: s.workload.GetRootCmdName(),
 			},
 			&templates.Project{
-				CliRootCmd: s.workload.GetRootCmdName(),
+				RootCmd: s.workload.GetRootCmdName(),
 			},
 		)
 		if err != nil {

@@ -91,14 +91,14 @@ func (s *apiScaffolder) Scaffold() error {
 		// build a subcommand for standalone, e.g. `webstorectl init`
 		err = scaffold.Execute(
 			&cli.CmdInitSub{
-				CliRootCmd:        s.project.CliRootCommandName,
-				CliRootCmdVarName: utils.ToPascalCase(s.project.CliRootCommandName),
-				CmdCmdName:        s.workload.GetSubcommandName(),
-				CmdCmdDescr:       s.workload.GetSubcommandDescr(),
-				CmdCmdVarName:     s.workload.GetSubcommandVarName(),
-				CmdCmdFileName:    s.workload.GetSubcommandFileName(),
-				SpecFields:        s.workload.GetAPISpecFields(),
-				IsComponent:       s.workload.IsComponent(),
+				RootCmd:        s.project.CliRootCommandName,
+				RootCmdVarName: utils.ToPascalCase(s.project.CliRootCommandName),
+				SubCmdName:     s.workload.GetSubcommandName(),
+				SubCmdDescr:    s.workload.GetSubcommandDescr(),
+				SubCmdVarName:  s.workload.GetSubcommandVarName(),
+				SubCmdFileName: s.workload.GetSubcommandFileName(),
+				SpecFields:     s.workload.GetAPISpecFields(),
+				IsComponent:    s.workload.IsComponent(),
 				ComponentResource: s.workload.GetComponentResource(
 					s.config.GetDomain(),
 					s.config.GetRepository(),
@@ -106,12 +106,12 @@ func (s *apiScaffolder) Scaffold() error {
 				),
 			},
 			&cli.CmdGenerateSub{
-				PackageName:       s.workload.GetPackageName(),
-				CliRootCmd:        s.project.CliRootCommandName,
-				CliRootCmdVarName: utils.ToPascalCase(s.project.CliRootCommandName),
-				CmdCmdName:        s.workload.GetSubcommandName(),
-				CmdCmdDescr:       s.workload.GetSubcommandDescr(),
-				IsComponent:       s.workload.IsComponent(),
+				PackageName:    s.workload.GetPackageName(),
+				RootCmd:        s.project.CliRootCommandName,
+				RootCmdVarName: utils.ToPascalCase(s.project.CliRootCommandName),
+				SubCmdName:     s.workload.GetSubcommandName(),
+				SubCmdDescr:    s.workload.GetSubcommandDescr(),
+				IsComponent:    s.workload.IsComponent(),
 			},
 		)
 		if err != nil {
@@ -120,14 +120,14 @@ func (s *apiScaffolder) Scaffold() error {
 	} else if s.workload.IsCollection() && s.workload.GetRootcommandName() != "" {
 		err = scaffold.Execute(
 			&cli.CmdInit{
-				CliRootCmd:        s.project.CliRootCommandName,
-				CliRootCmdVarName: utils.ToPascalCase(s.project.CliRootCommandName),
-				Collection:        s.workload.(*workloadv1.WorkloadCollection),
+				RootCmd:        s.project.CliRootCommandName,
+				RootCmdVarName: utils.ToPascalCase(s.project.CliRootCommandName),
+				Collection:     s.workload.(*workloadv1.WorkloadCollection),
 			},
 			&cli.CmdGenerate{
-				CliRootCmd:        s.project.CliRootCommandName,
-				CliRootCmdVarName: utils.ToPascalCase(s.project.CliRootCommandName),
-				Collection:        s.workload.(*workloadv1.WorkloadCollection),
+				RootCmd:        s.project.CliRootCommandName,
+				RootCmdVarName: utils.ToPascalCase(s.project.CliRootCommandName),
+				Collection:     s.workload.(*workloadv1.WorkloadCollection),
 			},
 		)
 		if err != nil {
@@ -139,14 +139,14 @@ func (s *apiScaffolder) Scaffold() error {
 				// build a subcommand for the component, e.g. `cnpctl init ingress`
 				err = scaffold.Execute(
 					&cli.CmdInitSub{
-						CliRootCmd:        s.project.CliRootCommandName,
-						CliRootCmdVarName: utils.ToPascalCase(s.project.CliRootCommandName),
-						CmdCmdName:        component.GetSubcommandName(),
-						CmdCmdDescr:       component.GetSubcommandDescr(),
-						CmdCmdVarName:     component.GetSubcommandVarName(),
-						CmdCmdFileName:    component.GetSubcommandFileName(),
-						SpecFields:        component.GetAPISpecFields(),
-						IsComponent:       component.IsComponent(),
+						RootCmd:        s.project.CliRootCommandName,
+						RootCmdVarName: utils.ToPascalCase(s.project.CliRootCommandName),
+						SubCmdName:     component.GetSubcommandName(),
+						SubCmdDescr:    component.GetSubcommandDescr(),
+						SubCmdVarName:  component.GetSubcommandVarName(),
+						SubCmdFileName: component.GetSubcommandFileName(),
+						SpecFields:     component.GetAPISpecFields(),
+						IsComponent:    component.IsComponent(),
 						ComponentResource: component.GetComponentResource(
 							s.config.GetDomain(),
 							s.config.GetRepository(),
@@ -154,14 +154,14 @@ func (s *apiScaffolder) Scaffold() error {
 						),
 					},
 					&cli.CmdGenerateSub{
-						PackageName:       component.GetPackageName(),
-						CliRootCmd:        s.project.CliRootCommandName,
-						CliRootCmdVarName: utils.ToPascalCase(s.project.CliRootCommandName),
-						CmdCmdName:        component.GetSubcommandName(),
-						CmdCmdDescr:       component.GetSubcommandDescr(),
-						CmdCmdVarName:     component.GetSubcommandVarName(),
-						CmdCmdFileName:    component.GetSubcommandFileName(),
-						IsComponent:       component.IsComponent(),
+						PackageName:    component.GetPackageName(),
+						RootCmd:        s.project.CliRootCommandName,
+						RootCmdVarName: utils.ToPascalCase(s.project.CliRootCommandName),
+						SubCmdName:     component.GetSubcommandName(),
+						SubCmdDescr:    component.GetSubcommandDescr(),
+						SubCmdVarName:  component.GetSubcommandVarName(),
+						SubCmdFileName: component.GetSubcommandFileName(),
+						IsComponent:    component.IsComponent(),
 						ComponentResource: component.GetComponentResource(
 							s.config.GetDomain(),
 							s.config.GetRepository(),
@@ -179,7 +179,7 @@ func (s *apiScaffolder) Scaffold() error {
 
 	err = scaffold.Execute(
 		&cli.CmdRootUpdater{
-			CliRootCmd:      s.project.CliRootCommandName,
+			RootCmd:         s.project.CliRootCommandName,
 			InitCommand:     true,
 			GenerateCommand: true,
 		},

@@ -21,12 +21,12 @@ type CmdGenerateSub struct {
 	machinery.ResourceMixin
 
 	PackageName       string
-	CliRootCmd        string
-	CliRootCmdVarName string
-	CmdCmdName        string
-	CmdCmdDescr       string
-	CmdCmdVarName     string
-	CmdCmdFileName    string
+	RootCmd           string
+	RootCmdVarName    string
+	SubCmdName        string
+	SubCmdDescr       string
+	SubCmdVarName     string
+	SubCmdFileName    string
 	IsComponent       bool
 	ComponentResource *resource.Resource
 	Collection        *workloadv1.WorkloadCollection
@@ -38,12 +38,12 @@ type CmdGenerateSub struct {
 func (f *CmdGenerateSub) SetTemplateDefaults() error {
 	if f.IsComponent {
 		f.Path = filepath.Join(
-			"cmd", f.CliRootCmd, "commands",
-			fmt.Sprintf("%s_generate.go", f.CmdCmdFileName),
+			"cmd", f.RootCmd, "commands",
+			fmt.Sprintf("%s_generate.go", f.SubCmdFileName),
 		)
 		f.Resource = f.ComponentResource
 	} else {
-		f.Path = filepath.Join("cmd", f.CliRootCmd, "commands", "generate.go")
+		f.Path = filepath.Join("cmd", f.RootCmd, "commands", "generate.go")
 	}
 
 	f.GenerateCommandName = generateCommandName
@@ -86,7 +86,7 @@ type generateCommand struct {
 {{- end }}
 
 // generate creates child resource manifests from a workload's custom resource.
-func (g *generateCommand) generate{{ .CmdCmdVarName }}(cmd *cobra.Command, args []string) error {
+func (g *generateCommand) generate{{ .SubCmdVarName }}(cmd *cobra.Command, args []string) error {
 	{{- if .IsComponent }}
 	// component workload
 	wkFilename, _ := filepath.Abs(g.workloadManifest)
@@ -175,30 +175,30 @@ func (g *generateCommand) generate{{ .CmdCmdVarName }}(cmd *cobra.Command, args 
 
 {{ if not .IsComponent -}}
 // newGenerateCommand creates a new instance of the generate subcommand.
-func (c *{{ .CliRootCmdVarName }}Command) newGenerateCommand() {
+func (c *{{ .RootCmdVarName }}Command) newGenerateCommand() {
 	g := &generateCommand{}
 {{- else }}
-// newGenerate{{ .CmdCmdVarName }}Command creates a new instance of the generaete{{ .CmdCmdVarName }} subcommand.
-func (g *generateCommand) newGenerate{{ .CmdCmdVarName }}Command() {
+// newGenerate{{ .SubCmdVarName }}Command creates a new instance of the generaete{{ .SubCmdVarName }} subcommand.
+func (g *generateCommand) newGenerate{{ .SubCmdVarName }}Command() {
 {{- end }}
-	generate{{ .CmdCmdVarName }}Cmd := &cobra.Command{
+	generate{{ .SubCmdVarName }}Cmd := &cobra.Command{
 		{{ if .IsComponent -}}
-		Use:   "{{ .CmdCmdName }}",
-		Short: "{{ .CmdCmdDescr }}",
-		Long: "{{ .CmdCmdDescr }}",
+		Use:   "{{ .SubCmdName }}",
+		Short: "{{ .SubCmdDescr }}",
+		Long: "{{ .SubCmdDescr }}",
 		{{- else -}}
 		Use:   "{{ .GenerateCommandName }}",
 		Short: "{{ .GenerateCommandDescr }}",
 		Long: "{{ .GenerateCommandDescr }}",
 		{{- end }}
-		RunE: g.generate{{ .CmdCmdVarName }},
+		RunE: g.generate{{ .SubCmdVarName }},
 	}
 
 	{{ if .IsComponent -}}
-	g.AddCommand(generate{{ .CmdCmdVarName }}Cmd)
+	g.AddCommand(generate{{ .SubCmdVarName }}Cmd)
 	{{- else -}}
 
-	generate{{ .CmdCmdVarName }}Cmd.Flags().StringVarP(
+	generate{{ .SubCmdVarName }}Cmd.Flags().StringVarP(
 		&g.workloadManifest,
 		"workload-manifest",
 		"w",
@@ -206,7 +206,7 @@ func (g *generateCommand) newGenerate{{ .CmdCmdVarName }}Command() {
 		"Filepath to the workload manifest to generate child resources for.",
 	)
 
-	c.AddCommand(generate{{ .CmdCmdVarName }}Cmd)
+	c.AddCommand(generate{{ .SubCmdVarName }}Cmd)
 	{{- end -}}
 }
 `

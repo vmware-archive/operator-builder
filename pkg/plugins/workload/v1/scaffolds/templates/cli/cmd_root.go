@@ -17,15 +17,15 @@ type CmdRoot struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
 
-	// CliRootCmd is the root command for the companion CLI
-	CliRootCmd        string
-	CliRootCmdVarName string
-	// CliRootDescription is the command description given by the CLI help info
-	CliRootDescription string
+	// RootCmd is the root command for the companion CLI
+	RootCmd        string
+	RootCmdVarName string
+	// RootCmdDescription is the command description given by the CLI help info
+	RootCmdDescription string
 }
 
 func (f *CmdRoot) SetTemplateDefaults() error {
-	f.Path = filepath.Join("cmd", f.CliRootCmd, "commands", "root.go")
+	f.Path = filepath.Join("cmd", f.RootCmd, "commands", "root.go")
 
 	f.TemplateBody = fmt.Sprintf(CmdRootTemplate, machinery.NewMarkerFor(f.Path, subcommandsMarker))
 
@@ -38,7 +38,7 @@ type CmdRootUpdater struct { //nolint:maligned
 	machinery.MultiGroupMixin
 	machinery.ResourceMixin
 
-	CliRootCmd string
+	RootCmd string
 
 	// Flags to indicate which parts need to be included when updating the file
 	InitCommand, GenerateCommand bool
@@ -46,7 +46,7 @@ type CmdRootUpdater struct { //nolint:maligned
 
 // GetPath implements file.Builder interface.
 func (f *CmdRootUpdater) GetPath() string {
-	return filepath.Join("cmd", f.CliRootCmd, "commands", "root.go")
+	return filepath.Join("cmd", f.RootCmd, "commands", "root.go")
 }
 
 // GetIfExistsAction implements file.Builder interface.
@@ -106,18 +106,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// {{ .CliRootCmdVarName }}Command represents the base command when called without any subcommands.
-type {{ .CliRootCmdVarName }}Command struct {
+// {{ .RootCmdVarName }}Command represents the base command when called without any subcommands.
+type {{ .RootCmdVarName }}Command struct {
 	*cobra.Command
 }
 
-// New{{ .CliRootCmdVarName }}Command returns an instance of the {{ .CliRootCmdVarName }}Command.
-func New{{ .CliRootCmdVarName }}Command() *{{ .CliRootCmdVarName }}Command {
-	c := &{{ .CliRootCmdVarName }}Command{
+// New{{ .RootCmdVarName }}Command returns an instance of the {{ .RootCmdVarName }}Command.
+func New{{ .RootCmdVarName }}Command() *{{ .RootCmdVarName }}Command {
+	c := &{{ .RootCmdVarName }}Command{
 		Command: &cobra.Command{
-			Use:   "{{ .CliRootCmd }}",
-			Short: "{{ .CliRootDescription }}",
-			Long:  "{{ .CliRootDescription }}",
+			Use:   "{{ .RootCmd }}",
+			Short: "{{ .RootCmdDescription }}",
+			Long:  "{{ .RootCmdDescription }}",
 		},
 	}
 
@@ -128,12 +128,12 @@ func New{{ .CliRootCmdVarName }}Command() *{{ .CliRootCmdVarName }}Command {
 
 // Run represents the main entry point into the command
 // This is called by main.main() to execute the root command.
-func (c *{{ .CliRootCmdVarName }}Command) Run() {
+func (c *{{ .RootCmdVarName }}Command) Run() {
 	cobra.CheckErr(c.Execute())
 }
 
 // addSubCommands adds any additional subCommands to the root command.
-func (c *{{ .CliRootCmdVarName }}Command) addSubCommands() {
+func (c *{{ .RootCmdVarName }}Command) addSubCommands() {
 	%s
 }
 `

@@ -22,8 +22,8 @@ type CmdGenerate struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
 
-	CliRootCmd        string
-	CliRootCmdVarName string
+	RootCmd        string
+	RootCmdVarName string
 
 	GenerateCommandName  string
 	GenerateCommandDescr string
@@ -31,7 +31,7 @@ type CmdGenerate struct {
 }
 
 func (f *CmdGenerate) SetTemplateDefaults() error {
-	f.Path = filepath.Join("cmd", f.CliRootCmd, "commands", "generate.go")
+	f.Path = filepath.Join("cmd", f.RootCmd, "commands", "generate.go")
 
 	f.GenerateCommandName = generateCommandName
 	f.GenerateCommandDescr = generateCommandDescr
@@ -56,7 +56,7 @@ type generateCommand struct{
 }
 
 // newGenerateCommand creates a new instance of the generate subcommand.
-func (c *{{ .CliRootCmdVarName }}Command) newGenerateCommand() {
+func (c *{{ .RootCmdVarName }}Command) newGenerateCommand() {
 	generateCmd := &generateCommand{}
 
 	generateCmd.Command = &cobra.Command{

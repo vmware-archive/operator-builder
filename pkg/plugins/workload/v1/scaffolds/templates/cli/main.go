@@ -14,13 +14,13 @@ type Main struct {
 	machinery.BoilerplateMixin
 	machinery.RepositoryMixin
 
-	// CliRootCmd is the root command for the companion CLI
-	CliRootCmd        string
-	CliRootCmdVarName string
+	// RootCmd is the root command for the companion CLI
+	RootCmd        string
+	RootCmdVarName string
 }
 
 func (f *Main) SetTemplateDefaults() error {
-	f.Path = filepath.Join("cmd", f.CliRootCmd, "main.go")
+	f.Path = filepath.Join("cmd", f.RootCmd, "main.go")
 
 	f.TemplateBody = cliMainTemplate
 
@@ -32,11 +32,11 @@ const cliMainTemplate = `{{ .Boilerplate }}
 package main
 
 import (
-	"{{ .Repo }}/cmd/{{ .CliRootCmd }}/commands"
+	"{{ .Repo }}/cmd/{{ .RootCmd }}/commands"
 )
 
 func main() {
-	{{ .CliRootCmd }} := commands.New{{ .CliRootCmdVarName }}Command()
-	{{ .CliRootCmd }}.Run()
+	{{ .RootCmd }} := commands.New{{ .RootCmdVarName }}Command()
+	{{ .RootCmd }}.Run()
 }
 `

@@ -19,12 +19,12 @@ type CmdInitSub struct {
 	machinery.BoilerplateMixin
 	machinery.ResourceMixin
 
-	CliRootCmd        string
-	CliRootCmdVarName string
-	CmdCmdName        string
-	CmdCmdDescr       string
-	CmdCmdVarName     string
-	CmdCmdFileName    string
+	RootCmd           string
+	RootCmdVarName    string
+	SubCmdName        string
+	SubCmdDescr       string
+	SubCmdVarName     string
+	SubCmdFileName    string
 	SpecFields        *[]workloadv1.APISpecField
 	IsComponent       bool
 	ComponentResource *resource.Resource
@@ -36,12 +36,12 @@ type CmdInitSub struct {
 func (f *CmdInitSub) SetTemplateDefaults() error {
 	if f.IsComponent {
 		f.Path = filepath.Join(
-			"cmd", f.CliRootCmd, "commands",
-			fmt.Sprintf("%s_init.go", f.CmdCmdFileName),
+			"cmd", f.RootCmd, "commands",
+			fmt.Sprintf("%s_init.go", f.SubCmdFileName),
 		)
 		f.Resource = f.ComponentResource
 	} else {
-		f.Path = filepath.Join("cmd", f.CliRootCmd, "commands", "init.go")
+		f.Path = filepath.Join("cmd", f.RootCmd, "commands", "init.go")
 	}
 
 	f.InitCommandName = initCommandName
@@ -63,7 +63,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const defaultManifest{{ .CmdCmdVarName }} = ` + "`" + `apiVersion: {{ .Resource.QualifiedGroup }}/{{ .Resource.Version }}
+const defaultManifest{{ .SubCmdVarName }} = ` + "`" + `apiVersion: {{ .Resource.QualifiedGroup }}/{{ .Resource.Version }}
 kind: {{ .Resource.Kind }}
 metadata:
   name: {{ lower .Resource.Kind }}-sample
@@ -75,16 +75,16 @@ spec:
 
 {{ if not .IsComponent -}}
 // newInitCommand creates a new instance of the init subcommand.
-func (c *{{ .CliRootCmdVarName }}Command) newInitCommand() {
+func (c *{{ .RootCmdVarName }}Command) newInitCommand() {
 {{- else }}
-// newInit{{ .CmdCmdVarName }}Command creates a new instance of the  init{{ .CmdCmdVarName }} subcommand.
-func (i *initCommand) newInit{{ .CmdCmdVarName }}Command() {
+// newInit{{ .SubCmdVarName }}Command creates a new instance of the  init{{ .SubCmdVarName }} subcommand.
+func (i *initCommand) newInit{{ .SubCmdVarName }}Command() {
 {{- end }}
-	init{{ .CmdCmdVarName }}Cmd := &cobra.Command{
+	init{{ .SubCmdVarName }}Cmd := &cobra.Command{
 		{{ if .IsComponent -}}
-		Use:   "{{ .CmdCmdName }}",
-		Short: "{{ .CmdCmdDescr }}",
-		Long: "{{ .CmdCmdDescr }}",
+		Use:   "{{ .SubCmdName }}",
+		Short: "{{ .SubCmdDescr }}",
+		Long: "{{ .SubCmdDescr }}",
 		{{- else -}}
 		Use:   "{{ .InitCommandName }}",
 		Short: "{{ .InitCommandDescr }}",
@@ -93,7 +93,7 @@ func (i *initCommand) newInit{{ .CmdCmdVarName }}Command() {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			outputStream := os.Stdout
 
-			if _, err := outputStream.WriteString(defaultManifest{{ .CmdCmdVarName }}); err != nil {
+			if _, err := outputStream.WriteString(defaultManifest{{ .SubCmdVarName }}); err != nil {
 				return fmt.Errorf("failed to write outout, %w", err)
 			}
 
@@ -102,9 +102,9 @@ func (i *initCommand) newInit{{ .CmdCmdVarName }}Command() {
 	}
 
 	{{ if .IsComponent -}}
-	i.AddCommand(init{{ .CmdCmdVarName }}Cmd)
+	i.AddCommand(init{{ .SubCmdVarName }}Cmd)
 	{{- else -}}
-	c.AddCommand(init{{ .CmdCmdVarName }}Cmd)
+	c.AddCommand(init{{ .SubCmdVarName }}Cmd)
 	{{- end -}}
 }
 `
