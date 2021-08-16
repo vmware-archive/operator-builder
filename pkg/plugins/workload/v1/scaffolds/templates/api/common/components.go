@@ -35,25 +35,25 @@ import (
 
 	"github.com/go-logr/logr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	{{- if not .IsStandalone }}
-	"k8s.io/apimachinery/pkg/runtime"
+	{{ if not .IsStandalone -}}
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	{{ end -}}
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 )
 
 type Component interface {
-	{{- if not .IsStandalone }}
+	{{ if not .IsStandalone -}}
 	GetComponentGVK() schema.GroupVersionKind
 	GetDependencies() []Component
+	GetDependencyStatus() bool
 	{{ end -}}
 	GetReadyStatus() bool
-	GetDependencyStatus() bool
 	GetStatusConditions() []Condition
 
-	{{- if not .IsStandalone }}
+	{{ if not .IsStandalone -}}
 	SetReadyStatus(bool)
 	SetDependencyStatus(bool)
 	{{ end -}}
@@ -75,14 +75,14 @@ type ComponentReconciler interface {
 	// component and child resource methods
 	CreateOrUpdate(metav1.Object) error
 	UpdateStatus() error
-	{{- if not .IsStandalone }}
 
 	// methods from the underlying client package
+	Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error
+	Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error
+	{{ if not .IsStandalone -}}
 	Get(context.Context, types.NamespacedName, client.Object) error
 	List(context.Context, client.ObjectList, ...client.ListOption) error
-	Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error
 	Update(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error
-	Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error
 
 	// custom methods which are managed by consumers
 	CheckReady() (bool, error)
