@@ -177,6 +177,17 @@ func (s *apiScaffolder) Scaffold() error {
 		}
 	}
 
+	err = scaffold.Execute(
+		&cli.CmdRootUpdater{
+			CliRootCmd:      s.project.CliRootCommandName,
+			InitCommand:     true,
+			GenerateCommand: true,
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("error updating root.go: %v", err)
+	}
+
 	// API types
 	if s.workload.IsStandalone() {
 		err = scaffold.Execute(
