@@ -65,7 +65,7 @@ func (c *{{ .RootCmdVarName }}Command) newGenerateCommand() {
 		Long: "{{ .GenerateCommandDescr }}",
 	}
 
-	generateCmd.Command.Flags().StringVarP(
+	generateCmd.Command.PersistentFlags().StringVarP(
 		&generateCmd.workloadManifest,
 		"workload-manifest",
 		"w",
