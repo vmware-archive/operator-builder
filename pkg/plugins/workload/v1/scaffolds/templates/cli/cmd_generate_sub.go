@@ -160,7 +160,7 @@ func (g *generateCommand) generate{{ .SubCmdVarName }}(cmd *cobra.Command, args 
 	outputStream := os.Stdout
 
 	for _, o := range resourceObjects {
-		if _, err := outputStream.WriteString("---"); err != nil {
+		if _, err := outputStream.WriteString("---\n"); err != nil {
 			return fmt.Errorf("failed to write output, %w", err)
 		}
 
