@@ -159,7 +159,7 @@ func (r *{{ .Resource.Kind }}Reconciler) Reconcile(ctx context.Context, req ctrl
 
 // GetResources will create and return the resources in memory.
 func (r *{{ .Resource.Kind }}Reconciler) GetResources(parent common.Component) ([]metav1.Object, error) {
-{{ if .HasChildResources }}
+{{- if .HasChildResources }}
 	var resourceObjects []metav1.Object
 
 	// create resources in memory
