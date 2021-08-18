@@ -20,9 +20,9 @@ type Types struct {
 	machinery.RepositoryMixin
 	machinery.ResourceMixin
 
-	SpecFields    *[]workloadv1.APISpecField
+	SpecFields    []*workloadv1.APISpecField
 	ClusterScoped bool
-	Dependencies  *[]workloadv1.ComponentWorkload
+	Dependencies  []*workloadv1.ComponentWorkload
 	IsStandalone  bool
 }
 

@@ -129,7 +129,7 @@ func (c *WorkloadCollection) IsCollection() bool {
 }
 
 func (c *WorkloadCollection) SetSpecFields(workloadPath string) error {
-	var specFields []APISpecField
+	var specFields []*APISpecField
 
 	for _, component := range c.Spec.Components {
 		componentSpecFields, err := processMarkers(
@@ -142,7 +142,7 @@ func (c *WorkloadCollection) SetSpecFields(workloadPath string) error {
 		}
 
 		// add to spec fields if not present
-		for _, csf := range *componentSpecFields {
+		for _, csf := range componentSpecFields {
 			fieldPresent := false
 
 			for i, sf := range specFields {
@@ -170,12 +170,12 @@ func (c *WorkloadCollection) SetResources(workloadPath string) error {
 	return errors.New("Workload collections do not have child resources to be set")
 }
 
-func (c *WorkloadCollection) GetDependencies() *[]ComponentWorkload {
-	return &[]ComponentWorkload{}
+func (c *WorkloadCollection) GetDependencies() []*ComponentWorkload {
+	return []*ComponentWorkload{}
 }
 
-func (c *WorkloadCollection) SetComponents(components *[]ComponentWorkload) error {
-	c.Spec.Components = *components
+func (c *WorkloadCollection) SetComponents(components []*ComponentWorkload) error {
+	c.Spec.Components = components
 
 	return nil
 }
@@ -185,8 +185,8 @@ func (*WorkloadCollection) HasChildResources() bool {
 	return false
 }
 
-func (c *WorkloadCollection) GetComponents() *[]ComponentWorkload {
-	return &c.Spec.Components
+func (c *WorkloadCollection) GetComponents() []*ComponentWorkload {
+	return c.Spec.Components
 }
 
 func (c *WorkloadCollection) GetSourceFiles() *[]SourceFile {
@@ -197,8 +197,8 @@ func (c *WorkloadCollection) GetFuncNames() (createFuncNames, initFuncNames []st
 	return getFuncNames(*c.GetSourceFiles())
 }
 
-func (c *WorkloadCollection) GetAPISpecFields() *[]APISpecField {
-	return &c.Spec.APISpecFields
+func (c *WorkloadCollection) GetAPISpecFields() []*APISpecField {
+	return c.Spec.APISpecFields
 }
 
 func (*WorkloadCollection) GetRBACRules() *[]RBACRule {

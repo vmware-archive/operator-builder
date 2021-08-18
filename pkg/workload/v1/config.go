@@ -63,7 +63,7 @@ func ProcessAPIConfig(workloadConfig string) (WorkloadAPIBuilder, error) {
 
 	var workload WorkloadAPIBuilder
 
-	var components []ComponentWorkload
+	var components []*ComponentWorkload
 
 	for kind := range workloads {
 		for _, w := range workloads[kind] {
@@ -91,7 +91,7 @@ func ProcessAPIConfig(workloadConfig string) (WorkloadAPIBuilder, error) {
 				}
 
 				v.SetNames()
-				components = append(components, *v)
+				components = append(components, v)
 			}
 		}
 	}
@@ -101,7 +101,7 @@ func ProcessAPIConfig(workloadConfig string) (WorkloadAPIBuilder, error) {
 	}
 
 	if len(workloads[WorkloadKindCollection]) == 1 {
-		if err := workload.SetComponents(&components); err != nil {
+		if err := workload.SetComponents(components); err != nil {
 			return nil, fmt.Errorf("%w", err)
 		}
 
@@ -258,7 +258,7 @@ func decodeKind(kind WorkloadKind, dc *yaml.Decoder) (WorkloadIdentifier, error)
 	}
 }
 
-func handleDependencies(components *[]ComponentWorkload) error {
+func handleDependencies(components *[]*ComponentWorkload) error {
 	c := *components
 	// get a list of existing component names in the config
 	componentNames := make([]string, len(c))

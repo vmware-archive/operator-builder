@@ -21,7 +21,7 @@ type Resources struct {
 	PackageName     string
 	CreateFuncNames []string
 	InitFuncNames   []string
-	SpecFields      *[]workloadv1.APISpecField
+	SpecFields      []*workloadv1.APISpecField
 	IsComponent     bool
 	Collection      *workloadv1.WorkloadCollection
 }

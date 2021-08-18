@@ -19,8 +19,8 @@ func SupportedMarkerDataTypes() []string {
 	return []string{"bool", "string", "int", "int32", "int64", "float32", "float64"}
 }
 
-func processMarkers(workloadPath string, resources []string, collection bool) (*[]APISpecField, error) {
-	var specFields []APISpecField
+func processMarkers(workloadPath string, resources []string, collection bool) ([]*APISpecField, error) {
+	var specFields []*APISpecField
 
 	for _, manifestFile := range resources {
 
@@ -56,7 +56,7 @@ func processMarkers(workloadPath string, resources []string, collection bool) (*
 				}
 			}
 
-			specField := APISpecField{
+			specField := &APISpecField{
 				FieldName:          strings.Title(m.FieldName),
 				ManifestFieldName:  m.FieldName,
 				DataType:           m.DataType,
@@ -86,7 +86,7 @@ func processMarkers(workloadPath string, resources []string, collection bool) (*
 		}
 	}
 
-	return &specFields, nil
+	return specFields, nil
 }
 
 func processManifest(manifest string) ([]Marker, error) {
