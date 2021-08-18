@@ -106,7 +106,7 @@ func (c *ComponentWorkload) SetSpecFields(workloadPath string) error {
 		return err
 	}
 
-	c.Spec.APISpecFields = *apiSpecFields
+	c.Spec.APISpecFields = apiSpecFields
 
 	return nil
 }
@@ -124,11 +124,11 @@ func (c *ComponentWorkload) SetResources(workloadPath string) error {
 	return nil
 }
 
-func (c *ComponentWorkload) GetDependencies() *[]ComponentWorkload {
-	return &c.Spec.ComponentDependencies
+func (c *ComponentWorkload) GetDependencies() []*ComponentWorkload {
+	return c.Spec.ComponentDependencies
 }
 
-func (*ComponentWorkload) SetComponents(components *[]ComponentWorkload) error {
+func (*ComponentWorkload) SetComponents(components []*ComponentWorkload) error {
 	return errors.New("Cannot set component workloads on a component workload - only on collections")
 }
 
@@ -136,8 +136,8 @@ func (c *ComponentWorkload) HasChildResources() bool {
 	return len(c.Spec.Resources) > 0
 }
 
-func (*ComponentWorkload) GetComponents() *[]ComponentWorkload {
-	return &[]ComponentWorkload{}
+func (*ComponentWorkload) GetComponents() []*ComponentWorkload {
+	return []*ComponentWorkload{}
 }
 
 func (c *ComponentWorkload) GetSourceFiles() *[]SourceFile {
@@ -148,8 +148,8 @@ func (c *ComponentWorkload) GetFuncNames() (createFuncNames, initFuncNames []str
 	return getFuncNames(*c.GetSourceFiles())
 }
 
-func (c *ComponentWorkload) GetAPISpecFields() *[]APISpecField {
-	return &c.Spec.APISpecFields
+func (c *ComponentWorkload) GetAPISpecFields() []*APISpecField {
+	return c.Spec.APISpecFields
 }
 
 func (c *ComponentWorkload) GetRBACRules() *[]RBACRule {

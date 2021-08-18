@@ -128,7 +128,7 @@ func (s *apiScaffolder) Scaffold() error {
 			return err
 		}
 
-		for _, component := range *s.workload.GetComponents() {
+		for _, component := range s.workload.GetComponents() {
 			if component.GetSubcommandName() != "" {
 				// build a subcommand for the component, e.g. `cnpctl init ingress`
 				err = scaffold.Execute(
@@ -327,7 +327,7 @@ func (s *apiScaffolder) Scaffold() error {
 			return err
 		}
 
-		for _, component := range *s.workload.GetComponents() {
+		for _, component := range s.workload.GetComponents() {
 
 			componentScaffold := machinery.NewScaffold(s.fs,
 				machinery.WithConfig(s.config),
@@ -357,7 +357,7 @@ func (s *apiScaffolder) Scaffold() error {
 					WireController: true,
 				},
 				&api.Types{
-					SpecFields:    &component.Spec.APISpecFields,
+					SpecFields:    component.Spec.APISpecFields,
 					ClusterScoped: component.IsClusterScoped(),
 					Dependencies:  component.GetDependencies(),
 					IsStandalone:  component.IsStandalone(),
@@ -385,7 +385,7 @@ func (s *apiScaffolder) Scaffold() error {
 				&helpers.Component{},
 				&wait.Component{},
 				&samples.CRDSample{
-					SpecFields: &component.Spec.APISpecFields,
+					SpecFields: component.Spec.APISpecFields,
 				},
 				&crd.Kustomization{
 					CRDSampleFilenames: crdSampleFilenames,
