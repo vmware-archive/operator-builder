@@ -203,7 +203,6 @@ func (s *apiScaffolder) Scaffold() error {
 				PackageName:     s.workload.GetPackageName(),
 				CreateFuncNames: createFuncNames,
 				InitFuncNames:   initFuncNames,
-				SpecFields:      s.workload.GetAPISpecFields(),
 				IsComponent:     s.workload.IsComponent(),
 			},
 			&controller.Controller{
@@ -340,7 +339,6 @@ func (s *apiScaffolder) Scaffold() error {
 					PackageName:     component.GetPackageName(),
 					CreateFuncNames: createFuncNames,
 					InitFuncNames:   initFuncNames,
-					SpecFields:      component.GetAPISpecFields(),
 					IsComponent:     component.IsComponent(),
 					Collection:      s.workload.(*workloadv1.WorkloadCollection),
 				},
