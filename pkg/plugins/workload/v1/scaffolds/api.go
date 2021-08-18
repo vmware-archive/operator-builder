@@ -31,7 +31,7 @@ var _ plugins.Scaffolder = &apiScaffolder{}
 
 type apiScaffolder struct {
 	config          config.Config
-	resource        resource.Resource
+	resource        *resource.Resource
 	boilerplatePath string
 	workload        workloadv1.WorkloadAPIBuilder
 	project         *workloadv1.Project
@@ -42,7 +42,7 @@ type apiScaffolder struct {
 // NewAPIScaffolder returns a new Scaffolder for project initialization operations.
 func NewAPIScaffolder(
 	cfg config.Config,
-	res resource.Resource,
+	res *resource.Resource,
 	workload workloadv1.WorkloadAPIBuilder,
 	project *workloadv1.Project,
 ) plugins.Scaffolder {
@@ -72,7 +72,7 @@ func (s *apiScaffolder) Scaffold() error {
 	scaffold := machinery.NewScaffold(s.fs,
 		machinery.WithConfig(s.config),
 		machinery.WithBoilerplate(string(boilerplate)),
-		machinery.WithResource(&s.resource),
+		machinery.WithResource(s.resource),
 	)
 
 	createFuncNames, initFuncNames := s.workload.GetFuncNames()
@@ -405,7 +405,7 @@ func (s *apiScaffolder) Scaffold() error {
 		scaffold := machinery.NewScaffold(s.fs,
 			machinery.WithConfig(s.config),
 			machinery.WithBoilerplate(string(boilerplate)),
-			machinery.WithResource(&s.resource),
+			machinery.WithResource(s.resource),
 		)
 
 		err = scaffold.Execute(

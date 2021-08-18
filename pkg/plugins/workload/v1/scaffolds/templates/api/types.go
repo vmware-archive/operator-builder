@@ -41,7 +41,7 @@ func (f *Types) SetTemplateDefaults() error {
 	return nil
 }
 
-func (f Types) GetFuncMap() template.FuncMap {
+func (*Types) GetFuncMap() template.FuncMap {
 	funcMap := machinery.DefaultFuncMap()
 	funcMap["containsString"] = func(value string, in string) bool {
 		return strings.Contains(in, value)
@@ -126,7 +126,7 @@ type {{ .Resource.Kind }}List struct {
 // interface methods
 
 // GetReadyStatus returns the ready status for a component.
-func (component {{ .Resource.Kind }}) GetReadyStatus() bool {
+func (component *{{ .Resource.Kind }}) GetReadyStatus() bool {
 	return component.Status.Created
 }
 
@@ -148,7 +148,7 @@ func (component *{{ .Resource.Kind }}) SetDependencyStatus(dependencyStatus bool
 {{ end }}
 
 // GetStatusConditions returns the status conditions for a component.
-func (component {{ .Resource.Kind }}) GetStatusConditions() []common.Condition {
+func (component *{{ .Resource.Kind }}) GetStatusConditions() []common.Condition {
 	return component.Status.Conditions
 }
 
@@ -159,7 +159,7 @@ func (component *{{ .Resource.Kind }}) SetStatusConditions(condition common.Cond
 
 {{- if not .IsStandalone }}
 // GetDependencies returns the dependencies for a component.
-func (component {{ .Resource.Kind }}) GetDependencies() []common.Component {
+func (*{{ .Resource.Kind }}) GetDependencies() []common.Component {
 	return []common.Component{
 		{{ range .Dependencies }}
 		{{- if eq .Spec.APIGroup $.Resource.Group }}
@@ -172,7 +172,7 @@ func (component {{ .Resource.Kind }}) GetDependencies() []common.Component {
 }
 
 // GetComponentGVK returns a GVK object for the component.
-func (component {{ .Resource.Kind }}) GetComponentGVK() schema.GroupVersionKind {
+func (*{{ .Resource.Kind }}) GetComponentGVK() schema.GroupVersionKind {
 	return schema.GroupVersionKind{
 		Group:   GroupVersion.Group,
 		Version: GroupVersion.Version,
