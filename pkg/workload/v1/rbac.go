@@ -111,10 +111,12 @@ func rbacRulesForManifest(kind, group string, rawContent interface{}, rbacRules 
 			if rbacGroups == nil {
 				continue
 			}
+
 			for _, rbacGroup := range rbacGroups.([]interface{}) {
 				if rbacKinds == nil {
 					continue
 				}
+
 				for _, rbacKind := range rbacKinds.([]interface{}) {
 					if rbacVerbs == nil {
 						continue

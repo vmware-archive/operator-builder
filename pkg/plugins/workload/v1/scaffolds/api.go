@@ -328,7 +328,6 @@ func (s *apiScaffolder) Scaffold() error {
 		}
 
 		for _, component := range s.workload.GetComponents() {
-
 			componentScaffold := machinery.NewScaffold(s.fs,
 				machinery.WithConfig(s.config),
 				machinery.WithBoilerplate(string(boilerplate)),
