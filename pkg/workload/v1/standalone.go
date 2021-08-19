@@ -157,7 +157,7 @@ func (*StandaloneWorkload) GetDependencies() []*ComponentWorkload {
 }
 
 func (*StandaloneWorkload) SetComponents(components []*ComponentWorkload) error {
-	return errors.New("Cannot set component workloads on a standalone workload - only on collections")
+	return errors.New("cannot set component workloads on a standalone workload - only on collections")
 }
 
 func (s *StandaloneWorkload) HasChildResources() bool {
