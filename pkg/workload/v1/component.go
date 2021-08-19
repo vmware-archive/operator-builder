@@ -129,7 +129,7 @@ func (c *ComponentWorkload) GetDependencies() []*ComponentWorkload {
 }
 
 func (*ComponentWorkload) SetComponents(components []*ComponentWorkload) error {
-	return errors.New("Cannot set component workloads on a component workload - only on collections")
+	return errors.New("cannot set component workloads on a component workload - only on collections")
 }
 
 func (c *ComponentWorkload) HasChildResources() bool {

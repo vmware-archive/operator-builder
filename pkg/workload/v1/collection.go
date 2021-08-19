@@ -167,7 +167,7 @@ func (c *WorkloadCollection) SetSpecFields(workloadPath string) error {
 }
 
 func (c *WorkloadCollection) SetResources(workloadPath string) error {
-	return errors.New("Workload collections do not have child resources to be set")
+	return errors.New("workload collections do not have child resources to be set")
 }
 
 func (c *WorkloadCollection) GetDependencies() []*ComponentWorkload {
