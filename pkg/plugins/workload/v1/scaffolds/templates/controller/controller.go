@@ -171,13 +171,13 @@ func (r *{{ .Resource.Kind }}Reconciler) ConstructResources() ([]metav1.Object, 
 	var resourceObjects []metav1.Object
 
 	// create resources in memory
-	for _, f := range {{ .PackageName }}.CreateFuncs {
+	for i, f := range {{ .PackageName }}.CreateFuncs {
 		resource, err := f(r.Component{{ if .IsComponent }}, r.Collection){{ else }}){{ end }}
 		if err != nil {
 			return nil, err
 		}
 
-		resourceObjects = append(resourceObjects, resource)
+		resourceObjects[i] = resource
 	}
 
 	return resourceObjects, nil
