@@ -160,16 +160,16 @@ func (r *{{ .Resource.Kind }}Reconciler) Reconcile(ctx context.Context, req ctrl
 // GetResources will create and return the resources in memory.
 func (r *{{ .Resource.Kind }}Reconciler) GetResources(parent common.Component) ([]metav1.Object, error) {
 {{- if .HasChildResources }}
-	var resourceObjects []metav1.Object
+	resourceObjects := make([]metav1.Object, len({{ .PackageName }}.CreateFuncs))
 
 	// create resources in memory
-	for _, f := range {{ .PackageName }}.CreateFuncs {
+	for i, f := range {{ .PackageName }}.CreateFuncs {
 		resource, err := f(r.Component{{ if .IsComponent }}, r.Collection){{ else }}){{ end }}
 		if err != nil {
 			return nil, err
 		}
 
-		resourceObjects = append(resourceObjects, resource)
+		resourceObjects[i] = resource
 	}
 
 	return resourceObjects, nil
