@@ -79,11 +79,11 @@ func persistResource(
 	if err := r.CreateOrUpdate(resource); err != nil {
 		if isOptimisticLockError(err) {
 			return nil
-		} else {
-			r.GetLogger().V(0).Info("failed persisting object of kind: " + objectKind + " with name: " + objectName)
-
-			return err
 		}
+		
+		r.GetLogger().V(0).Info("failed persisting object of kind: " + objectKind + " with name: " + objectName)
+		
+		return err
 	}
 
 	// update the condition to notify that we have created a child resource
