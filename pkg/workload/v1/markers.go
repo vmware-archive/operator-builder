@@ -23,7 +23,6 @@ func processMarkers(workloadPath string, resources []string, collection bool) ([
 	var specFields []*APISpecField
 
 	for _, manifestFile := range resources {
-
 		// capture entire resource manifest file content
 		manifestContent, err := ioutil.ReadFile(filepath.Join(filepath.Dir(workloadPath), manifestFile))
 		if err != nil {
@@ -91,7 +90,9 @@ func processMarkers(workloadPath string, resources []string, collection bool) ([
 
 func processManifest(manifest string) ([]Marker, error) {
 	var markers []Marker
+
 	var startIndex int
+
 	var hasDocs bool
 
 	lines := strings.Split(manifest, "\n")

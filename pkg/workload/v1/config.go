@@ -77,6 +77,7 @@ func ProcessAPIConfig(workloadConfig string) (WorkloadAPIBuilder, error) {
 				if err := workload.SetResources(workloadConfig); err != nil {
 					return nil, fmt.Errorf("%w", err)
 				}
+
 				workload.SetNames()
 			case *WorkloadCollection:
 				workload = v

@@ -9,6 +9,7 @@ import (
 
 func (rule *RBACRule) AddVerb(verb string) {
 	var found bool
+
 	for _, existingVerb := range rule.Verbs {
 		if existingVerb == verb {
 			found = true
@@ -27,6 +28,7 @@ func rbacGroupFromGroup(group string) string {
 	if group == "" {
 		return coreRBACGroup
 	}
+
 	return group
 }
 
