@@ -46,6 +46,7 @@ func groupResourceEqual(rbacRule, newRBACRule *RBACRule) bool {
 
 func groupResourceRecorded(rbacRules *[]RBACRule, newRBACRule *RBACRule) bool {
 	for _, r := range *rbacRules {
+		r := r
 		if groupResourceEqual(&r, newRBACRule) {
 			return true
 		}
