@@ -36,6 +36,7 @@ import (
 )
 
 // PersistResourcePhase.Execute executes persisting resources to the Kubernetes database.
+<<<<<<< HEAD
 func (phase *PersistResourcePhase) Execute(
 	resource common.ComponentResource,
 	resourceCondition common.ResourceCondition,
@@ -47,6 +48,25 @@ func (phase *PersistResourcePhase) Execute(
 		phase,
 	); err != nil {
 		return ctrl.Result{}, false, err
+=======
+func (phase *PersistResourcePhase) Execute(resource *ComponentResource) (ctrl.Result, bool, error) {
+	// if we are skipping resource creation, return immediately
+	if resource.Skip {
+		return ctrl.Result{}, true, nil
+	}
+
+	// if we are replacing resources, use the replaced resources, else use the original resources
+	if len(resource.ReplacedResources) > 0 {
+		for _, replacedResource := range resource.ReplacedResources {
+			if err := persistResource(resource.ComponentReconciler, replacedResource); err != nil {
+				return ctrl.Result{}, false, err
+			}
+		}
+	} else {
+		if err := persistResource(resource.ComponentReconciler, resource.OriginalResource); err != nil {
+			return ctrl.Result{}, false, err
+		}
+>>>>>>> upstream/main
 	}
 
 	return ctrl.Result{}, true, nil
@@ -59,12 +79,20 @@ func persistResource(
 	phase *PersistResourcePhase,
 ) error {
 	// persist resource
+<<<<<<< HEAD
 	r := resource.GetReconciler()
 	if err := r.CreateOrUpdate(resource.GetObject()); err != nil {
 		if IsOptimisticLockError(err) {
 			return nil
 		} else {
 			r.GetLogger().V(0).Info(err.Error())
+=======
+	if err := r.CreateOrUpdate(resource); err != nil {
+		if isOptimisticLockError(err) {
+			return nil
+		} else {
+			r.GetLogger().V(0).Info("failed persisting object of kind: " + objectKind + " with name: " + objectName)
+>>>>>>> upstream/main
 
 			return err
 		}

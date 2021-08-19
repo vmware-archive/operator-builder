@@ -77,7 +77,7 @@ import (
 )
 
 // CreateFuncs is an array of functions that are called to create the child resources for the controller
-// in memroy during the reconciliation loop prior to persisting the changes or updates to the Kubernetes
+// in memory during the reconciliation loop prior to persisting the changes or updates to the Kubernetes
 // database.
 var CreateFuncs = []func(
 	*{{ .Resource.ImportAlias }}.{{ .Resource.Kind }},
@@ -92,10 +92,12 @@ var CreateFuncs = []func(
 
 // InitFuncs is an array of functions that are called prior to starting the controller manager.  This is
 // necessary in instances which the controller needs to "own" objects which depend on resources to
-// pre-exist in the cluster. A common use case for this is a CustomResourceDefinition and a resource
-// created as part of that CRD.  In this case, we cannot create and own the CRD and its affiliated resource
-// as part of the reconciliation loop.  Because the CRD does not exist, the API has not been extended
-// properly for the controller to own the affiliated resource, and it will fail with an error.
+// pre-exist in the cluster. A common use case for this is the need to own a custom resource.
+// If the controller needs to own a custom resource type, the CRD that defines it must
+// first exist. In this case, the InitFunc will create the CRD so that the controller
+// can own custom resources of that type.  Without the InitFunc the controller will
+// crash loop because when it tries to own a non-existent resource type during manager
+// setup, it will fail.
 var InitFuncs = []func(
 	*{{ .Resource.ImportAlias }}.{{ .Resource.Kind }},
 	{{- if $.IsComponent }}

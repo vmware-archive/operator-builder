@@ -87,7 +87,7 @@ type {{ .Resource.Kind }}Spec struct {
 		{{- range .DocumentationLines }}
 			// {{ . -}}
 		{{ end }}
-		{{ .ApiSpecContent }}
+		{{ .APISpecContent }}
 	{{ end }}
 }
 
