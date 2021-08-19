@@ -124,7 +124,6 @@ func processManifest(manifest string) ([]Marker, error) {
 
 func processMarkedComments(line string) (processed string) {
 	codeCommentSplit := strings.Split(line, "//")
-	code := codeCommentSplit[0]
 	comment := codeCommentSplit[1]
 	commentSplit := strings.Split(comment, ":")
 	fieldName := commentSplit[1]
@@ -136,7 +135,7 @@ func processMarkedComments(line string) (processed string) {
 		fieldPath = fmt.Sprintf("parent.Spec.%s", strings.Title(fieldName))
 	}
 
-	if strings.Contains(code, ":") {
+	if code := codeCommentSplit[0]; strings.Contains(code, ":") {
 		keyValSplit := strings.Split(code, ":")
 		key := keyValSplit[0]
 		processed = fmt.Sprintf("%s: %s,", key, fieldPath)
