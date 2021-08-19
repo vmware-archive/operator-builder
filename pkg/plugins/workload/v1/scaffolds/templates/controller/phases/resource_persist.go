@@ -58,10 +58,8 @@ func (phase *PersistResourcePhase) Execute(resource *ComponentResource) (ctrl.Re
 				return ctrl.Result{}, false, err
 			}
 		}
-	} else {
-		if err := persistResource(resource.ComponentReconciler, resource.OriginalResource); err != nil {
-			return ctrl.Result{}, false, err
-		}
+	} else if err := persistResource(resource.ComponentReconciler, resource.OriginalResource); err != nil {
+		return ctrl.Result{}, false, err
 	}
 
 	return ctrl.Result{}, true, nil
