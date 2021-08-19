@@ -70,7 +70,7 @@ func persistResource(
 	r common.ComponentReconciler,
 	resource metav1.Object,
 ) error {
-	objectName := resource.(metav1.Object).GetName()
+	objectName := resource.GetName()
 	objectKind := resource.(runtime.Object).GetObjectKind().GroupVersionKind().Kind
 
 	// persist resource
