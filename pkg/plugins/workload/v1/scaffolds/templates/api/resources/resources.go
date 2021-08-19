@@ -63,10 +63,6 @@ const resourcesTemplate = `{{ .Boilerplate }}
 package {{ .PackageName }}
 
 import (
-	"fmt"
-	"bytes"
-	"text/template"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	{{ .Resource.ImportAlias }} "{{ .Resource.Path }}"
