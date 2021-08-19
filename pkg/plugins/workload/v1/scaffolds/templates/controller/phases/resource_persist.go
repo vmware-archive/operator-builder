@@ -35,7 +35,7 @@ import (
 	"{{ .Repo }}/apis/common"
 )
 
-func persistExitSuccessCondition(objectName string, objectKind string) *common.Condition {
+func persistExitSuccessCondition(objectName, objectKind string) *common.Condition {
 	return &common.Condition{
 		Phase:   common.ConditionPhaseCreateResources,
 		Type:    common.ConditionTypeReconciling,
