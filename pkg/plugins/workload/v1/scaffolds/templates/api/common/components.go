@@ -35,7 +35,7 @@ import (
 
 	"github.com/go-logr/logr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	{{- if not .IsStandalone }}
+	{{ if not .IsStandalone -}}
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -52,14 +52,14 @@ type Component interface {
 	GetReadyStatus() bool
 	GetDependencyStatus() bool
 	GetPhaseConditions() []PhaseCondition
-	GetResourceConditions() []ResourceCondition
+	GetResources() []Resource
 
 	{{- if not .IsStandalone }}
 	SetReadyStatus(bool)
 	SetDependencyStatus(bool)
 	{{ end -}}
 	SetPhaseCondition(PhaseCondition)
-	SetResourceCondition(ResourceCondition)
+	SetResource(Resource)
 }
 
 type ComponentReconciler interface {
@@ -70,14 +70,13 @@ type ComponentReconciler interface {
 	GetController() controller.Controller
 	GetLogger() logr.Logger
 	GetScheme() *runtime.Scheme
-	GetResources(Component) ([]metav1.Object, error)
+	GetResources() []ComponentResource
 	GetWatches() []client.Object
 	SetWatch(client.Object)
 
 	// component and child resource methods
 	CreateOrUpdate(metav1.Object) error
 	UpdateStatus() error
-	{{- if not .IsStandalone }}
 
 	// methods from the underlying client package
 	Get(context.Context, types.NamespacedName, client.Object) error
@@ -90,6 +89,24 @@ type ComponentReconciler interface {
 	CheckReady() (bool, error)
 	Mutate(*metav1.Object) ([]metav1.Object, bool, error)
 	Wait(*metav1.Object) (bool, error)
-	{{ end -}}
+}
+
+type ComponentResource interface {
+	// attribute exporters and setters
+	GetGroup() string
+	GetVersion() string
+	GetKind() string
+	GetName() string
+	GetNamespace() string
+	GetObject() client.Object
+	GetReconciler() ComponentReconciler
+
+	// equality checkers
+	EqualGVK(ComponentResource) bool
+	EqualNamespaceName(ComponentResource) bool
+
+	// other methods
+	IsReady() (bool, error)
+	ToCommonResource() *Resource
 }
 `

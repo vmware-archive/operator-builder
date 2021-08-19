@@ -29,12 +29,8 @@ package phases
 
 import (
 	"fmt"
-	"time"
-	"reflect"
 	"strings"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"{{ .Repo }}/apis/common"
@@ -47,37 +43,14 @@ func Requeue() ctrl.Result {
 	return ctrl.Result{Requeue: true}
 }
 
+// IsOptimisticLockError checks to see if the error is a locking error.
+func IsOptimisticLockError(err error) bool {
+	return strings.Contains(err.Error(), optimisticLockErrorMsg)
+}
+
 // DefaultReconcileResult will return the default reconcile result when requeuing is not needed.
 func DefaultReconcileResult() ctrl.Result {
 	return ctrl.Result{}
-}
-
-// phaseConditionExists will return whether or not a specific condition already exists on the object.
-func phaseConditionExists(
-	currentConditions []common.PhaseCondition,
-	condition *common.PhaseCondition,
-) bool {
-	for _, currentCondition := range currentConditions {
-		if reflect.DeepEqual(currentCondition, *condition) {
-			return true
-		}
-	}
-
-	return false
-}
-
-// resourceConditionExists will return whether or not a specific resource condition already exists on the object.
-func resourceConditionExists(
-	currentConditions []common.ResourceCondition,
-	condition *common.ResourceCondition,
-) bool {
-	for _, currentCondition := range currentConditions {
-		if reflect.DeepEqual(currentCondition, *condition) {
-			return true
-		}
-	}
-
-	return false
 }
 
 // updatePhaseConditions updates the status.conditions field of the parent custom resource.
@@ -85,37 +58,21 @@ func updatePhaseConditions(
 	r common.ComponentReconciler,
 	condition *common.PhaseCondition,
 ) error {
-	component := r.GetComponent()
+	r.GetComponent().SetPhaseCondition(*condition)
 
-	if !phaseConditionExists(component.GetPhaseConditions(), condition) {
-		if condition.LastModified == "" {
-			condition.LastModified = time.Now().UTC().String()
-		}
-		component.SetPhaseCondition(*condition)
-
-		return r.UpdateStatus()
-	}
-
-	return nil
+	return r.UpdateStatus()
 }
 
 // updateResourceConditions updates the status.resourceConditions field of the parent custom resource.
 func updateResourceConditions(
 	r common.ComponentReconciler,
+	resource common.Resource,
 	condition *common.ResourceCondition,
 ) error {
-	component := r.GetComponent()
+	resource.ResourceCondition = *condition
+	r.GetComponent().SetResource(resource)
 
-	if !resourceConditionExists(component.GetResourceConditions(), condition) {
-		if condition.LastModified == "" {
-			condition.LastModified = time.Now().UTC().String()
-		}
-		component.SetResourceCondition(*condition)
-
-		return r.UpdateStatus()
-	}
-
-	return nil
+	return r.UpdateStatus()
 }
 
 // HandlePhaseExit will perform the steps required to exit a phase.
@@ -125,13 +82,13 @@ func HandlePhaseExit(
 	phaseIsReady bool,
 	phaseError error,
 ) (ctrl.Result, error) {
-	var condition common.PhaseCondition
 
+	var condition common.PhaseCondition
 	var result ctrl.Result
 
 	switch {
 	case phaseError != nil:
-		if isOptimisticLockError(phaseError) {
+		if IsOptimisticLockError(phaseError) {
 			phaseError = nil
 			condition = GetSuccessCondition(phase)
 		} else {
@@ -140,7 +97,7 @@ func HandlePhaseExit(
 		result = DefaultReconcileResult()
 	case !phaseIsReady:
 		condition = GetPendingCondition(phase)
-		result = Requeue()
+		result = phase.DefaultRequeue()
 	default:
 		condition = GetSuccessCondition(phase)
 		result = DefaultReconcileResult()
@@ -149,7 +106,7 @@ func HandlePhaseExit(
 	// update the status conditions and return any errors
 	if updateError := updatePhaseConditions(reconciler, &condition); updateError != nil {
 		// adjust the message if we had both an update error and a phase error
-		if !isOptimisticLockError(updateError) {
+		if !IsOptimisticLockError(updateError) {
 			if phaseError != nil {
 				phaseError = fmt.Errorf("failed to update status conditions; %v; %v", updateError, phaseError)
 			} else {
@@ -164,56 +121,36 @@ func HandlePhaseExit(
 // handleResourcePhaseExit will perform the steps required to exit a phase.
 func handleResourcePhaseExit(
 	reconciler common.ComponentReconciler,
-	resource client.Object,
+	resource common.Resource,
 	condition common.ResourceCondition,
+	phase ResourcePhase,
 	phaseIsReady bool,
 	phaseError error,
 ) (bool, error) {
 
 	switch {
 	case phaseError != nil:
-		if isOptimisticLockError(phaseError) {
+		if IsOptimisticLockError(phaseError) {
 			phaseError = nil
-			condition.Message = "resource creation successful"
 		}
 	case !phaseIsReady:
-		condition.Message = "unable to proceed with resource creation"
-	default:
-		condition.Message = "resource creation successful"
+		condition.Message = fmt.Sprintf("unable to proceed with resource creation; phase %v is not ready", getResourcePhaseName(phase))
 	}
 
 	// update the status conditions and return any errors
-	if updateError := updateResourceConditions(reconciler, &condition); updateError != nil {
+	if updateError := updateResourceConditions(reconciler, resource, &condition); updateError != nil {
 		// adjust the message if we had both an update error and a phase error
-		if !isOptimisticLockError(updateError) {
+		if !IsOptimisticLockError(updateError) {
 			if phaseError != nil {
 				phaseError = fmt.Errorf("failed to update resource conditions; %v; %v", updateError, phaseError)
 			} else {
 				phaseError = updateError
 			}
 		}
+	} else {
+		condition.Message = "resource creation successful"
 	}
 
 	return (phaseError == nil && phaseIsReady), phaseError
-}
-
-// isOptimisticLockError checks to see if the error is a locking error.
-func isOptimisticLockError(err error) bool {
-	return strings.Contains(err.Error(), optimisticLockErrorMsg)
-}
-
-// setResources will set the resources against a CreateResourcePhase.
-func setResources(
-	parent *CreateResourcesPhase,
-	resources []metav1.Object,
-) {
-	parent.Resources = resources
-}
-
-// getResources will get the resources from a CreateResourcePhase.
-func getResources(
-	parent *CreateResourcesPhase,
-) []metav1.Object {
-	return parent.Resources
 }
 `

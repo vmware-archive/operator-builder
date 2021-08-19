@@ -32,12 +32,9 @@ const controllerCommonTemplate = `{{ .Boilerplate }}
 package controllers
 
 import (
-	"fmt"
-	"time"
 	"reflect"
 
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -47,11 +44,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"{{ .Repo }}/apis/common"
+	"{{ .Repo }}/pkg/resources"
 	controllerphases "{{ .Repo }}/controllers/phases"
-)
-
-const (
-	FieldManager = "reconciler"
 )
 
 func IgnoreNotFound(err error) error {
@@ -65,15 +59,11 @@ func IgnoreNotFound(err error) error {
 // CreatePhases defines the phases for create and the order in which they run during the reconcile process.
 func CreatePhases() []controllerphases.Phase {
 	return []controllerphases.Phase{
-		{{- if not .IsStandalone }}
 		&controllerphases.DependencyPhase{},
 		&controllerphases.PreFlightPhase{},
-		{{ end -}}
 		&controllerphases.CreateResourcesPhase{},
-		{{- if not .IsStandalone }}
 		&controllerphases.CheckReadyPhase{},
 		&controllerphases.CompletePhase{},
-		{{ end -}}
 	}
 }
 
@@ -95,67 +85,16 @@ func Phases(component common.Component) []controllerphases.Phase {
 	return phases
 }
 
-// reconcileUpdaters is a list of managers which produce a reconciliation on update.
-// TODO: this solves for the 95% of cases, but there will inevitably by corner cases in which
-// are not addressed.
-func reconcileUpdaters() []string {
-	return []string{
-		"kubectl",
-		"kapp",
-		"helm",
-		"ansible",
-		"ansible-playbook",
-	}
-}
-
 // ResourcePredicates returns the filters which are used to filter out the common reconcile events
 // prior to reconciling the child resource of a component.
 func ResourcePredicates(r common.ComponentReconciler) predicate.Predicate {
 	return predicate.Funcs{
 		UpdateFunc: func(e event.UpdateEvent) bool {
-			// return immediately if the managed fields are the same
-			if reflect.DeepEqual(e.ObjectNew.GetManagedFields(), e.ObjectOld.GetManagedFields()) {
-				return false
-			}
-
-			// return immediately if both objects are the same
-			if reflect.DeepEqual(e.ObjectNew, e.ObjectOld) {
-				return false
-			}
-
-			// if we have a non-reconciler update return
-			var numWhitelisted int
-			var justUpdated bool
-			for _, new := range e.ObjectNew.GetManagedFields() {
-				if new.Operation == v1.ManagedFieldsOperationUpdate {
-					// count the number of whitelisted managers which we know we need to update for
-					for _, updater := range reconcileUpdaters() {
-						if new.Manager == updater {
-							numWhitelisted++
-						}
-					}
-
-					// if our manager is the reconciler, see if it was just updated
-					// TODO: time boxing the update is not ideal, however it is much simpler than
-					// doing a deep compare at this moment.  we can improve this logic at a later time.
-					if new.Manager == FieldManager {
-						if time.Now().UTC().Sub(new.Time.Time.UTC()) < 2*time.Second {
-							justUpdated = true
-						}
-					}
-				}
-			}
-
-			return !justUpdated && numWhitelisted > 0
+			return resources.NeedsUpdate(
+				*resources.NewResourceFromClient(e.ObjectOld),
+				*resources.NewResourceFromClient(e.ObjectNew),
+			)
 		},
-		// TODO: we will prevent deletions from child objects.  This will end up being confusing to the
-		// user, as this will result in a successful "kubectl delete" command with nothing else happening.
-		// Need to add a valdiating webhook to give feedback to the user.
-		// DeleteFunc: func(e event.DeleteEvent) bool {
-		// 	r.GetLogger().V(0).Info(fmt.Sprintf("WARN: skipping deletion of resource; kind: [%s], name: [%s], namespace: [%s]",
-		// 		e.Object.GetObjectKind().GroupVersionKind().Kind, e.Object.GetName(), e.Object.GetNamespace()))
-		// 	return false
-		// },
 		GenericFunc: func(e event.GenericEvent) bool {
 			// do not run reconciliation on unknown events
 			return false
@@ -173,6 +112,9 @@ func ComponentPredicates() predicate.Predicate {
 	return predicate.Funcs{
 		UpdateFunc: func(e event.UpdateEvent) bool {
 			return e.ObjectOld.GetGeneration() != e.ObjectNew.GetGeneration()
+		},
+		CreateFunc: func(e event.CreateEvent) bool {
+			return true
 		},
 		DeleteFunc: func(e event.DeleteEvent) bool {
 			return !e.DeleteStateUnknown
@@ -215,41 +157,6 @@ func Watch(
 		}
 
 		r.SetWatch(resource)
-	}
-
-	return nil
-}
-
-// Create creates a resource.
-func Create(
-	r common.ComponentReconciler,
-	newResource client.Object,
-) error {
-	r.GetLogger().V(0).Info(fmt.Sprintf("creating resource with name: [%s] in namespace: [%s] of kind: [%s]",
-		newResource.GetName(), newResource.GetNamespace(), newResource.GetObjectKind().GroupVersionKind().Kind))
-
-	if err := r.Create(r.GetContext(), newResource, &client.CreateOptions{FieldManager: FieldManager}); err != nil {
-		r.GetLogger().V(0).Info("unable to create resource")
-
-		return err
-	}
-
-	return nil
-}
-
-// Update updates a resource.
-func Update(
-	r common.ComponentReconciler,
-	newResource client.Object,
-	oldResource client.Object,
-) error {
-	r.GetLogger().V(0).Info(fmt.Sprintf("updating resource with name: [%s] in namespace: [%s] of kind: [%s]",
-		newResource.GetName(), newResource.GetNamespace(), newResource.GetObjectKind().GroupVersionKind().Kind))
-
-	if err := r.Patch(r.GetContext(), newResource, &client.Merge, &client.PatchOptions{FieldManager: FieldManager}); err != nil {
-		r.GetLogger().V(0).Info("unable to update resource")
-
-		return err
 	}
 
 	return nil

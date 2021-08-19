@@ -28,8 +28,15 @@ const preFlightTemplate = `{{ .Boilerplate }}
 package phases
 
 import (
-	common "{{ .Repo }}/apis/common"
+	ctrl "sigs.k8s.io/controller-runtime"
+
+	"{{ .Repo }}/apis/common"
 )
+
+// PreFlightPhase.DefaultRequeue executes checking for a parent components readiness status.
+func (phase *PreFlightPhase) DefaultRequeue() ctrl.Result {
+	return Requeue()
+}
 
 // PreFlightPhase.Execute executes pre-flight and fail-fast conditions prior to attempting resource creation.
 func (phase *PreFlightPhase) Execute(

@@ -30,37 +30,23 @@ package phases
 import (
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"{{ .Repo }}/apis/common"
 )
 
 // PersistResourcePhase.Execute executes persisting resources to the Kubernetes database.
-func (phase *PersistResourcePhase) Execute(resource *ComponentResource) (ctrl.Result, bool, error) {
-	// if we are skipping resource creation, return immediately
-	if resource.Skip {
-		return ctrl.Result{}, true, nil
-	}
-
-	// if we are replacing resources, use the replaced resources, else use the original resources
-	var resources []metav1.Object
-	if len(resource.ReplacedResources) > 0 {
-		resources = resource.ReplacedResources
-	} else {
-		resources = []metav1.Object{resource.OriginalResource}
-	}
-
-	// loop through the resources and persist as necessary
-	for _, resourceObject := range resources {
-		if err := persistResource(
-			resource.ComponentReconciler,
-			resourceObject,
-			resource.ResourceCondition,
-			phase,
-		); err != nil {
-			return ctrl.Result{}, false, err
-		}
+func (phase *PersistResourcePhase) Execute(
+	resource common.ComponentResource,
+	resourceCondition common.ResourceCondition,
+) (ctrl.Result, bool, error) {
+	// persist the resource
+	if err := persistResource(
+		resource,
+		resourceCondition,
+		phase,
+	); err != nil {
+		return ctrl.Result{}, false, err
 	}
 
 	return ctrl.Result{}, true, nil
@@ -68,16 +54,18 @@ func (phase *PersistResourcePhase) Execute(resource *ComponentResource) (ctrl.Re
 
 // persistResource persists a single resource to the Kubernetes database.
 func persistResource(
-	r common.ComponentReconciler,
-	resource metav1.Object,
+	resource common.ComponentResource,
 	condition common.ResourceCondition,
 	phase *PersistResourcePhase,
 ) error {
 	// persist resource
-	if err := r.CreateOrUpdate(resource); err != nil {
-		if isOptimisticLockError(err) {
+	r := resource.GetReconciler()
+	if err := r.CreateOrUpdate(resource.GetObject()); err != nil {
+		if IsOptimisticLockError(err) {
 			return nil
 		} else {
+			r.GetLogger().V(0).Info(err.Error())
+
 			return err
 		}
 	}
@@ -89,6 +77,6 @@ func persistResource(
 	condition.Created = true
 
 	// update the condition to notify that we have created a child resource
-	return updateResourceConditions(r, &condition)
+	return updateResourceConditions(r, *resource.ToCommonResource(), &condition)
 }
 `

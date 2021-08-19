@@ -55,10 +55,12 @@ const typesTemplate = `{{ .Boilerplate }}
 package {{ .Resource.Version }}
 
 import (
+	"time"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	{{ if not .IsStandalone }}"k8s.io/apimachinery/pkg/runtime/schema"{{ end }}
 
-	common "{{ .Repo }}/apis/common"
+	"{{ .Repo }}/apis/common"
 	{{- $Repo := .Repo }}{{- $Added := "" }}{{- range .Dependencies }}
 	{{- if ne .Spec.APIGroup $.Resource.Group }}
 	{{- if not (containsString (printf "%s%s" .Spec.APIGroup .Spec.APIVersion) $Added) }}
@@ -96,8 +98,8 @@ type {{ .Resource.Kind }}Status struct {
 
 	Created               bool                       ` + "`" + `json:"created,omitempty"` + "`" + `
 	DependenciesSatisfied bool                       ` + "`" + `json:"dependenciesSatisfied,omitempty"` + "`" + `
-	Conditions            []common.PhaseCondition    ` + "`" + `json:"conditions,omitempty" ` + "`" + `
-	ResourceConditions    []common.ResourceCondition ` + "`" + `json:"resourceConditions,omitempty" ` + "`" + `
+	Conditions            []common.PhaseCondition    ` + "`" + `json:"conditions,omitempty"` + "`" + `
+	Resources             []common.Resource          ` + "`" + `json:"resources,omitempty"` + "`" + `
 }
 
 // +kubebuilder:object:root=true
@@ -154,36 +156,31 @@ func (component {{ .Resource.Kind }}) GetPhaseConditions() []common.PhaseConditi
 
 // SetPhaseCondition sets the phase conditions for a component.
 func (component *{{ .Resource.Kind }}) SetPhaseCondition(condition common.PhaseCondition) {
-	component.Status.Conditions = append(component.Status.Conditions, condition)
-}
-
-// GetResourceConditions returns the phase conditions for a component.
-func (component {{ .Resource.Kind }}) GetResourceConditions() []common.ResourceCondition {
-	return component.Status.ResourceConditions
-}
-
-// SetResourceCondition sets the phase conditions for a component.
-func (component *{{ .Resource.Kind }}) SetResourceCondition(condition common.ResourceCondition) {
-
-	var found bool
-	var foundIndex int
-
-	for i, currentCondition := range component.GetResourceConditions() {
-		// find a condition with a matching gvk and name/namespace
-		if currentCondition.Group == condition.Group && currentCondition.Version == condition.Version && currentCondition.Kind == condition.Kind {
-			if currentCondition.Name == condition.Name && currentCondition.Namespace == condition.Namespace {
-				found = true
-				foundIndex = i
-
-				break
-			}
+	if found := condition.GetPhaseConditionIndex(component); found >= 0 {
+		if condition.LastModified == "" {
+			condition.LastModified = time.Now().UTC().String()
 		}
-	}
-
-	if found {
-		component.Status.ResourceConditions[foundIndex] = condition
+		component.Status.Conditions[found] = condition
 	} else {
-		component.Status.ResourceConditions = append(component.Status.ResourceConditions, condition)
+		component.Status.Conditions = append(component.Status.Conditions, condition)
+	}
+}
+
+// GetResources returns the resources for a component.
+func (component {{ .Resource.Kind }}) GetResources() []common.Resource {
+	return component.Status.Resources
+}
+
+// SetResources sets the phase conditions for a component.
+func (component *{{ .Resource.Kind }}) SetResource(resource common.Resource) {
+
+	if found := resource.GetResourceIndex(component); found >= 0 {
+		if resource.ResourceCondition.LastModified == "" {
+			resource.ResourceCondition.LastModified = time.Now().UTC().String()
+		}
+		component.Status.Resources[found] = resource
+	} else {
+		component.Status.Resources = append(component.Status.Resources, resource)
 	}
 }
 
@@ -193,9 +190,9 @@ func (component {{ .Resource.Kind }}) GetDependencies() []common.Component {
 	return []common.Component{
 		{{ range .Dependencies }}
 		{{- if eq .Spec.APIGroup $.Resource.Group }}
-			&{{ .Spec.APIKind }}{},
+			&{{- .Spec.APIKind }}{},
 		{{ else }}
-			&{{ .Spec.APIGroup }}{{ .Spec.APIVersion }}.{{ .Spec.APIKind }}{},
+			&{{- .Spec.APIGroup }}{{ .Spec.APIVersion }}.{{ .Spec.APIKind }}{},
 		{{ end }}
 		{{ end }}
 	}

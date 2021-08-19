@@ -52,33 +52,31 @@ type PhaseCondition struct {
 	LastModified string ` + "`" + `json:"lastModified"` + "`" + `
 }
 
-// ResourceCondition describes that condition of a Kubernetes resource managed by the parent object.
+// ResourceCondition describes the condition of a Kubernetes resource managed by the parent object.
 type ResourceCondition struct {
-	// Group defines the API Group of the resource that this status applies to.
-	Group string ` + "`" + `json:"group"` + "`" + `
-
-	// Version defines the API Version of the resource that this status applies to.
-	Version string ` + "`" + `json:"version"` + "`" + `
-
-	// Kind defines the kind of resource that this status applies to.
-	Kind string ` + "`" + `json:"kind"` + "`" + `
-
-	// Name defines the name of the resource from the metadata.name field.
-	Name string ` + "`" + `json:"name"` + "`" + `
-
-	// Namespace defines the namespace in which this resource exists in.
-	Namespace string ` + "`" + `json:"namespace"` + "`" + `
-
-	// Created defined whether this object has been successfully created or not.
+	// Created defines whether this object has been successfully created or not.
 	Created bool ` + "`" + `json:"created"` + "`" + `
 
 	// LastResourcePhase defines the last successfully completed resource phase.
-	LastResourcePhase string ` + "`" + `json:"lastResourcePhase"` + "`" + `
+	LastResourcePhase string ` + "`" + `json:"lastResourcePhase,omitempty"` + "`" + `
 
 	// LastModified defines the time in which this resource was updated.
-	LastModified string ` + "`" + `json:"lastModified"` + "`" + `
+	LastModified string ` + "`" + `json:"lastModified,omitempty"` + "`" + `
 
 	// Message defines a helpful message from the resource phase.
-	Message string ` + "`" + `json:"message"` + "`" + `
+	Message string ` + "`" + `json:"message,omitempty"` + "`" + `
+}
+
+// GetPhaseConditionIndex returns the index of a matching phase condition.  Any integer which is 0
+// or greater indicates that the phase condition was found.  Anything lower indicates that an
+// associated condition is not found.
+func (condition *PhaseCondition) GetPhaseConditionIndex(component Component) int {
+	for i, currentCondition := range component.GetPhaseConditions() {
+		if currentCondition.Phase == condition.Phase {
+			return i
+		}
+	}
+
+	return -1
 }
 `

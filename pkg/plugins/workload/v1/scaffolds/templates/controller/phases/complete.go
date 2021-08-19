@@ -30,11 +30,11 @@ package phases
 import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	common "{{ .Repo }}/apis/common"
+	"{{ .Repo }}/apis/common"
 )
 
-// Requeue defines the result return when a requeue is needed.
-func (phase *CompletePhase) Requeue() ctrl.Result {
+// CompletePhase.DefaultRequeue executes checking for a parent components readiness status.
+func (phase *CompletePhase) DefaultRequeue() ctrl.Result {
 	return Requeue()
 }
 

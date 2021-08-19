@@ -32,7 +32,6 @@ import (
 	"reflect"
 	"strings"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"{{ .Repo }}/apis/common"
@@ -41,36 +40,22 @@ import (
 // Phase defines a phase of the reconciliation process.
 type Phase interface {
 	Execute(common.ComponentReconciler) (bool, error)
+	DefaultRequeue() ctrl.Result
 }
 
 // ResourcePhase defines the specific phase of reconcilication associated with creating resources.
 type ResourcePhase interface {
-	Execute(*ComponentResource) (ctrl.Result, bool, error)
-}
-
-// ComponentResource defines a resource which is created by the parent Component custom resource.
-type ComponentResource struct {
-	ComponentReconciler common.ComponentReconciler
-	OriginalResource    metav1.Object
-	ReplacedResources   []metav1.Object
-	Skip                bool
-
-	ResourceCondition common.ResourceCondition
+	Execute(common.ComponentResource, common.ResourceCondition) (ctrl.Result, bool, error)
 }
 
 // Below are the phase types which satisfy the Phase interface.
 type DependencyPhase struct{}
 type PreFlightPhase struct{}
-type CreateResourcesPhase struct {
-	Resources         []metav1.Object
-	ReplacedResources []metav1.Object
-}
+type CreateResourcesPhase struct{}
 type CheckReadyPhase struct{}
 type CompletePhase struct{}
 
 // Below are the phase types which satisfy the ResourcePhase interface.
-type ConstructPhase struct{}
-type MutateResourcePhase struct{}
 type PersistResourcePhase struct{}
 type WaitForResourcePhase struct{}
 
