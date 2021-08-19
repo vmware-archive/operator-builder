@@ -28,10 +28,6 @@ const resourceWaitTemplate = `{{ .Boilerplate }}
 package phases
 
 import (
-<<<<<<< HEAD
-=======
-	v1 "k8s.io/api/core/v1"
->>>>>>> upstream/main
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -46,13 +42,7 @@ func (phase *WaitForResourcePhase) Execute(
 ) (ctrl.Result, bool, error) {
 	// TODO: loop through functions instead of repeating logic
 	// common wait logic for a resource
-<<<<<<< HEAD
 	ready, err := commonWait(resource.GetReconciler(), resource)
-=======
-	ready, err := commonWait(resource.ComponentReconciler, resource.OriginalResource)
-
-	// return the error if we have any
->>>>>>> upstream/main
 	if err != nil {
 		return ctrl.Result{}, false, err
 	}
@@ -63,14 +53,8 @@ func (phase *WaitForResourcePhase) Execute(
 	}
 
 	// specific wait logic for a resource
-<<<<<<< HEAD
 	meta := resource.GetObject().(metav1.Object)
 	ready, err = resource.GetReconciler().Wait(&meta)
-=======
-	ready, err = resource.ComponentReconciler.Wait(&resource.OriginalResource)
-
-	// return the error if we have any
->>>>>>> upstream/main
 	if err != nil {
 		return ctrl.Result{}, false, err
 	}
@@ -86,11 +70,7 @@ func (phase *WaitForResourcePhase) Execute(
 // commonWait applies all common waiting functions for known resources.
 func commonWait(
 	r common.ComponentReconciler,
-<<<<<<< HEAD
 	resource common.ComponentResource,
-=======
-	resource metav1.Object,
->>>>>>> upstream/main
 ) (bool, error) {
 	// Namespace
 	if resource.GetObject().GetNamespace() != "" {
