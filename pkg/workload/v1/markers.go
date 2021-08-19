@@ -155,7 +155,7 @@ func processDocLines(lines []string, start, end int) []string {
 		if strings.HasPrefix(line, "#") {
 			docLine := strings.TrimLeft(line, "#")
 			docLine = strings.TrimLeft(docLine, " ")
-			docLine = strings.TrimLeft(docLine, docMarkerStr)
+			docLine = strings.TrimPrefix(docLine, docMarkerStr)
 			docLine = strings.TrimLeft(docLine, " ")
 
 			docLines = append(docLines, docLine)
