@@ -143,4 +143,10 @@ endef
 build-{{ .RootCmd }}:
 	go build -o bin/{{ .RootCmd }} cmd/{{ .RootCmd }}/main.go
 
+# Build the API Documentation
+# NOTE: requires go version 1.16 or later
+docs: manifests
+	@if [[ ! -d config/docs/ ]]; then mkdir -p config/docs/; fi; \
+	go install fybrik.io/crdoc@v0.5.0; \
+	crdoc --resources config/crd/bases/ --output config/docs/apis.md
 `

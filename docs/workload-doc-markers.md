@@ -72,3 +72,9 @@ DESCRIPTION:
      Defines the namespace in which all resources for this component will be
      placed into.
 ```
+
+## API Documentation
+
+API documentation in markdown can also be generated after building an operator.  To do
+so, simply run the command `make docs` from the root of your repository.  This will build
+the documentation in the `config/docs/apis.md` file.
