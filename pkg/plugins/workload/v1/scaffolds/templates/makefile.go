@@ -151,5 +151,5 @@ docs: manifests
 	if [[ -z $$($$GOCMD version | grep '1.16') ]]; then echo "error: requires go version >= 1.16"; exit 1; fi; \
 	go get fybrik.io/crdoc@v0.5.0; \
 	go install fybrik.io/crdoc@v0.5.0; \
-	crdoc --resources config/crd/bases/ --output config/docs/apis.md
+	crdoc --resources config/crd/bases/ --output docs/apis.md
 `
