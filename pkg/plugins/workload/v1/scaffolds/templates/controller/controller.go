@@ -168,7 +168,7 @@ func (r *{{ .Resource.Kind }}Reconciler) Reconcile(ctx context.Context, req ctrl
 // Construct resources runs the methods to properly construct the resources.
 func (r *{{ .Resource.Kind }}Reconciler) ConstructResources() ([]metav1.Object, error) {
 	{{ if .HasChildResources }}
-	var resourceObjects []metav1.Object
+	resourceObjects := make([]metav1.Object, len({{ .PackageName }}.CreateFuncs))
 
 	// create resources in memory
 	for i, f := range {{ .PackageName }}.CreateFuncs {
