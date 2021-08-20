@@ -45,7 +45,7 @@ type DefaultRateLimiter struct {
 }
 
 func NewDefaultRateLimiter(baseDelay, maxDelay time.Duration) *DefaultRateLimiter {
-	return &defaultRateLimiter{
+	return &DefaultRateLimiter{
 		baseDelay: baseDelay,
 		maxDelay:  maxDelay,
 		requeues: map[interface{}]int{},
