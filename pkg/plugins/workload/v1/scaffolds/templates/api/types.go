@@ -188,13 +188,13 @@ func (component *{{ .Resource.Kind }}) SetResource(resource common.Resource) {
 // GetDependencies returns the dependencies for a component.
 func (component {{ .Resource.Kind }}) GetDependencies() []common.Component {
 	return []common.Component{
-		{{ range .Dependencies }}
+		{{- range .Dependencies }}
 		{{- if eq .Spec.APIGroup $.Resource.Group }}
-			&{{- .Spec.APIKind }}{},
-		{{ else }}
-			&{{- .Spec.APIGroup }}{{ .Spec.APIVersion }}.{{ .Spec.APIKind }}{},
-		{{ end }}
-		{{ end }}
+			&{{ .Spec.APIKind }}{},
+		{{- else }}
+			&{{ .Spec.APIGroup }}{{ .Spec.APIVersion }}.{{ .Spec.APIKind }}{},
+		{{- end }}
+		{{- end }}
 	}
 }
 
