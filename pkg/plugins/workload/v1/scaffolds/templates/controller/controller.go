@@ -71,12 +71,10 @@ import (
 	{{ end -}}
 	"{{ .Repo }}/controllers"
 	"{{ .Repo }}/controllers/phases"
-	{{- if not .IsStandalone }}
 	"{{ .Repo }}/pkg/dependencies"
 	"{{ .Repo }}/pkg/mutate"
 	"{{ .Repo }}/pkg/resources"
 	"{{ .Repo }}/pkg/wait"
-	{{ end }}
 )
 
 // {{ .Resource.Kind }}Reconciler reconciles a {{ .Resource.Kind }} object.

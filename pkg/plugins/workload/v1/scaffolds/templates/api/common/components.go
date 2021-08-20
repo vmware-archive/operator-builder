@@ -34,32 +34,24 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	{{ if not .IsStandalone -}}
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	{{ end -}}
-
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 )
 
 type Component interface {
-	{{- if not .IsStandalone }}
 	GetComponentGVK() schema.GroupVersionKind
 	GetDependencies() []Component
 	GetDependencyStatus() bool
-	{{ end -}}
 	GetReadyStatus() bool
 	GetPhaseConditions() []PhaseCondition
 	GetResources() []Resource
 
-	{{- if not .IsStandalone }}
 	SetReadyStatus(bool)
 	SetDependencyStatus(bool)
-	{{ end -}}
 	SetPhaseCondition(PhaseCondition)
 	SetResource(Resource)
 }

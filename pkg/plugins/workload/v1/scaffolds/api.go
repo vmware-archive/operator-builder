@@ -239,6 +239,11 @@ func (s *apiScaffolder) Scaffold() error {
 			&phases.ResourceWait{},
 			&phases.CheckReady{},
 			&phases.Complete{},
+			&helpers.Common{},
+			&helpers.Component{},
+			&dependencies.Component{},
+			&mutate.Component{},
+			&wait.Component{},
 			&samples.CRDSample{
 				SpecFields: s.workload.GetAPISpecFields(),
 			},

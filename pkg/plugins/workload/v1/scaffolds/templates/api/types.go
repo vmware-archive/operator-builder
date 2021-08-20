@@ -58,7 +58,7 @@ import (
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	{{ if not .IsStandalone }}"k8s.io/apimachinery/pkg/runtime/schema"{{ end }}
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"{{ .Repo }}/apis/common"
 	{{- $Repo := .Repo }}{{- $Added := "" }}{{- range .Dependencies }}
@@ -132,7 +132,6 @@ func (component {{ .Resource.Kind }}) GetReadyStatus() bool {
 	return component.Status.Created
 }
 
-{{- if not .IsStandalone }}
 // SetReadyStatus sets the ready status for a component.
 func (component *{{ .Resource.Kind }}) SetReadyStatus(status bool) {
 	component.Status.Created = status
@@ -147,7 +146,6 @@ func (component *{{ .Resource.Kind }}) GetDependencyStatus() bool {
 func (component *{{ .Resource.Kind }}) SetDependencyStatus(dependencyStatus bool) {
 	component.Status.DependenciesSatisfied = dependencyStatus
 }
-{{ end }}
 
 // GetPhaseConditions returns the phase conditions for a component.
 func (component {{ .Resource.Kind }}) GetPhaseConditions() []common.PhaseCondition {
@@ -184,7 +182,6 @@ func (component *{{ .Resource.Kind }}) SetResource(resource common.Resource) {
 	}
 }
 
-{{- if not .IsStandalone }}
 // GetDependencies returns the dependencies for a component.
 func (component {{ .Resource.Kind }}) GetDependencies() []common.Component {
 	return []common.Component{
@@ -206,7 +203,6 @@ func (component {{ .Resource.Kind }}) GetComponentGVK() schema.GroupVersionKind 
 		Kind:    "{{ .Resource.Kind }}",
 	}
 }
-{{ end }}
 
 func init() {
 	SchemeBuilder.Register(&{{ .Resource.Kind }}{}, &{{ .Resource.Kind }}List{})
