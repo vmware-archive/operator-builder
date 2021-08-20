@@ -78,20 +78,11 @@ type ComponentReconciler interface {
 	UpdateStatus() error
 
 	// methods from the underlying client package
-<<<<<<< HEAD
 	Get(context.Context, types.NamespacedName, client.Object) error
 	List(context.Context, client.ObjectList, ...client.ListOption) error
 	Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error
 	Update(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error
 	Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error
-=======
-	Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error
-	Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error
-	{{ if not .IsStandalone -}}
-	Get(context.Context, types.NamespacedName, client.Object) error
-	List(context.Context, client.ObjectList, ...client.ListOption) error
-	Update(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error
->>>>>>> upstream/main
 
 	// custom methods which are managed by consumers
 	CheckReady() (bool, error)
