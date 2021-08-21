@@ -31,6 +31,7 @@ type Controller struct {
 func (f *Controller) SetTemplateDefaults() error {
 	f.Path = filepath.Join(
 		"controllers",
+		"reconcilers",
 		f.Resource.Group,
 		fmt.Sprintf("%s_controller.go", utils.ToFileName(f.Resource.Kind)),
 	)
@@ -69,8 +70,8 @@ import (
 	{{- if .HasChildResources -}}
 	"{{ .Resource.Path }}/{{ .PackageName }}"
 	{{ end -}}
-	"{{ .Repo }}/controllers"
-	"{{ .Repo }}/controllers/phases"
+	controllerutils "{{ .Repo }}/controllers/utils"
+	controllerphases "{{ .Repo }}/controllers/phases/controller"
 	"{{ .Repo }}/pkg/dependencies"
 	"{{ .Repo }}/pkg/mutate"
 	"{{ .Repo }}/pkg/resources"
@@ -117,7 +118,7 @@ func (r *{{ .Resource.Kind }}Reconciler) Reconcile(ctx context.Context, req ctrl
 	if err := r.Get(r.Context, req.NamespacedName, r.Component); err != nil {
 		log.V(0).Info("unable to fetch {{ .Resource.Kind }}")
 
-		return ctrl.Result{}, controllers.IgnoreNotFound(err)
+		return ctrl.Result{}, controllerutils.IgnoreNotFound(err)
 	}
 
 	{{ if .IsComponent }}
@@ -147,10 +148,10 @@ func (r *{{ .Resource.Kind }}Reconciler) Reconcile(ctx context.Context, req ctrl
 	}
 
 	// execute the phases
-	for _, phase := range controllers.Phases(r.Component) {
+	for _, phase := range controllerphases.GetPhases(r.Component) {
 		r.GetLogger().V(7).Info(fmt.Sprintf("enter phase: %T", phase))
 		proceed, err := phase.Execute(r)
-		result, err := phases.HandlePhaseExit(r, phase, proceed, err)
+		result, err := controllerphases.HandlePhaseExit(r, phase, proceed, err)
 
 		// return only if we have an error or are told not to proceed
 		if err != nil || !proceed {
@@ -162,7 +163,7 @@ func (r *{{ .Resource.Kind }}Reconciler) Reconcile(ctx context.Context, req ctrl
 		r.GetLogger().V(5).Info(fmt.Sprintf("completed phase: %T", phase))
 	}
 
-	return phases.DefaultReconcileResult(), nil
+	return controllerutils.DefaultReconcileResult(), nil
 }
 
 // Construct resources runs the methods to properly construct the resources.
@@ -257,7 +258,7 @@ func (r *{{ .Resource.Kind }}Reconciler) CreateOrUpdate(
 		}
 	}
 
-	return controllers.Watch(r, newResource.Object)
+	return controllerutils.Watch(r, newResource.Object)
 }
 
 // SetResources will create and return the resources in memory.
@@ -361,12 +362,12 @@ func (r *{{ .Resource.Kind }}Reconciler) Wait(
 
 func (r *{{ .Resource.Kind }}Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 	options := controller.Options{
-		RateLimiter: controllers.NewDefaultRateLimiter(5*time.Microsecond, 5*time.Minute),
+		RateLimiter: controllerutils.NewDefaultRateLimiter(5*time.Microsecond, 5*time.Minute),
 	}
 
 	baseController, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
-		WithEventFilter(controllers.ComponentPredicates()).
+		WithEventFilter(controllerutils.ComponentPredicates()).
 		For(&{{ .Resource.ImportAlias }}.{{ .Resource.Kind }}{}).
 		Build(r)
 	if err != nil {

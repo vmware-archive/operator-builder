@@ -1,4 +1,4 @@
-package phases
+package controller
 
 import (
 	"path/filepath"
@@ -16,7 +16,7 @@ type Complete struct {
 }
 
 func (f *Complete) SetTemplateDefaults() error {
-	f.Path = filepath.Join("controllers", "phases", "complete.go")
+	f.Path = filepath.Join("controllers", "phases", "controller", "complete.go")
 
 	f.TemplateBody = completeTemplate
 
@@ -25,21 +25,22 @@ func (f *Complete) SetTemplateDefaults() error {
 
 const completeTemplate = `{{ .Boilerplate }}
 
-package phases
+package controller
 
 import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"{{ .Repo }}/apis/common"
+	controllerutils "{{ .Repo }}/controllers/utils"
 )
 
-// CompletePhase.DefaultRequeue executes checking for a parent components readiness status.
-func (phase *CompletePhase) DefaultRequeue() ctrl.Result {
-	return Requeue()
+// Complete.DefaultRequeue returns the default requeue configuration for this controller phase.
+func (phase *Complete) DefaultRequeue() ctrl.Result {
+	return controllerutils.DefaultRequeueResult()
 }
 
-// CompletePhase.Execute executes the completion of a reconciliation loop.
-func (phase *CompletePhase) Execute(
+// Complete.Execute executes the completion of a reconciliation loop.
+func (phase *Complete) Execute(
 	r common.ComponentReconciler,
 ) (proceedToNextPhase bool, err error) {
 	r.GetComponent().SetReadyStatus(true)

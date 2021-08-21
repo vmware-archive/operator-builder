@@ -1,4 +1,4 @@
-package phases
+package resource
 
 import (
 	"path/filepath"
@@ -6,26 +6,26 @@ import (
 	"sigs.k8s.io/kubebuilder/v3/pkg/machinery"
 )
 
-var _ machinery.Template = &ResourceWait{}
+var _ machinery.Template = &Wait{}
 
-// ResourceWait scaffolds the resource wait phase methods.
-type ResourceWait struct {
+// Wait scaffolds the resource wait phase methods.
+type Wait struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
 	machinery.RepositoryMixin
 }
 
-func (f *ResourceWait) SetTemplateDefaults() error {
-	f.Path = filepath.Join("controllers", "phases", "resource_wait.go")
+func (f *Wait) SetTemplateDefaults() error {
+	f.Path = filepath.Join("controllers", "phases", "resource", "wait.go")
 
-	f.TemplateBody = resourceWaitTemplate
+	f.TemplateBody = waitTemplate
 
 	return nil
 }
 
-const resourceWaitTemplate = `{{ .Boilerplate }}
+const waitTemplate = `{{ .Boilerplate }}
 
-package phases
+package resource
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,10 +33,11 @@ import (
 
 	"{{ .Repo }}/apis/common"
 	"{{ .Repo }}/pkg/resources"
+	controllerutils "{{ .Repo }}/controllers/utils"
 )
 
-// WaitForResourcePhase.Execute executes waiting for a resource to be ready before continuing.
-func (phase *WaitForResourcePhase) Execute(
+// Wait.Execute executes waiting for a resource to be ready before continuing.
+func (phase *Wait) Execute(
 	resource common.ComponentResource,
 	resourceCondition common.ResourceCondition,
 ) (ctrl.Result, bool, error) {
@@ -49,7 +50,7 @@ func (phase *WaitForResourcePhase) Execute(
 
 	// return the result if the object is not ready
 	if !ready {
-		return Requeue(), false, nil
+		return controllerutils.DefaultRequeueResult(), false, nil
 	}
 
 	// specific wait logic for a resource
@@ -61,7 +62,7 @@ func (phase *WaitForResourcePhase) Execute(
 
 	// return the result if the object is not ready
 	if !ready {
-		return Requeue(), false, nil
+		return controllerutils.DefaultRequeueResult(), false, nil
 	}
 
 	return ctrl.Result{}, true, nil

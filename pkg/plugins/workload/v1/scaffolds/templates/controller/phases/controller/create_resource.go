@@ -1,4 +1,4 @@
-package phases
+package controller
 
 import (
 	"path/filepath"
@@ -18,7 +18,7 @@ type CreateResource struct {
 }
 
 func (f *CreateResource) SetTemplateDefaults() error {
-	f.Path = filepath.Join("controllers", "phases", "create_resource.go")
+	f.Path = filepath.Join("controllers", "phases", "controller", "create_resource.go")
 
 	f.TemplateBody = createResourceTemplate
 
@@ -27,7 +27,7 @@ func (f *CreateResource) SetTemplateDefaults() error {
 
 const createResourceTemplate = `{{ .Boilerplate }}
 
-package phases
+package controller
 
 import (
 	"fmt"
@@ -35,26 +35,28 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"{{ .Repo }}/apis/common"
+	resourcephases "{{ .Repo }}/controllers/phases/resource"
+	controllerutils "{{ .Repo }}/controllers/utils"
 )
 
-// CreateResourcesPhase.DefaultRequeue executes checking for a parent components readiness status.
-func (phase *CreateResourcesPhase) DefaultRequeue() ctrl.Result {
-	return Requeue()
+// CreateResources.DefaultRequeue returns the default requeue configuration for this controller phase.
+func (phase *CreateResources) DefaultRequeue() ctrl.Result {
+	return controllerutils.DefaultRequeueResult()
 }
 
-// createResourcePhases defines the phases for resource creation and the order in which they run during the reconcile process.
-func createResourcePhases() []ResourcePhase {
-	return []ResourcePhase{
+// resourcePhases defines the phases for resource creation and the order in which they run during the reconcile process.
+func resourcePhases() []resourcephases.ResourcePhase {
+	return []resourcephases.ResourcePhase{
 		// wait for other resources before attempting to create
-		&WaitForResourcePhase{},
+		&resourcephases.Wait{},
 
 		// create the resource in the cluster
-		&PersistResourcePhase{},
+		&resourcephases.Persist{},
 	}
 }
 
-// CreateResourcesPhase.Execute executes executes sub-phases which are required to create the resources.
-func (phase *CreateResourcesPhase) Execute(
+// CreateResources.Execute executes executes sub-phases which are required to create the resources.
+func (phase *CreateResources) Execute(
 	r common.ComponentReconciler,
 ) (proceedToNextPhase bool, err error) {
 	// execute the resource phases against each resource
@@ -62,17 +64,24 @@ func (phase *CreateResourcesPhase) Execute(
 		resourceCommon := resource.ToCommonResource()
 		resourceCondition := &common.ResourceCondition{}
 
-		for _, resourcePhase := range createResourcePhases() {
+		for _, resourcePhase := range resourcePhases() {
 			r.GetLogger().V(7).Info(fmt.Sprintf("enter resource phase: %T", resourcePhase))
 			_, proceed, err := resourcePhase.Execute(resource, *resourceCondition)
 
 			// set a message, return the error and result on error or when unable to proceed
 			if err != nil || !proceed {
-				return handleResourcePhaseExit(r, *resourceCommon, *resourceCondition, resourcePhase, proceed, err)
+				return resourcephases.HandleResourcePhaseExit(
+					r,
+					*resourceCommon,
+					*resourceCondition,
+					resourcePhase,
+					proceed,
+					err,
+				)
 			}
 
 			// set attributes on the resource condition before updating the status
-			resourceCondition.LastResourcePhase = getResourcePhaseName(resourcePhase)
+			resourceCondition.LastResourcePhase = resourcephases.GetResourcePhaseName(resourcePhase)
 
 			r.GetLogger().V(5).Info(fmt.Sprintf("completed resource phase: %T", resourcePhase))
 		}

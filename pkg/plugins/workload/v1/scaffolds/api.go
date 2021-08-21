@@ -17,8 +17,10 @@ import (
 	"github.com/vmware-tanzu-labs/operator-builder/pkg/plugins/workload/v1/scaffolds/templates/cli"
 	"github.com/vmware-tanzu-labs/operator-builder/pkg/plugins/workload/v1/scaffolds/templates/config/crd"
 	"github.com/vmware-tanzu-labs/operator-builder/pkg/plugins/workload/v1/scaffolds/templates/config/samples"
-	"github.com/vmware-tanzu-labs/operator-builder/pkg/plugins/workload/v1/scaffolds/templates/controller"
-	"github.com/vmware-tanzu-labs/operator-builder/pkg/plugins/workload/v1/scaffolds/templates/controller/phases"
+	controllerphases "github.com/vmware-tanzu-labs/operator-builder/pkg/plugins/workload/v1/scaffolds/templates/controller/phases/controller"
+	resourcephases "github.com/vmware-tanzu-labs/operator-builder/pkg/plugins/workload/v1/scaffolds/templates/controller/phases/resource"
+	reconcilers "github.com/vmware-tanzu-labs/operator-builder/pkg/plugins/workload/v1/scaffolds/templates/controller/reconcilers"
+	controllerutils "github.com/vmware-tanzu-labs/operator-builder/pkg/plugins/workload/v1/scaffolds/templates/controller/utils"
 	"github.com/vmware-tanzu-labs/operator-builder/pkg/plugins/workload/v1/scaffolds/templates/pkg/dependencies"
 	"github.com/vmware-tanzu-labs/operator-builder/pkg/plugins/workload/v1/scaffolds/templates/pkg/helpers"
 	"github.com/vmware-tanzu-labs/operator-builder/pkg/plugins/workload/v1/scaffolds/templates/pkg/mutate"
@@ -216,7 +218,7 @@ func (s *apiScaffolder) Scaffold() error {
 			&resourcespkg.DeploymentType{},
 			&resourcespkg.JobType{},
 			&resourcespkg.SecretType{},
-			&controller.Controller{
+			&reconcilers.Controller{
 				PackageName:       s.workload.GetPackageName(),
 				RBACRules:         s.workload.GetRBACRules(),
 				OwnershipRules:    s.workload.GetOwnershipRules(),
@@ -224,21 +226,25 @@ func (s *apiScaffolder) Scaffold() error {
 				IsStandalone:      s.workload.IsStandalone(),
 				IsComponent:       s.workload.IsComponent(),
 			},
-			&controller.Common{
+			&controllerutils.Actions{},
+			&controllerutils.Constants{},
+			&controllerutils.Errors{},
+			&controllerutils.Predicates{},
+			&controllerutils.RateLimiter{},
+			&controllerutils.Results{},
+			&controllerphases.Types{},
+			&controllerphases.Controller{},
+			&controllerphases.CheckReady{},
+			&controllerphases.Complete{},
+			&controllerphases.CreateResource{
 				IsStandalone: s.workload.IsStandalone(),
 			},
-			&controller.RateLimiter{},
-			&phases.Types{},
-			&phases.Common{},
-			&phases.CreateResource{
-				IsStandalone: s.workload.IsStandalone(),
-			},
-			&phases.ResourcePersist{},
-			&phases.Dependencies{},
-			&phases.PreFlight{},
-			&phases.ResourceWait{},
-			&phases.CheckReady{},
-			&phases.Complete{},
+			&controllerphases.Dependency{},
+			&controllerphases.PreFlight{},
+			&resourcephases.Types{},
+			&resourcephases.Resource{},
+			&resourcephases.Persist{},
+			&resourcephases.Wait{},
 			&helpers.Common{},
 			&helpers.Component{},
 			&dependencies.Component{},
@@ -274,6 +280,7 @@ func (s *apiScaffolder) Scaffold() error {
 				Dependencies:  s.workload.GetDependencies(),
 				IsStandalone:  s.workload.IsStandalone(),
 			},
+			&api.Group{},
 			&common.Components{
 				IsStandalone: s.workload.IsStandalone(),
 			},
@@ -288,7 +295,7 @@ func (s *apiScaffolder) Scaffold() error {
 			&resourcespkg.DeploymentType{},
 			&resourcespkg.JobType{},
 			&resourcespkg.SecretType{},
-			&controller.Controller{
+			&reconcilers.Controller{
 				PackageName:       s.workload.GetPackageName(),
 				RBACRules:         &[]workloadv1.RBACRule{},
 				OwnershipRules:    s.workload.GetOwnershipRules(),
@@ -296,21 +303,25 @@ func (s *apiScaffolder) Scaffold() error {
 				IsStandalone:      s.workload.IsStandalone(),
 				IsComponent:       s.workload.IsComponent(),
 			},
-			&controller.Common{
+			&controllerutils.Actions{},
+			&controllerutils.Constants{},
+			&controllerutils.Errors{},
+			&controllerutils.Predicates{},
+			&controllerutils.RateLimiter{},
+			&controllerutils.Results{},
+			&controllerphases.Types{},
+			&controllerphases.Controller{},
+			&controllerphases.CheckReady{},
+			&controllerphases.Complete{},
+			&controllerphases.CreateResource{
 				IsStandalone: s.workload.IsStandalone(),
 			},
-			&controller.RateLimiter{},
-			&phases.Types{},
-			&phases.Common{},
-			&phases.CreateResource{
-				IsStandalone: s.workload.IsStandalone(),
-			},
-			&phases.ResourcePersist{},
-			&phases.Dependencies{},
-			&phases.PreFlight{},
-			&phases.ResourceWait{},
-			&phases.CheckReady{},
-			&phases.Complete{},
+			&controllerphases.Dependency{},
+			&controllerphases.PreFlight{},
+			&resourcephases.Types{},
+			&resourcephases.Resource{},
+			&resourcephases.Persist{},
+			&resourcephases.Wait{},
 			&helpers.Common{},
 			&helpers.Component{},
 			&dependencies.Component{},
@@ -371,7 +382,7 @@ func (s *apiScaffolder) Scaffold() error {
 					IsComponent:     component.IsComponent(),
 					Collection:      s.workload.(*workloadv1.WorkloadCollection),
 				},
-				&controller.Controller{
+				&reconcilers.Controller{
 					PackageName:       component.GetPackageName(),
 					RBACRules:         component.GetRBACRules(),
 					OwnershipRules:    component.GetOwnershipRules(),

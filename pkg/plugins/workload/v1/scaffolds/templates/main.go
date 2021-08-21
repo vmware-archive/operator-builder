@@ -8,7 +8,7 @@ import (
 
 const (
 	defaultMainPath = "main.go"
-	importMarker    = "imports"
+	importMarker    = "controllerimports"
 	addSchemeMarker = "scheme"
 	setupMarker     = "reconcilers"
 )
@@ -68,9 +68,9 @@ func (f *MainUpdater) GetMarkers() []machinery.Marker {
 const (
 	apiImportCodeFragment = `%s "%s"
 `
-	controllerImportCodeFragment = `"%s/controllers"
+	controllerImportCodeFragment = `"%s/controllers/reconcilers"
 `
-	multiGroupControllerImportCodeFragment = `%scontrollers "%s/controllers/%s"
+	multiGroupControllerImportCodeFragment = `%scontrollers "%s/controllers/reconcilers/%s"
 `
 	addschemeCodeFragment = `utilruntime.Must(%s.AddToScheme(scheme))
 `

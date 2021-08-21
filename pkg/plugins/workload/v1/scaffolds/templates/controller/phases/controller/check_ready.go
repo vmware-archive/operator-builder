@@ -1,4 +1,4 @@
-package phases
+package controller
 
 import (
 	"path/filepath"
@@ -16,7 +16,7 @@ type CheckReady struct {
 }
 
 func (f *CheckReady) SetTemplateDefaults() error {
-	f.Path = filepath.Join("controllers", "phases", "check_ready.go")
+	f.Path = filepath.Join("controllers", "phases", "controller", "check_ready.go")
 
 	f.TemplateBody = checkReadyTemplate
 
@@ -25,7 +25,7 @@ func (f *CheckReady) SetTemplateDefaults() error {
 
 const checkReadyTemplate = `{{ .Boilerplate }}
 
-package phases
+package controller
 
 import (
 	"time"
@@ -36,16 +36,16 @@ import (
 	"{{ .Repo }}/pkg/resources"
 )
 
-// CheckReadyPhase.DefaultRequeue executes checking for a parent components readiness status.
-func (phase *CheckReadyPhase) DefaultRequeue() ctrl.Result {
+// CheckReady.DefaultRequeue returns the default requeue configuration for this controller phase.
+func (phase *CheckReady) DefaultRequeue() ctrl.Result {
 	return ctrl.Result{
 		Requeue:      true,
 		RequeueAfter: 5 * time.Second,
 	}
 }
 
-// CheckReadyPhase.Execute executes checking for a parent components readiness status.
-func (phase *CheckReadyPhase) Execute(
+// CheckReady.Execute executes checking for a parent components readiness status.
+func (phase *CheckReady) Execute(
 	r common.ComponentReconciler,
 ) (proceedToNextPhase bool, err error) {
 	// check to see if known types are ready

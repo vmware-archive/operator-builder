@@ -17,6 +17,18 @@ import (
 
 const CobraVersion = "v1.1.3"
 
+const (
+	// ControllerRuntimeVersion is the kubernetes-sigs/controller-runtime version to be used in the project
+	ControllerRuntimeVersion = "v0.7.2"
+	// ControllerToolsVersion is the kubernetes-sigs/controller-tools version to be used in the project
+	ControllerToolsVersion = "v0.6.1"
+	// KustomizeVersion is the kubernetes-sigs/kustomize version to be used in the project
+	KustomizeVersion = "v3.8.7"
+	// CobraVersion = "v1.1.3"
+
+	imageName = "controller:latest"
+)
+
 var _ plugins.Scaffolder = &initScaffolder{}
 
 type initScaffolder struct {

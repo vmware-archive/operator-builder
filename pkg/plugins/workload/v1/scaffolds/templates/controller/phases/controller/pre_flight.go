@@ -1,4 +1,4 @@
-package phases
+package controller
 
 import (
 	"path/filepath"
@@ -16,7 +16,7 @@ type PreFlight struct {
 }
 
 func (f *PreFlight) SetTemplateDefaults() error {
-	f.Path = filepath.Join("controllers", "phases", "pre_flight.go")
+	f.Path = filepath.Join("controllers", "phases", "controller", "pre_flight.go")
 
 	f.TemplateBody = preFlightTemplate
 
@@ -25,21 +25,22 @@ func (f *PreFlight) SetTemplateDefaults() error {
 
 const preFlightTemplate = `{{ .Boilerplate }}
 
-package phases
+package controller
 
 import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"{{ .Repo }}/apis/common"
+	controllerutils "{{ .Repo }}/controllers/utils"
 )
 
-// PreFlightPhase.DefaultRequeue executes checking for a parent components readiness status.
-func (phase *PreFlightPhase) DefaultRequeue() ctrl.Result {
-	return Requeue()
+// PreFlight.DefaultRequeue returns the default requeue configuration for this controller phase.
+func (phase *PreFlight) DefaultRequeue() ctrl.Result {
+	return controllerutils.DefaultRequeueResult()
 }
 
-// PreFlightPhase.Execute executes pre-flight and fail-fast conditions prior to attempting resource creation.
-func (phase *PreFlightPhase) Execute(
+// PreFlight.Execute executes pre-flight and fail-fast conditions prior to attempting resource creation.
+func (phase *PreFlight) Execute(
 	r common.ComponentReconciler,
 ) (proceedToNextPhase bool, err error) {
 	return true, nil

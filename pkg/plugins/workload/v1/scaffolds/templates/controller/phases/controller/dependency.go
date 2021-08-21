@@ -1,4 +1,4 @@
-package phases
+package controller
 
 import (
 	"path/filepath"
@@ -6,26 +6,26 @@ import (
 	"sigs.k8s.io/kubebuilder/v3/pkg/machinery"
 )
 
-var _ machinery.Template = &Dependencies{}
+var _ machinery.Template = &Dependency{}
 
-// Dependencies scaffolds the dependency phase methods.
-type Dependencies struct {
+// Dependency scaffolds the dependency phase methods.
+type Dependency struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
 	machinery.RepositoryMixin
 }
 
-func (f *Dependencies) SetTemplateDefaults() error {
-	f.Path = filepath.Join("controllers", "phases", "dependency.go")
+func (f *Dependency) SetTemplateDefaults() error {
+	f.Path = filepath.Join("controllers", "phases", "controller", "dependency.go")
 
-	f.TemplateBody = dependenciesTemplate
+	f.TemplateBody = dependencyTemplate
 
 	return nil
 }
 
-const dependenciesTemplate = `{{ .Boilerplate }}
+const dependencyTemplate = `{{ .Boilerplate }}
 
-package phases
+package controller
 
 import (
 	"fmt"
@@ -37,15 +37,16 @@ import (
 
 	"{{ .Repo }}/apis/common"
 	"{{ .Repo }}/pkg/helpers"
+	controllerutils "{{ .Repo }}/controllers/utils"
 )
 
-// DependencyPhase.DefaultRequeue executes checking for a parent components readiness status.
-func (phase *DependencyPhase) DefaultRequeue() ctrl.Result {
-	return Requeue()
+// Dependency.DefaultRequeue returns the default requeue configuration for this controller phase.
+func (phase *Dependency) DefaultRequeue() ctrl.Result {
+	return controllerutils.DefaultRequeueResult()
 }
 
-// DependencyPhase.Execute executes a dependency check prior to attempting to create resources.
-func (phase *DependencyPhase) Execute(r common.ComponentReconciler) (proceedToNextPhase bool, err error) {
+// Dependency.Execute executes a dependency check prior to attempting to create resources.
+func (phase *Dependency) Execute(r common.ComponentReconciler) (proceedToNextPhase bool, err error) {
 	// dependencies
 	component := r.GetComponent()
 
