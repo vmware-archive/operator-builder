@@ -195,6 +195,15 @@ func checkDir() error {
 					return nil
 				}
 			}
+			// Allow directories in the following list
+			allowedDirs := []string{
+				"docs",
+			}
+			for _, allowedDir := range allowedDirs {
+				if info.Name() == allowedDir && info.IsDir() {
+					return nil
+				}
+			}
 			// Do not allow any other file
 			return fmt.Errorf(
 				"target directory is not empty (only %s, files and directories with the prefix \".\", "+
