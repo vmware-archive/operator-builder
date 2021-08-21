@@ -218,6 +218,7 @@ func (s *apiScaffolder) Scaffold() error {
 			&resourcespkg.DeploymentType{},
 			&resourcespkg.JobType{},
 			&resourcespkg.SecretType{},
+			&resourcespkg.ServiceType{},
 			&reconcilers.Controller{
 				PackageName:       s.workload.GetPackageName(),
 				RBACRules:         s.workload.GetRBACRules(),
@@ -295,6 +296,7 @@ func (s *apiScaffolder) Scaffold() error {
 			&resourcespkg.DeploymentType{},
 			&resourcespkg.JobType{},
 			&resourcespkg.SecretType{},
+			&resourcespkg.ServiceType{},
 			&reconcilers.Controller{
 				PackageName:       s.workload.GetPackageName(),
 				RBACRules:         &[]workloadv1.RBACRule{},
