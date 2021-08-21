@@ -6,12 +6,15 @@ import (
 	"sigs.k8s.io/kubebuilder/v3/pkg/machinery"
 	"sigs.k8s.io/kubebuilder/v3/pkg/model/resource"
 	"sigs.k8s.io/kubebuilder/v3/pkg/plugin"
+	goPlugin "sigs.k8s.io/kubebuilder/v3/pkg/plugins/golang"
 
 	workloadv1 "github.com/vmware-tanzu-labs/operator-builder/pkg/workload/v1"
 )
 
 type createAPISubcommand struct {
 	workloadConfigPath string
+
+	options goPlugin.Options
 }
 
 var _ plugin.CreateAPISubcommand = &createAPISubcommand{}

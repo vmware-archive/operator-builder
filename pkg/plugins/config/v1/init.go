@@ -10,6 +10,8 @@ import (
 )
 
 type initSubcommand struct {
+	commandName string
+
 	workloadConfigPath string
 }
 

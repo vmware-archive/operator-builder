@@ -8,7 +8,11 @@ import (
 	"github.com/vmware-tanzu-labs/operator-builder/pkg/plugins"
 )
 
-const pluginName = "workload." + plugins.DefaultNameQualifier
+const (
+	pluginName = "workload." + plugins.DefaultNameQualifier
+
+	CommandName = "operator-builder"
+)
 
 var (
 	pluginVersion            = plugin.Version{Number: 1}
