@@ -191,6 +191,36 @@ func (r *{{ .Resource.Kind }}Reconciler) GetResources() []common.ComponentResour
 	return r.Resources
 }
 
+// SetResources will create and return the resources in memory.
+func (r *{{ .Resource.Kind }}Reconciler) SetResources() error {
+	// create resources in memory
+	baseResources, err := r.ConstructResources()
+	if err != nil {
+		return err
+	}
+
+	// loop through the in memory resources and store them on the reconciler
+	for _, base := range baseResources {
+		// run through the mutation functions to mutate the resources
+		mutatedResources, skip, err := r.Mutate(&base)
+		if err != nil {
+			return err
+		}
+		if skip {
+			continue
+		}
+
+		for _, mutated := range mutatedResources {
+			resourceObject := resources.NewResourceFromClient(mutated.(client.Object))
+			resourceObject.Reconciler = r
+
+			r.SetResource(resourceObject)
+		}
+	}
+
+	return nil
+}
+
 // SetResource will set a resource on the objects if the relevant object does not already exist.
 func (r *{{ .Resource.Kind }}Reconciler) SetResource(new common.ComponentResource) {
 
@@ -204,11 +234,9 @@ func (r *{{ .Resource.Kind }}Reconciler) SetResource(new common.ComponentResourc
 	// loop through the resources and set or update when found
 	for i, existing := range r.Resources {
 		if new.EqualGVK(existing) && new.EqualNamespaceName(existing) {
-			if !reflect.DeepEqual(new.GetObject(), existing.GetObject()) {
-				r.Resources[i] = new
+			r.Resources[i] = new
 
-				return
-			}
+			return
 		}
 	}
 
@@ -256,36 +284,6 @@ func (r *{{ .Resource.Kind }}Reconciler) CreateOrUpdate(
 	}
 
 	return controllers.Watch(r, newResource.Object)
-}
-
-// SetResources will create and return the resources in memory.
-func (r *{{ .Resource.Kind }}Reconciler) SetResources() error {
-	// create resources in memory
-	baseResources, err := r.ConstructResources()
-	if err != nil {
-		return err
-	}
-
-	// loop through the in memory resources and store them on the reconciler
-	for _, base := range baseResources {
-		// run through the mutation functions to mutate the resources
-		mutatedResources, skip, err := r.Mutate(&base)
-		if err != nil {
-			return err
-		}
-		if skip {
-			continue
-		}
-
-		for _, mutated := range mutatedResources {
-			resourceObject := resources.NewResourceFromClient(mutated.(client.Object))
-			resourceObject.Reconciler = r
-
-			r.SetResource(resourceObject)
-		}
-	}
-
-	return nil
 }
 
 // GetLogger returns the logger from the reconciler.
