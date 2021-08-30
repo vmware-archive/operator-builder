@@ -249,11 +249,9 @@ func (r *{{ .Resource.Kind }}Reconciler) CreateOrUpdate(
 			return err
 		}
 	} else {
-		// update the resource if it needs updating
-		if resources.NeedsUpdate(*oldResource, *newResource) {
-			if err := newResource.Update(oldResource.Object); err != nil {
-				return err
-			}
+		// update the resource
+		if err := newResource.Update(oldResource); err != nil {
+			return err
 		}
 	}
 
