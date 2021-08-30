@@ -50,7 +50,6 @@ import (
 	"context"
 	"fmt"
 	"time"
-	"reflect"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/errors"
