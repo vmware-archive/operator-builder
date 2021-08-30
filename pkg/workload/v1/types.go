@@ -132,6 +132,13 @@ type Marker struct {
 	DocumentationLines []string
 }
 
+type Resources struct {
+	SpecField     []*APISpecField
+	SourceFile    *[]SourceFile
+	RBACRule      *[]RBACRule
+	OwnershipRule *[]OwnershipRule
+}
+
 // RBACRule contains the info needed to create the kubebuilder:rbac markers in
 // the controller.
 type RBACRule struct {
