@@ -16,7 +16,7 @@ type Dependencies struct {
 }
 
 func (f *Dependencies) SetTemplateDefaults() error {
-	f.Path = filepath.Join("controllers", "phases", "dependency.go")
+	f.Path = filepath.Join("internal", "controllers", "phases", "dependency.go")
 
 	f.TemplateBody = dependenciesTemplate
 
@@ -36,7 +36,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"{{ .Repo }}/apis/common"
-	"{{ .Repo }}/pkg/helpers"
+	"{{ .Repo }}/internal/helpers"
 )
 
 // DependencyPhase.DefaultRequeue executes checking for a parent components readiness status.

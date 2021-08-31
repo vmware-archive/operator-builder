@@ -1,4 +1,4 @@
-package controller
+package utils
 
 import (
 	"path/filepath"
@@ -8,7 +8,7 @@ import (
 
 var _ machinery.Template = &RateLimiter{}
 
-// Common scaffolds controller utilities common to all controllers.
+// RateLimiter scaffolds the default rate limiter.
 type RateLimiter struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
@@ -17,7 +17,7 @@ type RateLimiter struct {
 }
 
 func (f *RateLimiter) SetTemplateDefaults() error {
-	f.Path = filepath.Join("controllers", "rate_limiter.go")
+	f.Path = filepath.Join("internal", "controllers", "utils", "rate_limiter.go")
 
 	f.TemplateBody = controllerRateLimiterTemplate
 	f.IfExistsAction = machinery.OverwriteFile
@@ -27,7 +27,7 @@ func (f *RateLimiter) SetTemplateDefaults() error {
 
 const controllerRateLimiterTemplate = `{{ .Boilerplate }}
 
-package controllers
+package utils
 
 import (
 	"math"

@@ -18,12 +18,13 @@ import (
 	"github.com/vmware-tanzu-labs/operator-builder/pkg/plugins/workload/v1/scaffolds/templates/config/crd"
 	"github.com/vmware-tanzu-labs/operator-builder/pkg/plugins/workload/v1/scaffolds/templates/config/samples"
 	"github.com/vmware-tanzu-labs/operator-builder/pkg/plugins/workload/v1/scaffolds/templates/controller"
-	"github.com/vmware-tanzu-labs/operator-builder/pkg/plugins/workload/v1/scaffolds/templates/controller/phases"
-	"github.com/vmware-tanzu-labs/operator-builder/pkg/plugins/workload/v1/scaffolds/templates/pkg/dependencies"
-	"github.com/vmware-tanzu-labs/operator-builder/pkg/plugins/workload/v1/scaffolds/templates/pkg/helpers"
-	"github.com/vmware-tanzu-labs/operator-builder/pkg/plugins/workload/v1/scaffolds/templates/pkg/mutate"
-	resourcespkg "github.com/vmware-tanzu-labs/operator-builder/pkg/plugins/workload/v1/scaffolds/templates/pkg/resources"
-	"github.com/vmware-tanzu-labs/operator-builder/pkg/plugins/workload/v1/scaffolds/templates/pkg/wait"
+	"github.com/vmware-tanzu-labs/operator-builder/pkg/plugins/workload/v1/scaffolds/templates/int/controllers/phases"
+	controllersutils "github.com/vmware-tanzu-labs/operator-builder/pkg/plugins/workload/v1/scaffolds/templates/int/controllers/utils"
+	"github.com/vmware-tanzu-labs/operator-builder/pkg/plugins/workload/v1/scaffolds/templates/int/dependencies"
+	"github.com/vmware-tanzu-labs/operator-builder/pkg/plugins/workload/v1/scaffolds/templates/int/helpers"
+	"github.com/vmware-tanzu-labs/operator-builder/pkg/plugins/workload/v1/scaffolds/templates/int/mutate"
+	resourcespkg "github.com/vmware-tanzu-labs/operator-builder/pkg/plugins/workload/v1/scaffolds/templates/int/resources"
+	"github.com/vmware-tanzu-labs/operator-builder/pkg/plugins/workload/v1/scaffolds/templates/int/wait"
 	"github.com/vmware-tanzu-labs/operator-builder/pkg/utils"
 	workloadv1 "github.com/vmware-tanzu-labs/operator-builder/pkg/workload/v1"
 )
@@ -223,10 +224,10 @@ func (s *apiScaffolder) Scaffold() error {
 				IsStandalone:      s.workload.IsStandalone(),
 				IsComponent:       s.workload.IsComponent(),
 			},
-			&controller.Common{
+			&controllersutils.Utils{
 				IsStandalone: s.workload.IsStandalone(),
 			},
-			&controller.RateLimiter{},
+			&controllersutils.RateLimiter{},
 			&phases.Types{},
 			&phases.Common{},
 			&phases.CreateResource{
@@ -295,10 +296,10 @@ func (s *apiScaffolder) Scaffold() error {
 				IsStandalone:      s.workload.IsStandalone(),
 				IsComponent:       s.workload.IsComponent(),
 			},
-			&controller.Common{
+			&controllersutils.Utils{
 				IsStandalone: s.workload.IsStandalone(),
 			},
-			&controller.RateLimiter{},
+			&controllersutils.RateLimiter{},
 			&phases.Types{},
 			&phases.Common{},
 			&phases.CreateResource{

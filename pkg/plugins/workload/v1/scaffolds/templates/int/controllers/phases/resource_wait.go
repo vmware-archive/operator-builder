@@ -16,7 +16,7 @@ type ResourceWait struct {
 }
 
 func (f *ResourceWait) SetTemplateDefaults() error {
-	f.Path = filepath.Join("controllers", "phases", "resource_wait.go")
+	f.Path = filepath.Join("internal", "controllers", "phases", "resource_wait.go")
 
 	f.TemplateBody = resourceWaitTemplate
 
@@ -32,7 +32,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"{{ .Repo }}/apis/common"
-	"{{ .Repo }}/pkg/resources"
+	"{{ .Repo }}/internal/resources"
 )
 
 // WaitForResourcePhase.Execute executes waiting for a resource to be ready before continuing.

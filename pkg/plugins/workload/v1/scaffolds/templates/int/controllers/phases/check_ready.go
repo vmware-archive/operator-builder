@@ -16,7 +16,7 @@ type CheckReady struct {
 }
 
 func (f *CheckReady) SetTemplateDefaults() error {
-	f.Path = filepath.Join("controllers", "phases", "check_ready.go")
+	f.Path = filepath.Join("internal", "controllers", "phases", "check_ready.go")
 
 	f.TemplateBody = checkReadyTemplate
 
@@ -33,7 +33,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"{{ .Repo }}/apis/common"
-	"{{ .Repo }}/pkg/resources"
+	"{{ .Repo }}/internal/resources"
 )
 
 // CheckReadyPhase.DefaultRequeue executes checking for a parent components readiness status.
