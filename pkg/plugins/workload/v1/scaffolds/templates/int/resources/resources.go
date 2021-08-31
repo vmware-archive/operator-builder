@@ -137,7 +137,7 @@ func (f *SecretType) SetTemplateDefaults() error {
 
 func (f *ServiceType) SetTemplateDefaults() error {
 	f.Path = filepath.Join(
-		"pkg",
+		"internal",
 		"resources",
 		"service.go",
 	)
@@ -718,7 +718,7 @@ package resources
 import (
 	corev1 "k8s.io/api/core/v1"
 
-	"gitlab.eng.vmware.com/sdustin/cloud-native-platform-operator/apis/common"
+	"{{ .Repo }}/apis/common"
 )
 
 const (
