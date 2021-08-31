@@ -13,19 +13,14 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const (
-	markerStr    = "+workload"
-	docMarkerStr = "+workload-docs:"
-)
-
 // SupportedMarkerDataTypes returns the supported data types that can be used in
 // workload markers.
 func SupportedMarkerDataTypes() []string {
 	return []string{"bool", "string", "int", "int32", "int64", "float32", "float64"}
 }
 
-func processMarkers(workloadPath string, resources []string, collection bool) (*Resources, error) {
-	results := &Resources{
+func processMarkers(workloadPath string, resources []string, collection bool) (*SourceCodeTemplateData, error) {
+	results := &SourceCodeTemplateData{
 		SourceFile:    new([]SourceFile),
 		RBACRule:      new([]RBACRule),
 		OwnershipRule: new([]OwnershipRule),
@@ -290,7 +285,6 @@ func TransformYAML(results ...inspect.YAMLResult) error {
 			value.Tag = "!!var"
 			value.Value = fmt.Sprintf("collection.Spec." + strings.Title(t.Name))
 		}
-
 	}
 
 	return nil

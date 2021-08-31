@@ -120,19 +120,8 @@ type ChildResource struct {
 	SourceCode    string
 }
 
-// Marker contains the attributes of a workload marker from a static manifest.
-type Marker struct {
-	Key                string
-	Value              string
-	FieldName          string
-	DataType           string
-	Default            string
-	LeadingSpaces      int
-	Collection         bool
-	DocumentationLines []string
-}
-
-type Resources struct {
+// SourceCodeTemplateData is a collection of variables used to generate source code.
+type SourceCodeTemplateData struct {
 	SpecField     []*APISpecField
 	SourceFile    *[]SourceFile
 	RBACRule      *[]RBACRule
