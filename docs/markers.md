@@ -8,21 +8,27 @@ A workload marker is commented out so the manifest is still valid and can be
 used if needed.  The marker must begin with `+operator-builder` followed by some
 colon-separated fields:
 
-These markers should always be provided as an in-line comment or as a head comment.  The marker always begins with `+operator-builder:field:` or `+operator-builder:collection:field:` (more on this later).
+These markers should always be provided as an in-line comment or as a head
+comment.  The marker always begins with `+operator-builder:field:` or
+`+operator-builder:collection:field:` (more on this later).
 
 That is followed by arguments separated by `,`.  Arguments can be given in any order.
 
 ## Field Marker
-defined as `+operator-builder:field` this marker can be used to define a CRD field for your workload.
+defined as `+operator-builder:field` this marker can be used to define a CRD
+field for your workload.
 
-### Arguments 
+### Arguments
 
-arguments are separated from the marker name with a `:` they are given in the format of `argument=value` and separated by the `,`. additionally if the argument name is given by itself with no value, it is assumed to have an implict =true on the end and is treated as a flag.
+Arguments are separated from the marker name with a `:` they are given in the
+format of `argument=value` and separated by the `,`. additionally if the
+argument name is given by itself with no value, it is assumed to have an
+implict `=true` on the end and is treated as a flag.
 
-below you will field the arguments for a field marker
+Below you will field the arguments for a field marker
 
 #### Name (required)
-the name you want to use for the field in the custom resource that
+The name you want to use for the field in the custom resource that
 Operator Builder will create.  If you're not sure what that means, it will
 become clear shortly.
 
@@ -43,20 +49,24 @@ the value.  The supported data types are:
 ex. `+operator-builder:field:name=myName,type=string`
 
 #### Default (optional)
-This will make configuration optional for
-your operator's end user. the supplied value will be used for the default value. If a field has no default, it will be a required field in the custom resource.
+This will make configuration optional for your operator's end user. the supplied
+value will be used for the default value. If a field has no default, it will be
+a required field in the custom resource.  For example:
 
-ex. `operator-builder:field:name=myName,type=string,default=test`
+    `operator-builder:field:name=myName,type=string,default=test`
+
 #### Description (optional)
-An optional description can be provided which will be used in the source code as a Doc String, backticks `` ` `` may be used to capture multiline strings (head comments only)
+An optional description can be provided which will be used in the source code as
+a Doc String, backticks `` ` `` may be used to capture multiline strings (head
+comments only).
 
 By injecting documentation to
 the CRD, the consumer of the custom resource gets the added benefit by being
 able to run `kubectl explain` against their resource and having documentation
 right at their fingertips without having to navigate to API documentation in
-order to see the usage of the API.
+order to see the usage of the API.  For example:
 
-ex. `operator-builder:field:name=myName,type=string,default=test,description="Hello World"`
+    `operator-builder:field:name=myName,type=string,default=test,description="Hello World"`
 
 Note that you can use a single custom resource field name to configure multiple
 fields in the resource.  In the example above, the value for the `teamName`
@@ -108,7 +118,9 @@ similar to the following to configure the deployment created:
       webAppReplicas: 2
       webAppImage: acmerepo/webapp:3.5.3
 
-
 ## Collection Markers
 
-a second marker type `+operator-builder:collection:field` can be used with the same arguments as a Field Marker. These markers are used to define global Fields for your Collection and can be used in any of its associated components.
+a second marker type `+operator-builder:collection:field` can be used with the
+same arguments as a Field Marker. These markers are used to define global Fields
+for your Collection and can be used in any of its associated components.
+

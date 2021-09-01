@@ -9,8 +9,8 @@ templated yaml and migrate to managing those resources with a custom Kubernetes 
 
 An operator built with Operator Builder has the following features:
 
-- A defined API for a custom resource based on [workload
-  markers](docs/markers.md) in static Kubernetes manifests.
+- A defined API for a custom resource based on [markers](docs/markers.md) in
+  static Kubernetes manifests.
 - A functioning controller that will create, update and delete child resources
   to reconcile the state for the custom resource/s.
 - A [companion CLI](docs/companion-cli.md) that helps end users with common
@@ -30,9 +30,10 @@ Get the source code.
     git clone git@github.com:vmware-tanzu-labs/operator-builder.git
     cd operator-builder
 
-> **NOTE:** Since the object-code-generator-for-k8s repository is still an internal Github repository you will have to do the following to build the project:  
-`export  GOPRIVATE=github.com/vmware-tanzu-labs/object-code-generator-for-k8s`  
-Add the following configuration to your ~/.gitconfig file:  
+> **NOTE:** Since the object-code-generator-for-k8s repository is still an
+internal Github repository you will have to do the following to build the project:
+`export  GOPRIVATE=github.com/vmware-tanzu-labs/object-code-generator-for-k8s`
+Add the following configuration to your ~/.gitconfig file:
 ```
 [url "git@github.com:"]
 	insteadOf = https://github.com/
@@ -194,7 +195,9 @@ Following is the Deployment manifest with these markers in place.
             ports:
             - containerPort: 8080
 
-These markers should always be provided as an in-line comment or as a head comment.  The marker always begins with `+operator-builder:field:` or `+operator-builder:collection:field:` (more on this later).
+These markers should always be provided as an in-line comment or as a head
+comment.  The marker always begins with `+operator-builder:field:` or
+`+operator-builder:collection:field:` (more on this later).
 
 see [Markers](docs/markers.md)
 
@@ -431,3 +434,4 @@ info [here](docs/license.md).
 ## Testing
 
 Testing of Operator Builder is documented [here](docs/testing.md).
+
