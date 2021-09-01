@@ -10,9 +10,7 @@ templated yaml and migrate to managing those resources with a custom Kubernetes 
 An operator built with Operator Builder has the following features:
 
 - A defined API for a custom resource based on [workload
-  markers](docs/workload-markers.md) in static Kubernetes manifests.
-- Documented CRDs which provide documentation directly via the
-  `kubectl explain` command.  See [workload doc markers](docs/workload-doc-markers.md).
+  markers](docs/markers.md) in static Kubernetes manifests.
 - A functioning controller that will create, update and delete child resources
   to reconcile the state for the custom resource/s.
 - A [companion CLI](docs/companion-cli.md) that helps end users with common
@@ -169,7 +167,7 @@ version of the app will be run.  In production, there will be more replicas and
 a stable release of the app will be used. In this example we don't have any
 configurable fields in the Ingress or Service.
 
-Next we need to use `+workload` markers in comments to inform Operator Builder
+Next we need to use `+operator-builder:field` markers in comments to inform Operator Builder
 that the operator will need to support configuration of these elements.
 Following is the Deployment manifest with these markers in place.
 
@@ -178,9 +176,9 @@ Following is the Deployment manifest with these markers in place.
     metadata:
       name: webstore-deploy
       labels:
-        team: dev-team  # +workload:teamName:type=string
+        team: dev-team  # +operator-builder:field:name=teamName,type=string
     spec:
-      replicas: 2  # +workload:webStoreReplicas:default=2:type=int
+      replicas: 2  # +operator-builder:field:name=webStoreReplicas,default=2,type=int
       selector:
         matchLabels:
           app: webstore
@@ -188,41 +186,17 @@ Following is the Deployment manifest with these markers in place.
         metadata:
           labels:
             app: webstore
-            team: dev-team  # +workload:teamName:type=string
+            team: dev-team  # +operator-builder:field:nmae=teamName,type=string
         spec:
           containers:
           - name: webstore-container
-            image: nginx:1.17  # +workload:webStoreImage:type=string
+            image: nginx:1.17  # +operator-builder:field:name=webStoreImage,type=string
             ports:
             - containerPort: 8080
 
-These markers should always be provided as an in-line comment.  This retains the
-functionality of the manifest and is what Operator Builder will look for.  The
-marker always begins with `+workload`.
+These markers should always be provided as an in-line comment or as a head comment.  The marker always begins with `+operator-builder:field:` or `+operator-builder:collection:field:` (more on this later).
 
-That is followed by fields separated by colons.  The first field in the marker
-must be the name you want to use for the field in the custom resource that
-Operator Builder will create.  If you're not sure what that means, it will
-become clear shortly.
-
-The other required field is the `type` field which specifies the data type for
-the value.  The supported data types are:
-
-- bool
-- string
-- int
-- int32
-- int64
-- float32
-- float64
-
-You may also add a `default` field.  This will make configuration optional for
-your operator's end user and, if not given, will use the supplied default value.
-If a field has no default, it will be a required field in the custom resource.
-
-Note that you can use a single custom resource field name to configure multiple
-fields in the resource.  In the example above, the value for the `teamName`
-field will be use for two different label values on the Deployment.
+see [Markers](docs/markers.md)
 
 ### Step 3
 
