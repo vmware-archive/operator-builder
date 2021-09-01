@@ -1,3 +1,3 @@
 package inspect
 
-type YAMLTransformer func(...YAMLResult) error
+type YAMLTransformer func(...*YAMLResult) error

@@ -79,9 +79,9 @@ func processMarkers(workloadPath string, resources []string, collection bool) (*
 
 				if r.Default != nil {
 					specField.DefaultVal = fmt.Sprintf("%v", r.Default)
-					specField.SampleField = fmt.Sprintf("%s: %s", r.Name, r.Default)
+					specField.SampleField = fmt.Sprintf("%s: %v", r.Name, r.Default)
 				} else {
-					specField.SampleField = fmt.Sprintf("%s: %s", r.Name, markerResult.Nodes[len(markerResult.Nodes)-1].Value)
+					specField.SampleField = fmt.Sprintf("%s: %v", r.Name, r.originalValue)
 				}
 
 				specFields[r.Name] = specField
@@ -112,9 +112,9 @@ func processMarkers(workloadPath string, resources []string, collection bool) (*
 
 				if r.Default != nil {
 					specField.DefaultVal = fmt.Sprintf("%v", r.Default)
-					specField.SampleField = fmt.Sprintf("%s: %s", r.Name, r.Default)
+					specField.SampleField = fmt.Sprintf("%s: %v", r.Name, r.Default)
 				} else {
-					specField.SampleField = fmt.Sprintf("%s: %s", r.Name, markerResult.Nodes[len(markerResult.Nodes)-1].Value)
+					specField.SampleField = fmt.Sprintf("%s: %v", r.Name, r.originalValue)
 				}
 
 				specFields[r.Name] = specField
@@ -250,7 +250,7 @@ func InitializeMarkerInspector() (*inspect.Inspector, error) {
 	return inspect.NewInspector(registry), nil
 }
 
-func TransformYAML(results ...inspect.YAMLResult) error {
+func TransformYAML(results ...*inspect.YAMLResult) error {
 	var key *yaml.Node
 
 	var value *yaml.Node
@@ -274,16 +274,24 @@ func TransformYAML(results ...inspect.YAMLResult) error {
 				key.HeadComment = "# " + *t.Description + ", controlled by " + t.Name
 			}
 
+			t.originalValue = value.Value
+
 			value.Tag = "!!var"
 			value.Value = fmt.Sprintf("parent.Spec." + strings.Title(t.Name))
+
+			r.Object = t
 
 		case CollectionFieldMarker:
 			if *t.Description != "" {
 				key.HeadComment = "# " + *t.Description + ", controlled by " + t.Name
 			}
 
+			t.originalValue = value.Value
+
 			value.Tag = "!!var"
 			value.Value = fmt.Sprintf("collection.Spec." + strings.Title(t.Name))
+
+			r.Object = t
 		}
 	}
 
@@ -332,10 +340,11 @@ func (f FieldType) String() string {
 }
 
 type FieldMarker struct {
-	Name        string
-	Type        FieldType
-	Description *string
-	Default     interface{} `marker:",optional"`
+	Name          string
+	Type          FieldType
+	Description   *string
+	Default       interface{} `marker:",optional"`
+	originalValue interface{}
 }
 
 type CollectionFieldMarker FieldMarker

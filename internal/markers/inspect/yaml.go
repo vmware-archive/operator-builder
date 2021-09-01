@@ -12,7 +12,7 @@ type YAMLResult struct {
 	Nodes []*yaml.Node
 }
 
-func (s *Inspector) InspectYAML(data []byte, transforms ...YAMLTransformer) (*yaml.Node, []YAMLResult, error) {
+func (s *Inspector) InspectYAML(data []byte, transforms ...YAMLTransformer) (*yaml.Node, []*YAMLResult, error) {
 	var node yaml.Node
 	if err := yaml.Unmarshal(data, &node); err != nil {
 		return &node, nil, fmt.Errorf("error unmarshaling yaml, %w", err)
@@ -34,7 +34,7 @@ func (s *Inspector) InspectYAML(data []byte, transforms ...YAMLTransformer) (*ya
 	return &node, results, nil
 }
 
-func (s *Inspector) inspectYAML(nodes ...*yaml.Node) (results []YAMLResult) {
+func (s *Inspector) inspectYAML(nodes ...*yaml.Node) (results []*YAMLResult) {
 	for _, node := range nodes {
 		results = append(results, s.inspectYAMLComments(node)...)
 
@@ -48,7 +48,7 @@ func (s *Inspector) inspectYAML(nodes ...*yaml.Node) (results []YAMLResult) {
 	return results
 }
 
-func (s *Inspector) inspectYAMLMap(nodes ...*yaml.Node) (results []YAMLResult) {
+func (s *Inspector) inspectYAMLMap(nodes ...*yaml.Node) (results []*YAMLResult) {
 	for i := 0; i < len(nodes); i += 2 {
 		results = append(results, s.inspectYAMLComments(nodes[i], nodes[i+1])...)
 
@@ -62,7 +62,7 @@ func (s *Inspector) inspectYAMLMap(nodes ...*yaml.Node) (results []YAMLResult) {
 	return results
 }
 
-func (s *Inspector) inspectYAMLComments(nodes ...*yaml.Node) (results []YAMLResult) {
+func (s *Inspector) inspectYAMLComments(nodes ...*yaml.Node) (results []*YAMLResult) {
 	var markers []*parser.Result
 
 	for _, node := range nodes {
@@ -70,7 +70,7 @@ func (s *Inspector) inspectYAMLComments(nodes ...*yaml.Node) (results []YAMLResu
 	}
 
 	for _, marker := range markers {
-		result := YAMLResult{
+		result := &YAMLResult{
 			Result: marker,
 			Nodes:  nodes,
 		}
