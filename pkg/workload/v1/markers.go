@@ -58,16 +58,19 @@ func processMarkers(workloadPath string, resources []string, collection bool) (*
 				}
 
 				specField := &APISpecField{
-					FieldName:          strings.ToTitle(r.Name),
-					ManifestFieldName:  r.Name,
-					DocumentationLines: strings.Split(*r.Description, "\n"),
-					DataType:           r.Type.String(),
+					FieldName:         strings.ToTitle(r.Name),
+					ManifestFieldName: r.Name,
+					DataType:          r.Type.String(),
 					APISpecContent: fmt.Sprintf(
 						"%s %s `json:\"%s\"`",
 						strings.Title(r.Name),
 						r.Type,
 						r.Name,
 					),
+				}
+
+				if r.Description != nil {
+					specField.DocumentationLines = strings.Split(*r.Description, "\n")
 				}
 
 				zv, err := zeroValue(r.Type.String())
@@ -78,10 +81,19 @@ func processMarkers(workloadPath string, resources []string, collection bool) (*
 				specField.ZeroVal = zv
 
 				if r.Default != nil {
-					specField.DefaultVal = fmt.Sprintf("%q", r.Default)
-					specField.SampleField = fmt.Sprintf("%s: %v", r.Name, r.Default)
+					if specField.DataType == "string" {
+						specField.DefaultVal = fmt.Sprintf("%q", r.Default)
+						specField.SampleField = fmt.Sprintf("%s: %q", r.Name, r.Default)
+					} else {
+						specField.DefaultVal = fmt.Sprintf("%v", r.Default)
+						specField.SampleField = fmt.Sprintf("%s: %v", r.Name, r.Default)
+					}
 				} else {
-					specField.SampleField = fmt.Sprintf("%s: %v", r.Name, r.originalValue)
+					if specField.DataType == "string" {
+						specField.SampleField = fmt.Sprintf("%s: %q", r.Name, r.originalValue)
+					} else {
+						specField.SampleField = fmt.Sprintf("%s: %v", r.Name, r.originalValue)
+					}
 				}
 
 				specFields[r.Name] = specField
@@ -91,16 +103,19 @@ func processMarkers(workloadPath string, resources []string, collection bool) (*
 				}
 
 				specField := &APISpecField{
-					FieldName:          strings.ToTitle(r.Name),
-					ManifestFieldName:  r.Name,
-					DocumentationLines: strings.Split(*r.Description, "\n"),
-					DataType:           r.Type.String(),
+					FieldName:         strings.ToTitle(r.Name),
+					ManifestFieldName: r.Name,
+					DataType:          r.Type.String(),
 					APISpecContent: fmt.Sprintf(
 						"%s %s `json:\"%s\"`",
 						strings.Title(r.Name),
 						r.Type,
 						r.Name,
 					),
+				}
+
+				if r.Description != nil {
+					specField.DocumentationLines = strings.Split(*r.Description, "\n")
 				}
 
 				zv, err := zeroValue(r.Type.String())
@@ -111,10 +126,19 @@ func processMarkers(workloadPath string, resources []string, collection bool) (*
 				specField.ZeroVal = zv
 
 				if r.Default != nil {
-					specField.DefaultVal = fmt.Sprintf("%q", r.Default)
-					specField.SampleField = fmt.Sprintf("%s: %v", r.Name, r.Default)
+					if specField.DataType == "string" {
+						specField.DefaultVal = fmt.Sprintf("%q", r.Default)
+						specField.SampleField = fmt.Sprintf("%s: %q", r.Name, r.Default)
+					} else {
+						specField.DefaultVal = fmt.Sprintf("%v", r.Default)
+						specField.SampleField = fmt.Sprintf("%s: %v", r.Name, r.Default)
+					}
 				} else {
-					specField.SampleField = fmt.Sprintf("%s: %v", r.Name, r.originalValue)
+					if specField.DataType == "string" {
+						specField.SampleField = fmt.Sprintf("%s: %q", r.Name, r.originalValue)
+					} else {
+						specField.SampleField = fmt.Sprintf("%s: %v", r.Name, r.originalValue)
+					}
 				}
 
 				specFields[r.Name] = specField
@@ -270,7 +294,8 @@ func TransformYAML(results ...*inspect.YAMLResult) error {
 
 		switch t := r.Object.(type) {
 		case FieldMarker:
-			if *t.Description != "" {
+			if t.Description != nil {
+				*t.Description = strings.TrimPrefix(*t.Description, "\n")
 				key.HeadComment = "# " + *t.Description + ", controlled by " + t.Name
 			}
 
@@ -282,7 +307,8 @@ func TransformYAML(results ...*inspect.YAMLResult) error {
 			r.Object = t
 
 		case CollectionFieldMarker:
-			if *t.Description != "" {
+			if t.Description != nil {
+				*t.Description = strings.TrimPrefix(*t.Description, "\n")
 				key.HeadComment = "# " + *t.Description + ", controlled by " + t.Name
 			}
 
