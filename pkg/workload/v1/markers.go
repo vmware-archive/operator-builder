@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
@@ -40,15 +41,24 @@ func processMarkers(workloadPath string, resources []string, collection bool) (*
 			return nil, err
 		}
 
-		node, markerResults, err := insp.InspectYAML(manifestContent, TransformYAML)
+		nodes, markerResults, err := insp.InspectYAML(manifestContent, TransformYAML)
 		if err != nil {
 			return nil, err
 		}
 
-		manifestContent, err = yaml.Marshal(node)
-		if err != nil {
-			return nil, err
+		buf := bytes.Buffer{}
+
+		for _, node := range nodes {
+			m, err := yaml.Marshal(node)
+			if err != nil {
+				return nil, err
+			}
+
+			buf.WriteString("---\n")
+			buf.Write(m)
 		}
+
+		manifestContent = buf.Bytes()
 
 		for _, markerResult := range markerResults {
 			switch r := markerResult.Object.(type) {
