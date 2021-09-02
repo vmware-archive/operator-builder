@@ -78,7 +78,7 @@ func processMarkers(workloadPath string, resources []string, collection bool) (*
 				specField.ZeroVal = zv
 
 				if r.Default != nil {
-					specField.DefaultVal = fmt.Sprintf("%v", r.Default)
+					specField.DefaultVal = fmt.Sprintf("%q", r.Default)
 					specField.SampleField = fmt.Sprintf("%s: %v", r.Name, r.Default)
 				} else {
 					specField.SampleField = fmt.Sprintf("%s: %v", r.Name, r.originalValue)
@@ -111,7 +111,7 @@ func processMarkers(workloadPath string, resources []string, collection bool) (*
 				specField.ZeroVal = zv
 
 				if r.Default != nil {
-					specField.DefaultVal = fmt.Sprintf("%v", r.Default)
+					specField.DefaultVal = fmt.Sprintf("%q", r.Default)
 					specField.SampleField = fmt.Sprintf("%s: %v", r.Name, r.Default)
 				} else {
 					specField.SampleField = fmt.Sprintf("%s: %v", r.Name, r.originalValue)
