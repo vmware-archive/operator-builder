@@ -3,7 +3,7 @@ package main
 import (
 	log "github.com/sirupsen/logrus"
 
-	"github.com/vmware-tanzu-labs/operator-builder/internal/cli"
+	"github.com/vmware-tanzu-labs/operator-builder/pkg/cli"
 )
 
 func main() {
