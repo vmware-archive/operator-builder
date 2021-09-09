@@ -91,10 +91,6 @@ func processMarkers(workloadPath string, resources []string, collection bool) (*
 				specField.ZeroVal = zv
 
 				if r.Default != nil {
-<<<<<<< HEAD:pkg/workload/v1/markers.go
-					specField.DefaultVal = fmt.Sprintf("%q", r.Default)
-					specField.SampleField = fmt.Sprintf("%s: %v", r.Name, r.Default)
-=======
 					if specField.DataType == "string" {
 						specField.DefaultVal = fmt.Sprintf("%q", r.Default)
 						specField.SampleField = fmt.Sprintf("%s: %q", r.Name, r.Default)
@@ -102,7 +98,6 @@ func processMarkers(workloadPath string, resources []string, collection bool) (*
 						specField.DefaultVal = fmt.Sprintf("%v", r.Default)
 						specField.SampleField = fmt.Sprintf("%s: %v", r.Name, r.Default)
 					}
->>>>>>> upstream/main:internal/workload/v1/markers.go
 				} else {
 					if specField.DataType == "string" {
 						specField.SampleField = fmt.Sprintf("%s: %q", r.Name, r.originalValue)
@@ -141,10 +136,6 @@ func processMarkers(workloadPath string, resources []string, collection bool) (*
 				specField.ZeroVal = zv
 
 				if r.Default != nil {
-<<<<<<< HEAD:pkg/workload/v1/markers.go
-					specField.DefaultVal = fmt.Sprintf("%q", r.Default)
-					specField.SampleField = fmt.Sprintf("%s: %v", r.Name, r.Default)
-=======
 					if specField.DataType == "string" {
 						specField.DefaultVal = fmt.Sprintf("%q", r.Default)
 						specField.SampleField = fmt.Sprintf("%s: %q", r.Name, r.Default)
@@ -152,7 +143,6 @@ func processMarkers(workloadPath string, resources []string, collection bool) (*
 						specField.DefaultVal = fmt.Sprintf("%v", r.Default)
 						specField.SampleField = fmt.Sprintf("%s: %v", r.Name, r.Default)
 					}
->>>>>>> upstream/main:internal/workload/v1/markers.go
 				} else {
 					if specField.DataType == "string" {
 						specField.SampleField = fmt.Sprintf("%s: %q", r.Name, r.originalValue)
