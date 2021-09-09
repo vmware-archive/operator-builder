@@ -352,6 +352,12 @@ func AreEqual(desired, actual Resource) (bool, error) {
 	desiredResource.SetResourceVersion(actualResource.GetResourceVersion())
 	desiredResource.SetGeneration(actualResource.GetGeneration())
 
+	// ensure that a current cluster-scoped resource is not evaluated against
+	// a manifest which may include a namespace
+	if actualResource.GetNamespace() == "" {
+		desiredResource.SetNamespace(actualResource.GetNamespace())
+	}
+
 	// merge the overrides from the desired resource into the actual resource
 	mergo.Merge(
 		&mergedResource.Object,
