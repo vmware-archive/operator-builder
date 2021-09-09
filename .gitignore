@@ -3,5 +3,6 @@ bin/*
 dist/*
 test/application/*
 test/platform/*
+test/persistent/*
 !test/application/.workloadConfig/
 !test/platform/.workloadConfig/
