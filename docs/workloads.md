@@ -8,22 +8,22 @@ any group of resources that logically group together.  Here's an example of
 a simple WorkloadConfig for a hypothetical web application called "webapp":
 
 ```yaml
-    name: webapp
-    kind: StandaloneWorkload
-    spec:
-      api:
-        domain: apps.acme.com
-        group: product
-        version: v1alpha1
-        kind: WebApp
-        clusterScoped: false
-      companionCliRootcmd:
-        name: webappctl
-        description: Manage webapp stuff like a boss
-      resources:
-        - deploy.yaml
-        - service.yaml
-        - ingress.yaml
+name: webapp
+kind: StandaloneWorkload
+spec:
+  api:
+    domain: apps.acme.com
+    group: product
+    version: v1alpha1
+    kind: WebApp
+    clusterScoped: false
+  companionCliRootcmd:
+    name: webappctl
+    description: Manage webapp stuff like a boss
+  resources:
+    - deploy.yaml
+    - service.yaml
+    - ingress.yaml
 ```
 
 This tells Operator Builder to create the source code for a new Kubernetes API
@@ -43,14 +43,14 @@ use the `init` command to generate a sample custom resource that might look
 something like this:
 
 ```yaml
-	apiVersion: product.apps.acme.com/v1alpha1
-	kind: WebApp
-	metadata:
-	  name: dev-webapp
-	spec:
-    production: false
-    webAppReplicas: 2
-    WebAppImage: acmerepo/webapp:3.5.3
+apiVersion: product.apps.acme.com/v1alpha1
+kind: WebApp
+metadata:
+  name: dev-webapp
+spec:
+  production: false
+  webAppReplicas: 2
+  webAppImage: acmerepo/webapp:3.5.3
 ```
 
 ## Required Fields
