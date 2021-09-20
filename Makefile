@@ -4,6 +4,14 @@ GOBIN=$(shell go env GOPATH)/bin
 else
 GOBIN=$(shell go env GOBIN)
 endif
+INIT_OPTS=init \
+		--workload-config .workloadConfig/workload.yaml \
+   		--repo github.com/acme/acme-cnp-mgr \
+        --skip-go-version-check
+CREATE_OPTS=create api \
+	--workload-config .workloadConfig/workload.yaml \
+	--controller \
+	--resource
 
 build:
 	go build -o bin/operator-builder cmd/operator-builder/main.go
@@ -15,31 +23,25 @@ test-install: build
 test-coverage-view: test-install
 	go tool cover -html=./bin/coverage.out	
 
-TEST_PATH ?= /tmp
-TEST_SCRIPT ?= default.sh
-
-test: test-install
-	find . -name ${TEST_SCRIPT} | xargs dirname | xargs -I {} cp -r {} $(TEST_PATH)/.workloadConfig
-	cd $(TEST_PATH); basename ${TEST_SCRIPT} | xargs find ${TEST_PATH} -name | xargs sh
-
-test-clean:
-	rm -rf $(TEST_PATH)/*
-	rm -rf $(TEST_PATH)/.workloadConfig
-
 DEBUG_PATH ?= test/application
+TEST_PATH ?= $(DEBUG_PATH)
 
 debug-clean:
 	rm -rf $(DEBUG_PATH)/*
 
 debug-init: debug-clean
-	dlv debug ./cmd/operator-builder --wd $(DEBUG_PATH) -- init \
-		--workload-config .workloadConfig/workload.yaml \
-   		--repo github.com/acme/acme-cnp-mgr \
-        	--skip-go-version-check
+	dlv debug ./cmd/operator-builder --wd $(DEBUG_PATH) -- $(INIT_OPTS)
+
 debug-create:
-	dlv debug ./cmd/operator-builder --wd $(DEBUG_PATH) -- create api \
-		--workload-config .workloadConfig/workload.yaml \
-		--controller \
-		--resource
+	dlv debug ./cmd/operator-builder --wd $(DEBUG_PATH) -- $(CREATE_OPTS)
 
 debug: debug-init debug-create
+
+test-clean:
+	rm -rf $(TEST_PATH)/*
+
+test-init: test-clean
+	cd $(TEST_PATH) && $$OLDPWD/bin/operator-builder $(INIT_OPTS)
+
+test-create:
+	cd $(TEST_PATH) && $$OLDPWD/bin/operator-builder $(CREATE_OPTS)

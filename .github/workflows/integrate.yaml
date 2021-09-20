@@ -1,0 +1,92 @@
+---
+name: Integration Test
+on:
+  - pull_request
+  - push
+
+jobs:
+  #
+  # build and store artifact
+  #
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
+
+      - name: Build Binary Artifact (operator-builder)
+        run: make build
+
+      - name: Store Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: operator-builder
+          path: bin/operator-builder
+
+  #
+  # test generation of standalone workload
+  #
+  generate-standalone:
+    name: Generate Standalone Operator
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      DEBUG_PATH: "test/application"
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Download operator-builder Binary
+        uses: actions/download-artifact@v2
+        with:
+          name: operator-builder
+
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
+
+      - name: Initialize Standalone Operator
+        run: |
+          make test-clean
+          make test-init
+
+      - name: Create Standalone Operator
+        run: make test-create
+
+  #
+  # test generation of component workload / collection
+  #
+  generate-collection:
+    name: Generate Collection Operator
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      DEBUG_PATH: "test/platform"
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Download operator-builder Binary
+        uses: actions/download-artifact@v2
+        with:
+          name: operator-builder
+
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
+
+      - name: Initialize Collection Operator
+        run: |
+          make test-clean
+          make test-init
+
+      - name: Create Collection Operator
+        run: make test-create
