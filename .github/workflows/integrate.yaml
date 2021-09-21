@@ -33,7 +33,7 @@ jobs:
   # test generation of standalone workload
   #
   generate-standalone:
-    name: Generate Standalone Operator
+    name: Generate Standalone Operator Codebase
     needs: build
     runs-on: ubuntu-latest
     env:
@@ -53,16 +53,16 @@ jobs:
         with:
           go-version: 1.16
 
-      - name: Initialize Standalone Operator
+      - name: Initialize Standalone Operator Codebase
         run: |
           chmod +x bin/operator-builder
           make test-clean
           make test-init
 
-      - name: Create Standalone Operator
+      - name: Create Standalone Operator Codebase
         run: make test-create
 
-      - name: Store Standalone Codebase
+      - name: Store Standalone Operator Codebase
         uses: actions/upload-artifact@v2
         with:
           name: standalone-codebase
@@ -72,7 +72,7 @@ jobs:
   # test generation of component workload / collection
   #
   generate-collection:
-    name: Generate Collection Operator
+    name: Generate Collection Operator Codebase
     needs: build
     runs-on: ubuntu-latest
     env:
@@ -92,16 +92,16 @@ jobs:
         with:
           go-version: 1.16
 
-      - name: Initialize Collection Operator
+      - name: Initialize Collection Operator Codebase
         run: |
           chmod +x bin/operator-builder
           make test-clean
           make test-init
 
-      - name: Create Collection Operator
+      - name: Create Collection Operator Codebase
         run: make test-create
 
-      - name: Store Collection Codebase
+      - name: Store Collection Operator Codebase
         uses: actions/upload-artifact@v2
         with:
           name: collection-codebase
