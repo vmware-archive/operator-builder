@@ -62,6 +62,12 @@ jobs:
       - name: Create Standalone Operator
         run: make test-create
 
+      - name: Store Standalone Codebase
+        uses: actions/upload-artifact@v2
+        with:
+          name: standalone-codebase
+          path: ${{ env.DEBUG_PATH }}
+
   #
   # test generation of component workload / collection
   #
@@ -94,3 +100,9 @@ jobs:
 
       - name: Create Collection Operator
         run: make test-create
+
+      - name: Store Collection Codebase
+        uses: actions/upload-artifact@v2
+        with:
+          name: collection-codebase
+          path: ${{ env.DEBUG_PATH }}
