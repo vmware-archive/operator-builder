@@ -55,6 +55,7 @@ jobs:
 
       - name: Initialize Standalone Operator
         run: |
+          chmod +x bin/operator-builder
           make test-clean
           make test-init
 
@@ -87,6 +88,7 @@ jobs:
 
       - name: Initialize Collection Operator
         run: |
+          chmod +x bin/operator-builder
           make test-clean
           make test-init
 
