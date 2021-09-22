@@ -4,7 +4,7 @@ GOBIN=$(shell go env GOPATH)/bin
 else
 GOBIN=$(shell go env GOBIN)
 endif
-BASE_DIR=$$PWD
+BASE_DIR=$(shell pwd)
 INIT_OPTS=init \
 		--workload-config .workloadConfig/workload.yaml \
    		--repo github.com/acme/acme-cnp-mgr \
@@ -16,7 +16,7 @@ CREATE_OPTS=create api \
 
 define create_path
 	if [ ! -d $$1 ]; then\
-        mkdir $$1;\
+        mkdir -p $$1;\
     fi
 endef
 
