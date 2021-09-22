@@ -21,7 +21,7 @@ define create_path
 endef
 
 set-path:
-	export PATH=$$PATH:$$PWD:$$PWD/bin:/usr/local/bin
+	export PATH=$$PATH:$$BASE_DIR:$$BASE_DIR/bin:/usr/local/bin
 
 build:
 	go build -o bin/operator-builder cmd/operator-builder/main.go
