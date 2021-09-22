@@ -64,7 +64,7 @@ generate-clean:
 
 generate-init: build generate-clean set-path
 	$(call create_path $(TEST_PATH))
-	cp -r $$BASE_DIR/$(TEST_WORKLOAD_PATH)/.workloadConfig $(TEST_PATH) ;
+	cp -r ${BASE_DIR}/$(TEST_WORKLOAD_PATH)/.workloadConfig $(TEST_PATH) ;
 	cd $(TEST_PATH) && operator-builder $(INIT_OPTS)
 
 generate-create: set-path
