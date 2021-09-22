@@ -56,7 +56,7 @@ debug: debug-init debug-create
 #
 # simple functional code generation testing outside of codebase itself
 #
-FUNC_TEST_PATH ?= /tmp/test
+FUNC_TEST_PATH ?= /tmp/operator-builder-func-test
 
 func-test-clean:
 	if [ -d $(FUNC_TEST_PATH) ]; then rm -rf $(FUNC_TEST_PATH)/*; fi
