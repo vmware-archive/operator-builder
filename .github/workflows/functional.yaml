@@ -57,11 +57,11 @@ jobs:
       - name: Initialize Standalone Operator Codebase
         run: |
           chmod +x bin/operator-builder
-          make generate-clean
-          make generate-init
+          make func-test-clean
+          make func-test-init
 
       - name: Create Standalone Operator Codebase
-        run: make generate-create
+        run: make func-test-create
 
       - name: Store Standalone Operator Codebase
         uses: actions/upload-artifact@v2
@@ -97,11 +97,11 @@ jobs:
       - name: Initialize Collection Operator Codebase
         run: |
           chmod +x bin/operator-builder
-          make generate-clean
-          make generate-init
+          make func-test-clean
+          make func-test-init
 
       - name: Create Collection Operator Codebase
-        run: make generate-create
+        run: make func-test-create
 
       - name: Store Collection Operator Codebase
         uses: actions/upload-artifact@v2
