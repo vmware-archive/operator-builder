@@ -4,6 +4,7 @@ on:
   - push
   - pull_request
 
+
 jobs:
   check-commits:
     name: Check Commit Messages
@@ -11,22 +12,21 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
-        with:
-          # for pull_request so we can do HEAD^2
-          fetch-depth: 2
 
-      - name: Get Commit Message
-        id: get_commit_message
+      - name: Check Commit Messages
         run: |
-          if   [[ '${{ github.event_name }}' == 'push' ]]; then
-            echo ::set-output name=commit_message::$(git log --format=%B -n 1 HEAD)
-          elif [[ '${{ github.event_name }}' == 'pull_request' ]]; then
-            echo ::set-output name=commit_message::$(git log --format=%B -n 1 HEAD^2)
-          fi
+          REGEX='\A(((Initial commit)|(Merge [^\r\n]+)|((build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\(\w+\))?!?: [^\r\n]+((\r|\n|\r\n)((\r|\n|\r\n)[^\r\n]+)+)*))(\r|\n|\r\n)?)\z'
+          git log --pretty="%s" `git log origin/HEAD -n 1 --pretty=format:"%h"`..HEAD | while read line; do
+            if [[ ! $line =~ $REGEX ]]; then
+              echo "commit message check failed: ${line}"
+              echo
+              echo "message is not convention commits format"
+              echo "please see https://www.conventionalcommits.org/en/v1.0.0/#specification"
 
-    outputs:
-      commit_message:
-        echo "${{ steps.get_commit_message.outputs.commit_message }}"
+              exit 1
+            fi
+          done
+
   dco-check:
     name: DCO Check
     if: github.event_name == 'pull_request'
