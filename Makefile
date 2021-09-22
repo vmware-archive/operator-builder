@@ -60,7 +60,7 @@ GENERATE_PATH ?= $(DEBUG_PATH)
 generate-clean:
 	rm -rf $(GENERATE_PATH)/*
 
-generate-init: test-clean set-path
+generate-init: generate-clean set-path
 	cd $(GENERATE_PATH) && operator-builder $(INIT_OPTS)
 
 generate-create: set-path
