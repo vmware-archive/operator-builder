@@ -19,8 +19,8 @@ define create_path
     fi
 endef
 
-set-path:
-	export PATH=$$PATH:`pwd`:`pwd`/bin:/usr/local/bin
+export BASE_DIR := $(shell pwd)
+export PATH := $(PATH):$(BASE_DIR):$(BASE_DIR)/bin:/usr/local/bin
 
 build:
 	go build -o bin/operator-builder cmd/operator-builder/main.go
@@ -61,12 +61,12 @@ TEST_PATH ?= /tmp/test
 generate-clean:
 	if [ -d $(TEST_PATH) ]; then rm -rf $(TEST_PATH)/*; fi
 
-generate-init: build generate-clean set-path
+generate-init: build generate-clean
 	$(call create_path $(TEST_PATH))
 	cp -r `pwd`/$(TEST_WORKLOAD_PATH)/.workloadConfig $(TEST_PATH) ;
 	cd $(TEST_PATH) && operator-builder $(INIT_OPTS)
 
-generate-create: set-path
+generate-create:
 	cd $(TEST_PATH) && operator-builder $(CREATE_OPTS)
 
 generate: generate-init generate-create
