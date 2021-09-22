@@ -14,8 +14,8 @@ CREATE_OPTS=create api \
 	--resource
 
 define create_path
-	if [ ! -d $$1 ]; then\
-        mkdir -p $$1;\
+	if [ ! -d $(1)/.workloadConfig ]; then\
+        mkdir -p $(1)/.workloadConfig;\
     fi
 endef
 
@@ -62,8 +62,8 @@ generate-clean:
 	if [ -d $(TEST_PATH) ]; then rm -rf $(TEST_PATH)/*; fi
 
 generate-init: build generate-clean
-	$(call create_path $(TEST_PATH))
-	cp -r $(BASE_DIR)/$(TEST_WORKLOAD_PATH)/.workloadConfig $(TEST_PATH)/.workloadConfig ;
+	$(call create_path,$(TEST_PATH))
+	cp -r $(BASE_DIR)/$(TEST_WORKLOAD_PATH)/.workloadConfig/* $(TEST_PATH)/.workloadConfig ;
 	ls -altr $(TEST_PATH) ;
 	ls -altr $(TEST_PATH)/.workloadConfig ;
 	cd $(TEST_PATH) && operator-builder $(INIT_OPTS)
