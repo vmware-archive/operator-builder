@@ -15,9 +15,9 @@ jobs:
 
       - name: Check Commit Messages
         run: |
-          REGEX='\A(((Initial commit)|(Merge [^\r\n]+)|((build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\(\w+\))?!?: [^\r\n]+((\r|\n|\r\n)((\r|\n|\r\n)[^\r\n]+)+)*))(\r|\n|\r\n)?)\z'
+          REGEX='^(?<type>build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test|¯\\_\(ツ\)_\/¯)(?<scope>\(\w+\)?((?=:\s)|(?=!:\s)))?(?<breaking>!)?(?<subject>:\s.*)?|^(?<merge>Merge \w+)'
           git log --pretty="%s" `git log origin/HEAD -n 1 --pretty=format:"%h"`..HEAD | while read line; do
-            if [[ ! $line =~ $REGEX ]]; then
+            if echo $line | egrep -qv '^(?<type>build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test|¯\\_\(ツ\)_\/¯)(?<scope>\(\w+\)?((?=:\s)|(?=!:\s)))?(?<breaking>!)?(?<subject>:\s.*)?|^(?<merge>Merge \w+)'; then
               echo "commit message check failed: ${line}"
               echo
               echo "message is not convention commits format"
