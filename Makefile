@@ -4,7 +4,6 @@ GOBIN=$(shell go env GOPATH)/bin
 else
 GOBIN=$(shell go env GOBIN)
 endif
-BASE_DIR=$(shell pwd)
 INIT_OPTS=init \
 		--workload-config .workloadConfig/workload.yaml \
    		--repo github.com/acme/acme-cnp-mgr \
@@ -21,6 +20,7 @@ define create_path
 endef
 
 set-path:
+	export BASE_DIR=`pwd` ;
 	export PATH=$$PATH:$$BASE_DIR:$$BASE_DIR/bin:/usr/local/bin
 
 build:
