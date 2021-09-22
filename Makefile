@@ -4,6 +4,7 @@ GOBIN=$(shell go env GOPATH)/bin
 else
 GOBIN=$(shell go env GOBIN)
 endif
+BASE_DIR=$$PWD
 INIT_OPTS=init \
 		--workload-config .workloadConfig/workload.yaml \
    		--repo github.com/acme/acme-cnp-mgr \
@@ -13,57 +14,60 @@ CREATE_OPTS=create api \
 	--controller \
 	--resource
 
+define create_path
+	if [ ! -d $$1 ]; then\
+        mkdir $$1;\
+    fi
+endef
+
 set-path:
-	export PATH=$$PATH:$$PWD:$$PWD/bin
+	export PATH=$$PATH:$$PWD:$$PWD/bin:/usr/local/bin
 
 build:
 	go build -o bin/operator-builder cmd/operator-builder/main.go
 
+install:
+	sudo cp bin/operator-builder /usr/local/bin/operator-builder
+
 #
 # traditional testing
-# TODO: come to consensus on what this looks like versus debug/generate tests
 #
-TEST_PATH ?= /tmp
-TEST_SCRIPT ?= default.sh
-
-test-install: build
+test:
 	go test -cover -coverprofile=./bin/coverage.out ./...
 
 test-coverage-view: test-install
 	go tool cover -html=./bin/coverage.out	
 
-test: test-install set-path
-	find . -name ${TEST_SCRIPT} | xargs dirname | xargs -I {} cp -r {} $(TEST_PATH)/.workloadConfig
-	cd $(TEST_PATH); basename ${TEST_SCRIPT} | xargs find ${TEST_PATH} -name | xargs sh
-
 #
 # debug testing with delve
 #
-DEBUG_PATH ?= test/application
+TEST_WORKLOAD_PATH ?= test/application
 
 debug-clean:
-	rm -rf $(DEBUG_PATH)/*
+	rm -rf $(TEST_WORKLOAD_PATH)/*
 
 debug-init: debug-clean
-	dlv debug ./cmd/operator-builder --wd $(DEBUG_PATH) -- $(INIT_OPTS)
+	dlv debug ./cmd/operator-builder --wd $(TEST_WORKLOAD_PATH) -- $(INIT_OPTS)
 
 debug-create:
-	dlv debug ./cmd/operator-builder --wd $(DEBUG_PATH) -- $(CREATE_OPTS)
+	dlv debug ./cmd/operator-builder --wd $(TEST_WORKLOAD_PATH) -- $(CREATE_OPTS)
 
 debug: debug-init debug-create
 
 #
-# simple generation testing
+# simple generation testing outside of codebase itself
 #
-GENERATE_PATH ?= $(DEBUG_PATH)
+TEST_PATH ?= /tmp/test
 
 generate-clean:
-	rm -rf $(GENERATE_PATH)/*
+	if [ -d $(TEST_PATH) ]; then rm -rf $(TEST_PATH)/*; fi
 
-generate-init: generate-clean set-path
-	cd $(GENERATE_PATH) && operator-builder $(INIT_OPTS)
+generate-init: build generate-clean set-path
+	$(call create_path $(TEST_PATH))
+	cp -r $(BASE_DIR)/$(TEST_WORKLOAD_PATH)/.workloadConfig $(TEST_PATH) ;
+	cd $(TEST_PATH) && operator-builder $(INIT_OPTS)
 
 generate-create: set-path
-	cd $(GENERATE_PATH) && operator-builder $(CREATE_OPTS)
+	cd $(TEST_PATH) && operator-builder $(CREATE_OPTS)
 
 generate: generate-init generate-create

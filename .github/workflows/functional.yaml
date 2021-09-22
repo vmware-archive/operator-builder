@@ -37,7 +37,8 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     env:
-      DEBUG_PATH: "test/application"
+      TEST_WORKLOAD_PATH: "test/application"
+      TEST_PATH: "/tmp/test"
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
@@ -66,7 +67,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: standalone-codebase
-          path: ${{ env.DEBUG_PATH }}
+          path: ${{ env.TEST_PATH }}
 
   #
   # test generation of component workload / collection
@@ -76,7 +77,8 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     env:
-      DEBUG_PATH: "test/platform"
+      TEST_WORKLOAD_PATH: "test/platform"
+      TEST_PATH: "/tmp/test"
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
@@ -105,4 +107,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: collection-codebase
-          path: ${{ env.DEBUG_PATH }}
+          path: ${{ env.TEST_PATH }}
