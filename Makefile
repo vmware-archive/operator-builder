@@ -13,18 +13,33 @@ CREATE_OPTS=create api \
 	--controller \
 	--resource
 
+set-path:
+	export PATH=$$PATH:$$PWD:$$PWD/bin
+
 build:
 	go build -o bin/operator-builder cmd/operator-builder/main.go
 
+#
+# traditional testing
+# TODO: come to consensus on what this looks like versus debug/generate tests
+#
+TEST_PATH ?= /tmp
+TEST_SCRIPT ?= default.sh
+
 test-install: build
 	go test -cover -coverprofile=./bin/coverage.out ./...
-	sudo cp bin/operator-builder /usr/local/bin/operator-builder
 
 test-coverage-view: test-install
 	go tool cover -html=./bin/coverage.out	
 
+test: test-install set-path
+	find . -name ${TEST_SCRIPT} | xargs dirname | xargs -I {} cp -r {} $(TEST_PATH)/.workloadConfig
+	cd $(TEST_PATH); basename ${TEST_SCRIPT} | xargs find ${TEST_PATH} -name | xargs sh
+
+#
+# debug testing with delve
+#
 DEBUG_PATH ?= test/application
-TEST_PATH ?= $(DEBUG_PATH)
 
 debug-clean:
 	rm -rf $(DEBUG_PATH)/*
@@ -37,11 +52,18 @@ debug-create:
 
 debug: debug-init debug-create
 
-test-clean:
-	rm -rf $(TEST_PATH)/*
+#
+# simple generation testing
+#
+GENERATE_PATH ?= $(DEBUG_PATH)
 
-test-init: test-clean
-	cd $(TEST_PATH) && $$OLDPWD/bin/operator-builder $(INIT_OPTS)
+generate-clean:
+	rm -rf $(GENERATE_PATH)/*
 
-test-create:
-	cd $(TEST_PATH) && $$OLDPWD/bin/operator-builder $(CREATE_OPTS)
+generate-init: test-clean set-path
+	cd $(GENERATE_PATH) && operator-builder $(INIT_OPTS)
+
+generate-create: set-path
+	cd $(GENERATE_PATH) && operator-builder $(CREATE_OPTS)
+
+generate: generate-init generate-create
