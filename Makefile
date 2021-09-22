@@ -5,9 +5,9 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 INIT_OPTS=init \
-		--workload-config .workloadConfig/workload.yaml \
-   		--repo github.com/acme/acme-cnp-mgr \
-        --skip-go-version-check
+	--workload-config .workloadConfig/workload.yaml \
+   	--repo github.com/acme/acme-cnp-mgr \
+    --skip-go-version-check
 CREATE_OPTS=create api \
 	--workload-config .workloadConfig/workload.yaml \
 	--controller \
