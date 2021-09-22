@@ -34,7 +34,7 @@ install:
 test:
 	go test -cover -coverprofile=./bin/coverage.out ./...
 
-test-coverage-view: test-install
+test-coverage-view: test
 	go tool cover -html=./bin/coverage.out	
 
 #
