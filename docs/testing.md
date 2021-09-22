@@ -6,34 +6,41 @@ Operator Builder is used to generate code for a distinct code repository - so th
 testing is conducted as such.  It stamps out and/or modifies source code for an
 operator project when a test is run.
 
-At this time, manual verification of results is required.  In the future,
-functional tests for the resulting operator will be added.
+At this time, manual verification of results is possible.  Additionally, the manual
+verification steps have been place into a CI pipeline via the `.github/workflows`
+directory.
 
-There are 3 relevant make targets:
+There are several relevant make targets:
 
 * `build`: Builds the operator-builder binary and saves it in the `bin`
   directory.
-* `test-install`: Builds operator-builder and installs it at `/usr/local/bin/`.
-* `test`: Builds and installs operator-builder, copies the secified test script
-  to the `.test` directory to your test repo and runs that script.
-* `test-clean`: Use with caution. Deletes the contents of the test repo directory.
+* `install`: Installs the operator-builder binary to `/usr/local/bin`.  **NOTE:**
+  this will override any previous installations of operator-builder.
+* `debug`: Runs the `delve` debugger in conjunction with the operator-builder codebase.
+* `generate`: Builds operator-builder, and uses the built binary to run `init`
+  and `create api` tasks into a `TEST_PATH` directory.
+* `generate-clean`: Use with caution. Deletes the contents of the test repo directory.
+* `debug-clean`: Use with caution. Deletes the contents of the debug repo directory.
 
 Follow these steps to create a new test case:
 
-1. Add a bash script to the `test/` directory that writes test config and
-   manifest files and then performs the actions you would expect an end-user
-   engineer to perform when using operator-builder.  See the existing scripts
-   for examples.
-2. In order to run the test in `test/application/.workloadConfig/`, run:
+1. Create a descriptive name for the test by creating a new directory under
+   the `test/` directory.
+2. Create a `.workloadConfig` directory within your newly created directory.
+3. Add the YAML files for your workload under the newly created `.workloadConfig`
+   directory.
+4. Create a [workload configuration](workloads.md) in the `.workloadConfig` directory
+   with the name `workload.yaml`.
+5. In order to run the test in `test/application/.workloadConfig/`, run:
 ```bash
-TEST_PATH=/my/test/repo/path TEST_SCRIPT=application.sh make test
+TEST_PATH=/tmp/test TEST_WORKLOAD_PATH=test/application make generate
 ```
 
    In order to run the test in `test/platform/.workloadConfig/`, run:
 ```bash
-TEST_PATH=/my/test/repo/path TEST_SCRIPT=platform.sh make test
+TEST_PATH=/path/to/generated/code TEST_WORKLOAD_PATH=test/platform make generate
 ```
 3. To remove the generated files in the target test repo run:
 ```
-TEST_PATH=/my/test/repo/path TEST_SCRIPT=platform.sh make test-clean
+make generate-clean
 ```
