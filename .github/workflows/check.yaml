@@ -38,28 +38,22 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v2
 
+      - name: Get PR Commits
+        id: get-pr-commits
+        uses: tim-actions/get-pr-commits@master
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Check Commit Messages
-        run: |
-          # get commits by hash
-          git log -n 10
+        uses: tim-actions/commit-message-checker-with-regex@v0.3.1
+        with:
+          commits: ${{ steps.get-pr-commits.outputs.commits }}
+          pattern: '^((build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test|¯\\_\(ツ\)_\/¯)(\(\w+\))?(!)?(: (.*\s*)*))|(Merge (.*\s*)*)|(Initial commit$)(\n.*)*$'
+          error: |
+              commit message check failed:
 
-
-          git log --pretty="%h" `git log origin/HEAD -n 1 --pretty=format:"%h"`..HEAD | while read line; do
-            COMMIT_MSG=`git log ${line} -n 1 --pretty=format:"%s"`
-
-            echo "checking commit $COMMIT_MSG"
-
-            if [[ ! "$COMMIT_MSG" =~ ^((build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test|¯\\_\(ツ\)_\/¯)(\(\w+\))?(!)?(: (.*\s*)*))|(Merge (.*\s*)*)|(Initial commit$) ]]; then
-              echo "commit message check failed:"
-              echo
-              echo "${COMMIT_MSG}"
-              echo
-              echo "message is not conventional commits format"
-              echo "please see https://www.conventionalcommits.org/en/v1.0.0/#specification"
-
-              exit 1
-            fi
-          done
+              message is not conventional commits format
+              please see https://www.conventionalcommits.org/en/v1.0.0/#specification
 
   dco-check:
     name: DCO Check
