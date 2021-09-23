@@ -41,6 +41,9 @@ jobs:
       - name: Check Commit Messages
         run: |
           # get commits by hash
+          git log -n 10
+
+
           git log --pretty="%h" `git log origin/HEAD -n 1 --pretty=format:"%h"`..HEAD | while read line; do
             COMMIT_MSG=`git log ${line} -n 1 --pretty=format:"%s"`
 
