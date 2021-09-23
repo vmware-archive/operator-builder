@@ -4,23 +4,51 @@ on:
   - push
   - pull_request
 
-
 jobs:
+  check-latest-commit:
+    name: Check Latest Commit Message
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Check Latest Commit Message
+        run: |
+          COMMIT_MSG=`git log -n 1 --pretty=format:"%s"`
+          if [[ ! "$COMMIT_MSG" =~ ^((build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test|¯\\_\(ツ\)_\/¯)(\(\w+\))?(!)?(: (.*\s*)*))|(Merge (.*\s*)*)|(Initial commit$) ]]; then
+              echo "commit message check failed:"
+              echo
+              echo "${COMMIT_MSG}"
+              echo
+              echo "message is not conventional commits format"
+              echo "please see https://www.conventionalcommits.org/en/v1.0.0/#specification"
+
+              exit 1
+          fi
+
   check-commits:
     name: Check Commit Messages
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
 
       - name: Check Commit Messages
         run: |
-          REGEX='^(?<type>build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test|¯\\_\(ツ\)_\/¯)(?<scope>\(\w+\)?((?=:\s)|(?=!:\s)))?(?<breaking>!)?(?<subject>:\s.*)?|^(?<merge>Merge \w+)'
-          git log --pretty="%s" `git log origin/HEAD -n 1 --pretty=format:"%h"`..HEAD | while read line; do
-            if echo $line | egrep -qv '^(?<type>build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test|¯\\_\(ツ\)_\/¯)(?<scope>\(\w+\)?((?=:\s)|(?=!:\s)))?(?<breaking>!)?(?<subject>:\s.*)?|^(?<merge>Merge \w+)'; then
-              echo "commit message check failed: ${line}"
+          # get commits by hash
+          git log --pretty="%h" `git log origin/HEAD -n 1 --pretty=format:"%h"`..HEAD | while read line; do
+            COMMIT_MSG=`git log ${line} -n 1 --pretty=format:"%s"`
+
+            echo "checking commit $COMMIT_MSG"
+
+            if [[ ! "$COMMIT_MSG" =~ ^((build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test|¯\\_\(ツ\)_\/¯)(\(\w+\))?(!)?(: (.*\s*)*))|(Merge (.*\s*)*)|(Initial commit$) ]]; then
+              echo "commit message check failed:"
               echo
-              echo "message is not convention commits format"
+              echo "${COMMIT_MSG}"
+              echo
+              echo "message is not conventional commits format"
               echo "please see https://www.conventionalcommits.org/en/v1.0.0/#specification"
 
               exit 1
