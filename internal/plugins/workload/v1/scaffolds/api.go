@@ -26,6 +26,10 @@ import (
 	"github.com/vmware-tanzu-labs/operator-builder/internal/plugins/workload/v1/scaffolds/templates/int/dependencies"
 	"github.com/vmware-tanzu-labs/operator-builder/internal/plugins/workload/v1/scaffolds/templates/int/helpers"
 	"github.com/vmware-tanzu-labs/operator-builder/internal/plugins/workload/v1/scaffolds/templates/int/mutate"
+	"github.com/vmware-tanzu-labs/operator-builder/internal/plugins/workload/v1/scaffolds/templates/int/postcreate"
+	"github.com/vmware-tanzu-labs/operator-builder/internal/plugins/workload/v1/scaffolds/templates/int/postflight"
+	"github.com/vmware-tanzu-labs/operator-builder/internal/plugins/workload/v1/scaffolds/templates/int/precreate"
+	"github.com/vmware-tanzu-labs/operator-builder/internal/plugins/workload/v1/scaffolds/templates/int/preflight"
 	resourcespkg "github.com/vmware-tanzu-labs/operator-builder/internal/plugins/workload/v1/scaffolds/templates/int/resources"
 	"github.com/vmware-tanzu-labs/operator-builder/internal/plugins/workload/v1/scaffolds/templates/int/wait"
 	"github.com/vmware-tanzu-labs/operator-builder/internal/utils"
@@ -241,6 +245,9 @@ func (s *apiScaffolder) Scaffold() error {
 			&phases.ResourcePersist{},
 			&phases.Dependencies{},
 			&phases.PreFlight{},
+			&phases.PostFlight{},
+			&phases.PreCreate{},
+			&phases.PostCreate{},
 			&phases.ResourceWait{},
 			&phases.CheckReady{},
 			&phases.Complete{},
@@ -249,6 +256,10 @@ func (s *apiScaffolder) Scaffold() error {
 			&dependencies.Component{},
 			&mutate.Component{},
 			&wait.Component{},
+			&preflight.Component{},
+			&postflight.Component{},
+			&precreate.Component{},
+			&postcreate.Component{},
 			&samples.CRDSample{
 				SpecFields: s.workload.GetAPISpecFields(),
 			},
@@ -315,6 +326,9 @@ func (s *apiScaffolder) Scaffold() error {
 			&phases.ResourcePersist{},
 			&phases.Dependencies{},
 			&phases.PreFlight{},
+			&phases.PostFlight{},
+			&phases.PreCreate{},
+			&phases.PostCreate{},
 			&phases.ResourceWait{},
 			&phases.CheckReady{},
 			&phases.Complete{},
@@ -323,6 +337,10 @@ func (s *apiScaffolder) Scaffold() error {
 			&dependencies.Component{},
 			&mutate.Component{},
 			&wait.Component{},
+			&preflight.Component{},
+			&postflight.Component{},
+			&precreate.Component{},
+			&postcreate.Component{},
 			&samples.CRDSample{
 				SpecFields: s.workload.GetAPISpecFields(),
 			},
@@ -389,6 +407,10 @@ func (s *apiScaffolder) Scaffold() error {
 				&mutate.Component{},
 				&helpers.Component{},
 				&wait.Component{},
+				&preflight.Component{},
+				&postflight.Component{},
+				&precreate.Component{},
+				&postcreate.Component{},
 				&samples.CRDSample{
 					SpecFields: component.Spec.APISpecFields,
 				},
@@ -455,4 +477,3 @@ func (s *apiScaffolder) Scaffold() error {
 
 	return nil
 }
-

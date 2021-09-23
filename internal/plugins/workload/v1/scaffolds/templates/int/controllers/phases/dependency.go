@@ -42,7 +42,8 @@ import (
 	"{{ .Repo }}/internal/helpers"
 )
 
-// DependencyPhase.DefaultRequeue executes checking for a parent components readiness status.
+// DependencyPhase.DefaultRequeue defines the default requeue result for this
+// phase.
 func (phase *DependencyPhase) DefaultRequeue() ctrl.Result {
 	return Requeue()
 }
@@ -129,4 +130,3 @@ func collectionConfigIsReady(r common.ComponentReconciler) bool {
 	return true
 }
 `
-

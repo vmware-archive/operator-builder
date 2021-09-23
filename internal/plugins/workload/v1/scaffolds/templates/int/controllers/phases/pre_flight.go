@@ -36,16 +36,17 @@ import (
 	"{{ .Repo }}/apis/common"
 )
 
-// PreFlightPhase.DefaultRequeue executes checking for a parent components readiness status.
+// PreFlightPhase.DefaultRequeue defines the default requeue result for this
+// phase.
 func (phase *PreFlightPhase) DefaultRequeue() ctrl.Result {
 	return Requeue()
 }
 
-// PreFlightPhase.Execute executes pre-flight and fail-fast conditions prior to attempting resource creation.
+// PreFlightPhase.Execute executes the pre-flight stub phase before
+// reconciliation has been performed.
 func (phase *PreFlightPhase) Execute(
 	r common.ComponentReconciler,
 ) (proceedToNextPhase bool, err error) {
-	return true, nil
+	return r.PreFlight()
 }
 `
-

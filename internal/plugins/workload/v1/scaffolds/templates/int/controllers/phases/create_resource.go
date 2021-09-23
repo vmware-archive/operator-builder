@@ -40,7 +40,8 @@ import (
 	"{{ .Repo }}/apis/common"
 )
 
-// CreateResourcesPhase.DefaultRequeue executes checking for a parent components readiness status.
+// CreateResourcesPhase.DefaultRequeue defines the default requeue result for this
+// phase.
 func (phase *CreateResourcesPhase) DefaultRequeue() ctrl.Result {
 	return Requeue()
 }
@@ -84,4 +85,3 @@ func (phase *CreateResourcesPhase) Execute(
 	return true, nil
 }
 `
-

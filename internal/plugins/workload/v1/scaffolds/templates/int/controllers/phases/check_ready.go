@@ -39,7 +39,8 @@ import (
 	"{{ .Repo }}/internal/resources"
 )
 
-// CheckReadyPhase.DefaultRequeue executes checking for a parent components readiness status.
+// CheckReadyPhase.DefaultRequeue defines the default requeue result for this
+// phase.
 func (phase *CheckReadyPhase) DefaultRequeue() ctrl.Result {
 	return ctrl.Result{
 		Requeue:      true,
@@ -51,19 +52,18 @@ func (phase *CheckReadyPhase) DefaultRequeue() ctrl.Result {
 func (phase *CheckReadyPhase) Execute(
 	r common.ComponentReconciler,
 ) (proceedToNextPhase bool, err error) {
-	// check to see if known types are ready
-	knownReady, err := resources.AreReady(r.GetResources()...)
-	if err != nil {
+	// check to see if known resource types are ready
+	resourcesAreReady, err := resources.AreReady(r.GetResources()...)
+	if err != nil || !resourcesAreReady {
 		return false, err
 	}
 
 	// check to see if the custom methods return ready
-	customReady, err := r.CheckReady()
-	if err != nil {
+	ready, err := r.CheckReady()
+	if err != nil || !ready {
 		return false, err
 	}
 
-	return (knownReady && customReady), nil
+	return true, nil
 }
 `
-

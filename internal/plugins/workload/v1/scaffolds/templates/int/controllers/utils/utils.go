@@ -66,11 +66,14 @@ func IgnoreNotFound(err error) error {
 // CreatePhases defines the phases for create and the order in which they run during the reconcile process.
 func CreatePhases() []controllerphases.Phase {
 	return []controllerphases.Phase{
-		&controllerphases.DependencyPhase{},
 		&controllerphases.PreFlightPhase{},
+		&controllerphases.DependencyPhase{},
+		&controllerphases.PreCreatePhase{},
 		&controllerphases.CreateResourcesPhase{},
+		&controllerphases.PostCreatePhase{},
 		&controllerphases.CheckReadyPhase{},
 		&controllerphases.CompletePhase{},
+		&controllerphases.PostFlightPhase{},
 	}
 }
 
@@ -216,4 +219,3 @@ func Watch(
 	return nil
 }
 `
-

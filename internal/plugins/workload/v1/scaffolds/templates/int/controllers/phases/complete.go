@@ -36,7 +36,8 @@ import (
 	"{{ .Repo }}/apis/common"
 )
 
-// CompletePhase.DefaultRequeue executes checking for a parent components readiness status.
+// CompletePhase.DefaultRequeue defines the default requeue result for this
+// phase.
 func (phase *CompletePhase) DefaultRequeue() ctrl.Result {
 	return Requeue()
 }
@@ -51,4 +52,3 @@ func (phase *CompletePhase) Execute(
 	return true, nil
 }
 `
-

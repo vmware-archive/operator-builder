@@ -77,6 +77,10 @@ import (
 	"{{ .Repo }}/internal/mutate"
 	"{{ .Repo }}/internal/resources"
 	"{{ .Repo }}/internal/wait"
+	"{{ .Repo }}/internal/preflight"
+	"{{ .Repo }}/internal/postflight"
+	"{{ .Repo }}/internal/precreate"
+	"{{ .Repo }}/internal/postcreate"
 )
 
 // {{ .Resource.Kind }}Reconciler reconciles a {{ .Resource.Kind }} object.
@@ -357,6 +361,30 @@ func (r *{{ .Resource.Kind }}Reconciler) Wait(
 	return wait.{{ .Resource.Kind }}Wait(r, object)
 }
 
+// PreFlight performs preflight logic that happens before controller
+// reconciliation is performed.
+func (r *{{ .Resource.Kind }}Reconciler) PreFlight() (bool, error) {
+	return preflight.{{ .Resource.Kind }}PreFlight(r)
+}
+
+// PostFlight performs postflight logic that happens after controller
+// reconciliation is performed.
+func (r *{{ .Resource.Kind }}Reconciler) PostFlight() (bool, error) {
+	return postflight.{{ .Resource.Kind }}PostFlight(r)
+}
+
+// PreCreate performs precreate logic that happens before resource
+// creation is performed.
+func (r *{{ .Resource.Kind }}Reconciler) PreCreate() (bool, error) {
+	return precreate.{{ .Resource.Kind }}PreCreate(r)
+}
+
+// PostCreate performs postcreate logic that happens after resource
+// creation is performed.
+func (r *{{ .Resource.Kind }}Reconciler) PostCreate() (bool, error) {
+	return postcreate.{{ .Resource.Kind }}PostCreate(r)
+}
+
 func (r *{{ .Resource.Kind }}Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 	options := controller.Options{
 		RateLimiter: utils.NewDefaultRateLimiter(5*time.Microsecond, 5*time.Minute),
@@ -376,4 +404,3 @@ func (r *{{ .Resource.Kind }}Reconciler) SetupWithManager(mgr ctrl.Manager) erro
 	return nil
 }
 `
-

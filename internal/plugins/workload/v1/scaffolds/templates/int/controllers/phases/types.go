@@ -52,11 +52,14 @@ type ResourcePhase interface {
 }
 
 // Below are the phase types which satisfy the Phase interface.
-type DependencyPhase struct{}
 type PreFlightPhase struct{}
+type DependencyPhase struct{}
+type PreCreatePhase struct{}
 type CreateResourcesPhase struct{}
+type PostCreatePhase struct{}
 type CheckReadyPhase struct{}
 type CompletePhase struct{}
+type PostFlightPhase struct{}
 
 // Below are the phase types which satisfy the ResourcePhase interface.
 type PersistResourcePhase struct{}
@@ -101,4 +104,3 @@ func getResourcePhaseName(resourcePhase ResourcePhase) string {
 	return objectElements[len(objectElements)-1]
 }
 `
-

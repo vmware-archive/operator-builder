@@ -86,6 +86,10 @@ type ComponentReconciler interface {
 	CheckReady() (bool, error)
 	Mutate(*metav1.Object) ([]metav1.Object, bool, error)
 	Wait(*metav1.Object) (bool, error)
+	PreFlight() (bool, error)
+	PostFlight() (bool, error)
+	PreCreate() (bool, error)
+	PostCreate() (bool, error)
 }
 
 type ComponentResource interface {
@@ -107,4 +111,3 @@ type ComponentResource interface {
 	ToCommonResource() *Resource
 }
 `
-
