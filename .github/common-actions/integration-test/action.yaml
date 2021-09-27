@@ -70,9 +70,9 @@ runs:
       shell: bash
       working-directory: /tmp/operator-builder-test
       run: |
-        for i in {1..60}; do
-          sleep 1
-        done
+        # this is a placeholder for proper e2e testing that the operator is
+        # running
+        sleep 30
 
     - name: Install Samples
       shell: bash
