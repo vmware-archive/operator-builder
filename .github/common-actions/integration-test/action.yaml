@@ -69,7 +69,10 @@ runs:
     - name: Ensure Operator Runs
       shell: bash
       working-directory: /tmp/operator-builder-test
-      run: sleep 60 && echo placeholder
+      run: |
+        for i in {1..60}; do
+          sleep 1
+        done
 
     - name: Install Samples
       shell: bash
@@ -82,8 +85,3 @@ runs:
       run: IMG=localhost:5000/${IMAGE_NAME}:latest make undeploy
       env:
         IMAGE_NAME: ${{ inputs.codebase-artifact }}
-
-    - name: Uninstall Custom Resources
-      shell: bash
-      working-directory: /tmp/operator-builder-test
-      run: make uninstall
