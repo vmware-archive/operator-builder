@@ -132,7 +132,16 @@ func (c *WorkloadCollection) IsCollection() bool {
 }
 
 func (c *WorkloadCollection) SetResources(workloadPath string) error {
-	var specFields []*APISpecField
+	resources, err := processMarkers(workloadPath, c.Spec.Resources, false)
+	if err != nil {
+		return err
+	}
+
+	c.Spec.SourceFiles = *resources.SourceFiles
+	c.Spec.RBACRules = *resources.RBACRules
+	c.Spec.OwnershipRules = *resources.OwnershipRules
+
+	specFields := resources.SpecFields
 
 	for _, component := range c.Spec.Components {
 		componentResources, err := processMarkers(
@@ -145,7 +154,7 @@ func (c *WorkloadCollection) SetResources(workloadPath string) error {
 		}
 
 		// add to spec fields if not present
-		for _, csf := range componentResources.SpecField {
+		for _, csf := range componentResources.SpecFields {
 			fieldPresent := false
 
 			for i, sf := range specFields {
@@ -179,9 +188,8 @@ func (c *WorkloadCollection) SetComponents(components []*ComponentWorkload) erro
 	return nil
 }
 
-func (*WorkloadCollection) HasChildResources() bool {
-	// collection never has child resources, only components
-	return false
+func (c *WorkloadCollection) HasChildResources() bool {
+	return len(c.Spec.Resources) > 0
 }
 
 func (c *WorkloadCollection) GetComponents() []*ComponentWorkload {
@@ -189,7 +197,7 @@ func (c *WorkloadCollection) GetComponents() []*ComponentWorkload {
 }
 
 func (c *WorkloadCollection) GetSourceFiles() *[]SourceFile {
-	return &[]SourceFile{}
+	return &c.Spec.SourceFiles
 }
 
 func (c *WorkloadCollection) GetFuncNames() (createFuncNames, initFuncNames []string) {
@@ -219,4 +227,3 @@ func (c *WorkloadCollection) SetNames() {
 		c.Spec.CompanionCliRootcmd.FileName = utils.ToFileName(c.Spec.CompanionCliRootcmd.Name)
 	}
 }
-

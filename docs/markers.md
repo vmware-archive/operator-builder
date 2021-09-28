@@ -124,3 +124,13 @@ A second marker type `+operator-builder:collection:field` can be used with the
 same arguments as a Field Marker. These markers are used to define global Fields
 for your Collection and can be used in any of its associated components.
 
+Important: If you use a marker on a [collection
+resource](workload-collections.md#collection-resources) do *not* use the
+collection marker.  Use the regular field marker: `+operator-builder:field`.
+Using a regular field marker on a collection resource will result in a collection
+field since it is on a collection resource.
+
+If you do use a collection marker on a collection resource, the resulting source
+code will not compile since the object variables will refer to a collection that
+does not exist.
+

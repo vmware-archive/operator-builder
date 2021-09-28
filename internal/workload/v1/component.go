@@ -109,10 +109,10 @@ func (c *ComponentWorkload) SetResources(workloadPath string) error {
 		return err
 	}
 
-	c.Spec.APISpecFields = resources.SpecField
-	c.Spec.SourceFiles = *resources.SourceFile
-	c.Spec.RBACRules = *resources.RBACRule
-	c.Spec.OwnershipRules = *resources.OwnershipRule
+	c.Spec.APISpecFields = resources.SpecFields
+	c.Spec.SourceFiles = *resources.SourceFiles
+	c.Spec.RBACRules = *resources.RBACRules
+	c.Spec.OwnershipRules = *resources.OwnershipRules
 
 	return nil
 }
@@ -196,4 +196,3 @@ func (c *ComponentWorkload) SetNames() {
 		c.Spec.CompanionCliSubcmd.FileName = utils.ToFileName(c.Spec.CompanionCliSubcmd.Name)
 	}
 }
-

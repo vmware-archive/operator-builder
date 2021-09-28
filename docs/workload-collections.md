@@ -72,3 +72,71 @@ initialize a new MetricsComponent custom resource to use to deploy the
 metrics-component workload.  Or they can use `platformctl metrics generate` to
 ouptut a set of Kubernetes manifests configured by a supplied MetricsComponent
 custom resource.
+
+## Collection Resources
+
+Collections can also have resources associated directly with them.  This is
+useful for resources such as namespaces that are shared by the components in the
+collection.  Consider the following workload collection with a resource
+included.
+
+```yaml
+name: acme-complex-app
+kind: WorkloadCollection
+spec:
+  api:
+    domain: apps.acme.com
+    group: tenant
+    version: v1alpha1
+    kind: AcmeComplexApp
+    clusterScoped: true
+  companionCliRootcmd:
+    name: appctl
+    description: Manage a really complex app
+  resources:
+    - namespace.yaml  # collection resource identified here
+  componentFiles:
+    - frontend-component.yaml
+    - backend-component.yaml
+    - service-x-component.yaml
+    - service-y-component.yaml
+    - service-z-component.yaml
+```
+
+When including markers in these collection resources, it is important you do
+*not* denote them as collection fields with `+operator-builder:collection:field:`.
+This will result in source code that will not compile because it will generate a
+variable that references a collection that does not exist.  Use the marker
+`+operator-builder:field:` on collection resources - this will result in a
+collection field since it is on a collection resources.  The following is an
+example of how this collection resource could look.  It will result in a
+`namespace` field being included in the spec for a `AcmeComplexApp` resource.
+
+```yaml
+# namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: complex-app # +operator-builder:field:name=namespace,type=string
+```
+
+When adding markers to resources belonging to components, you *will* denote them
+as a collection field: `+operator-builder:collection:field:`.  This will cause
+the value to be derived from the same `namespace` field in the collection's
+`AcmeComplexApp` resource.
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-svc
+  namespace: complex-app # +operator-builder:collection:field:name=namespace,type=string
+spec:
+  ports:
+    - name: https
+      port: 443
+      protocol: TCP
+  selector:
+    app: frontend
+```
+
