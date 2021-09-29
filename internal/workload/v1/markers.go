@@ -23,7 +23,12 @@ func SupportedMarkerDataTypes() []string {
 	return []string{"bool", "string", "int", "int32", "int64", "float32", "float64"}
 }
 
-func processMarkers(workloadPath string, resources []string, collection bool) (*SourceCodeTemplateData, error) {
+func processMarkers(
+	workloadPath string,
+	resources []string,
+	collection bool,
+	collectionResources bool,
+) (*SourceCodeTemplateData, error) {
 	results := &SourceCodeTemplateData{
 		SourceFiles:    new([]SourceFile),
 		RBACRules:      new([]RBACRule),
@@ -66,7 +71,7 @@ func processMarkers(workloadPath string, resources []string, collection bool) (*
 		for _, markerResult := range markerResults {
 			switch r := markerResult.Object.(type) {
 			case FieldMarker:
-				if collection {
+				if collection && !collectionResources {
 					continue
 				}
 
@@ -160,7 +165,7 @@ func processMarkers(workloadPath string, resources []string, collection bool) (*
 			}
 		}
 
-		if collection {
+		if collection && !collectionResources {
 			continue
 		}
 
@@ -176,6 +181,20 @@ func processMarkers(workloadPath string, resources []string, collection bool) (*
 		manifests := extractManifests(manifestContent)
 
 		for _, manifest := range manifests {
+			// If processing manifests for collection resources there is no case
+			// where there should be collection markers - they will result in
+			// code that won't compile.  We will convert collection markers to
+			// field markers for the sake of UX.
+			if collection && collectionResources {
+				// find & replace collection markers with field markers
+				manifest = strings.Replace(
+					manifest,
+					"!!var collection",
+					"!!var parent",
+					-1,
+				)
+			}
+
 			// unmarshal yaml to get attributes
 			var manifestMetadata struct {
 				Kind       string
