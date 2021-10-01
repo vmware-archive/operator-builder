@@ -1,0 +1,108 @@
+// Copyright 2021 VMware, Inc.
+// SPDX-License-Identifier: MIT
+
+package templates
+
+import (
+	"sigs.k8s.io/kubebuilder/v3/pkg/machinery"
+)
+
+var _ machinery.Template = &Readme{}
+
+// Readme scaffolds a file that defines the templated README.md instructions for a custom workload.
+type Readme struct {
+	machinery.TemplateMixin
+
+	RootCmd string
+}
+
+// SetTemplateDefaults implements file.Template.
+func (f *Readme) SetTemplateDefaults() error {
+	if f.Path == "" {
+		f.Path = "README.md"
+	}
+
+	f.IfExistsAction = machinery.OverwriteFile
+
+	f.TemplateBody = readmefileTemplate
+
+	return nil
+}
+
+// func (p *Readme) Scaffold(fs machinery.Filesystem) error {
+// 	return nil
+// }
+
+const readmefileTemplate = `A Kubernetes operator built with
+[operator-builder](https://github.com/vmware-tanzu-labs/operator-builder).
+
+## Local Development & Testing
+
+To install the custom resource/s for this operator:
+
+` + "```" + `
+bash
+make install
+` + "```" + `
+
+To run the controller locally against a test cluster, make sure you have a
+kubeconfig set up for a test cluster, then run:
+
+    make run
+
+You can then test the operator by creating the sample manifest/s:
+
+    kubectl apply -f config/samples
+
+
+To clean up:
+` + "```" + `
+bash
+make uninstall
+` + "```" + `
+
+## Deploy the Controller Manager
+
+First, set the image
+
+    export IMG=myrepo/myproject:v0.1.0
+
+
+Now you can build and push the image
+
+` + "```" + `
+bash
+make docker-build
+make docker-push
+` + "```" + `
+
+
+Then deploy:
+
+` + "```" + `
+bash
+make install
+make deploy
+` + "```" + `
+
+To clean up:
+
+` + "```" + `
+bash
+make uninstall
+make undeploy
+` + "```" + `
+
+{{ if ne .RootCmd "" -}}
+## Companion CLI
+
+To build the companion CLI:
+
+    make build-{{ .RootCmd }}
+
+The CLI binary will get saved to the bin directory.  You can see it's help
+message with:
+
+    ./bin/{{ .RootCmd }} help
+{{- end }}
+`

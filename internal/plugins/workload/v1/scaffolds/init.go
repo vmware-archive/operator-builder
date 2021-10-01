@@ -92,6 +92,9 @@ func (s *initScaffolder) Scaffold() error {
 			CobraVersion:             CobraVersion,
 		},
 		&templates.Dockerfile{},
+		&templates.Readme{
+			RootCmd: s.workload.GetRootCmdName(),
+		},
 	)
 	if err != nil {
 		return err
@@ -99,4 +102,3 @@ func (s *initScaffolder) Scaffold() error {
 
 	return nil
 }
-
