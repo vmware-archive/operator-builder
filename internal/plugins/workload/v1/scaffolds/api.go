@@ -175,15 +175,18 @@ func (s *apiScaffolder) Scaffold() error {
 		}
 	}
 
-	err = scaffold.Execute(
-		&cli.CmdRootUpdater{
-			RootCmd:         s.cliRootCommandName,
-			InitCommand:     true,
-			GenerateCommand: true,
-		},
-	)
-	if err != nil {
-		return fmt.Errorf("error updating root.go: %v", err)
+	if s.workload.GetRootcommandName() != "" {
+		err = scaffold.Execute(
+			&cli.CmdRootUpdater{
+				RootCmd:         s.cliRootCommandName,
+				InitCommand:     true,
+				GenerateCommand: true,
+			},
+		)
+
+		if err != nil {
+			return fmt.Errorf("error updating root.go: %v", err)
+		}
 	}
 
 	// API types
@@ -284,6 +287,12 @@ func (s *apiScaffolder) Scaffold() error {
 			},
 			&common.Conditions{},
 			&common.Resources{},
+			&resources.Resources{
+				PackageName:     s.workload.GetPackageName(),
+				CreateFuncNames: createFuncNames,
+				InitFuncNames:   initFuncNames,
+				IsComponent:     s.workload.IsComponent(),
+			},
 			&resourcespkg.ResourceType{},
 			&resourcespkg.Resources{},
 			&resourcespkg.NamespaceType{},
@@ -455,4 +464,3 @@ func (s *apiScaffolder) Scaffold() error {
 
 	return nil
 }
-
