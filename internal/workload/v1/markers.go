@@ -23,6 +23,10 @@ func SupportedMarkerDataTypes() []string {
 	return []string{"bool", "string", "int", "int32", "int64", "float32", "float64"}
 }
 
+func formatProcessError(manifestFile string, err error) error {
+	return fmt.Errorf("error processing file %s; %w", manifestFile, err)
+}
+
 func processMarkers(
 	workloadPath string,
 	resources []string,
