@@ -1,8 +1,13 @@
 ---
 name: Check
 on:
-  - push
-  - pull_request
+  push:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - synchronize
+      - reopened
 
 jobs:
   check-latest-commit:
@@ -40,6 +45,19 @@ jobs:
 
               message is not conventional commits format
               please see https://www.conventionalcommits.org/en/v1.0.0/#specification
+
+  check-pull-request-title:
+    name: Check Pull Request Title
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Check Pull Request Title
+        uses: deepakputhraya/action-pr-title@master
+        with:
+          regex: '^((build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test|¯\\_\(ツ\)_\/¯)(\(\w+\))?(!)?(: (.*\s*)*))|(Merge (.*\s*)*)|(Initial commit$)(\n.*)*$'
 
   dco-check:
     name: DCO Check
