@@ -1,19 +1,14 @@
-name: edge-collection
-kind: WorkloadCollection
+name: persistent
+kind: StandaloneWorkload
 spec:
   api:
     domain: acme.com
-    group: edge
+    group: apps
     version: v1alpha1
-    kind: EdgeCollection
-    clusterScoped: true
-  # test:
-  #   names with dashes
-  #   see https://github.com/vmware-tanzu-labs/operator-builder/issues/139
+    kind: Persistent
+    clusterScoped: false
   companionCliRootcmd:
-    name: edge-collection-ctl
-    description: Edge test cases for collection workloads
-  componentFiles:
-    - tenancy/tenancy-common-component.yaml
-    - tenancy/ns-operator-component.yaml
-    - ingress/contour-component.yaml
+    name: persistentctl
+    description: Manage persistent stuff like a boss
+  resources:
+  - app.yaml
