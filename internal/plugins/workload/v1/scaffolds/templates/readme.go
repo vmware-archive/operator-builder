@@ -29,10 +29,6 @@ func (f *Readme) SetTemplateDefaults() error {
 	return nil
 }
 
-// func (p *Readme) Scaffold(fs machinery.Filesystem) error {
-// 	return nil
-// }
-
 const readmefileTemplate = `A Kubernetes operator built with
 [operator-builder](https://github.com/vmware-tanzu-labs/operator-builder).
 
@@ -50,7 +46,7 @@ kubeconfig set up for a test cluster, then run:
 
     make run
 
-You can then test the operator by creating the sample manifest/s:
+You can then test the operator by creating the sample manifests:
 
     kubectl apply -f config/samples
 
@@ -89,7 +85,6 @@ To clean up:
 
 ` + "```" + `
 bash
-make uninstall
 make undeploy
 ` + "```" + `
 
