@@ -76,9 +76,6 @@ func (s *initScaffolder) Scaffold() error {
 				RootCmdVarName:     utils.ToPascalCase(s.workload.GetRootCmdName()),
 				RootCmdDescription: s.workload.GetRootCmdDescr(),
 			},
-			&templates.Makefile{
-				RootCmd: s.workload.GetRootCmdName(),
-			},
 		)
 		if err != nil {
 			return err
