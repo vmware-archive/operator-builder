@@ -46,7 +46,7 @@ kubeconfig set up for a test cluster, then run:
 
     make run
 
-You can then test the operator by creating the sample manifests:
+You can then test the operator by creating the sample manifest/s:
 
     kubectl apply -f config/samples
 
@@ -85,6 +85,7 @@ To clean up:
 
 ` + "```" + `
 bash
+make uninstall
 make undeploy
 ` + "```" + `
 
