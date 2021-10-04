@@ -92,6 +92,9 @@ func (s *initScaffolder) Scaffold() error {
 			CobraVersion:             CobraVersion,
 		},
 		&templates.Dockerfile{},
+		&templates.Makefile{
+			RootCmd: s.workload.GetRootCmdName(),
+		},
 		&templates.Readme{
 			RootCmd: s.workload.GetRootCmdName(),
 		},
