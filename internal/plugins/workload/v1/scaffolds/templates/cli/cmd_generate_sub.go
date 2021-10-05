@@ -170,6 +170,7 @@ func (g *generateCommand) newGenerate{{ .SubCmdVarName }}Command() {
 		"",
 		"Filepath to the workload manifest to generate child resources for.",
 	)
+	generate{{ .SubCmdVarName }}Cmd.MarkFlagRequired("workload-manifest")
 
 	c.AddCommand(generate{{ .SubCmdVarName }}Cmd)
 	{{- end -}}
