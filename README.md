@@ -25,6 +25,12 @@ The custom resource defined in the source code can be cluster-scoped or
 namespace-scoped based on the requirements of the project.  More info
 [here](docs/resource-scope.md).
 
+## Prerequisites
+
+- Go version 1.16 or later
+- Make
+- Docker (for building/pushing controller images)
+
 ## Installation
 
 Get the source code.
@@ -428,4 +434,3 @@ info [here](docs/license.md).
 ## Testing
 
 Testing of Operator Builder is documented [here](docs/testing.md).
-
