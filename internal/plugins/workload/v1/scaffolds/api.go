@@ -226,15 +226,18 @@ func (s *apiScaffolder) Scaffold() error {
 		}
 	}
 
-	err = scaffold.Execute(
-		&cli.CmdRootUpdater{
-			RootCmd:         s.cliRootCommandName,
-			InitCommand:     true,
-			GenerateCommand: true,
-		},
-	)
-	if err != nil {
-		return fmt.Errorf("error updating root.go: %v", err)
+	if s.workload.GetRootcommandName() != "" {
+		err = scaffold.Execute(
+			&cli.CmdRootUpdater{
+				RootCmd:         s.cliRootCommandName,
+				InitCommand:     true,
+				GenerateCommand: true,
+			},
+		)
+
+		if err != nil {
+			return fmt.Errorf("error updating root.go: %v", err)
+		}
 	}
 
 	// API types
