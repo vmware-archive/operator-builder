@@ -220,7 +220,7 @@ func (g *generateCommand) generate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to unmarshal yaml %s into workload, %w", colFilename, err)
 	}
 
-	err = validateWorkload(&workload)
+	err = validateWorkload(&collection)
 	if err != nil {
 		return fmt.Errorf("error validating yaml %s, %w", colFilename, err)
 	}
