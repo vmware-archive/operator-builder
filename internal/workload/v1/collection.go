@@ -297,7 +297,9 @@ func (c *WorkloadCollection) SetNames() {
 func (c *WorkloadCollection) GetSubcommands() *[]CliCommand {
 	commands := []CliCommand{}
 
-	if c.Spec.CompanionCliSubcmd.Name != "" {
+	// only add a collection subcommand as a subcommand to itself if we have
+	// child resources
+	if c.HasChildResources() {
 		commands = append(commands, c.Spec.CompanionCliSubcmd)
 	}
 
