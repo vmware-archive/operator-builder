@@ -46,6 +46,10 @@ func (c *ComponentWorkload) GetWorkloadKind() WorkloadKind {
 }
 
 // methods that implement WorkloadAPIBuilder.
+func (c *ComponentWorkload) GetDomain() string {
+	return c.Spec.API.Domain
+}
+
 func (c *ComponentWorkload) GetName() string {
 	return c.Name
 }
@@ -83,6 +87,11 @@ func (c *ComponentWorkload) GetSubcommandFileName() string {
 }
 
 func (*ComponentWorkload) GetRootcommandName() string {
+	// no root commands for component workloads
+	return ""
+}
+
+func (c *ComponentWorkload) GetRootcommandVarName() string {
 	// no root commands for component workloads
 	return ""
 }
@@ -189,12 +198,26 @@ func (c *ComponentWorkload) HasSubCmdName() bool {
 	return c.Spec.CompanionCliSubcmd.Name != ""
 }
 
+func (c *ComponentWorkload) HasSubCmdDescription() bool {
+	return c.Spec.CompanionCliSubcmd.Description != ""
+}
+
 func (c *ComponentWorkload) SetNames() {
 	c.PackageName = utils.ToPackageName(c.Name)
-	if c.HasSubCmdName() {
-		c.Spec.CompanionCliSubcmd.VarName = utils.ToPascalCase(c.Spec.CompanionCliSubcmd.Name)
-		c.Spec.CompanionCliSubcmd.FileName = utils.ToFileName(c.Spec.CompanionCliSubcmd.Name)
+
+	// default the sub command name to the defaultSubcommandCollection if unspecified
+	if !c.HasSubCmdName() {
+		c.Spec.CompanionCliSubcmd.Name = defaultCollectionSubcommandName
 	}
+
+	if !c.HasSubCmdDescription() {
+		c.Spec.CompanionCliSubcmd.Description = fmt.Sprintf(
+			defaultCollectionDescription, defaultCollectionSubcommandName,
+		)
+	}
+
+	c.Spec.CompanionCliSubcmd.VarName = utils.ToPascalCase(c.Spec.CompanionCliSubcmd.Name)
+	c.Spec.CompanionCliSubcmd.FileName = utils.ToFileName(c.Spec.CompanionCliSubcmd.Name)
 }
 
 func (c *ComponentWorkload) GetSubcommands() *[]CliCommand {
@@ -203,5 +226,6 @@ func (c *ComponentWorkload) GetSubcommands() *[]CliCommand {
 	if c.Spec.CompanionCliSubcmd.Name != "" {
 		commands = append(commands, c.Spec.CompanionCliSubcmd)
 	}
+
 	return &commands
 }

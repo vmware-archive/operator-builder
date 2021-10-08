@@ -6,6 +6,7 @@ package v1
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"sigs.k8s.io/kubebuilder/v3/pkg/model/resource"
 
@@ -55,6 +56,10 @@ func (s *StandaloneWorkload) GetDomain() string {
 
 func (s *StandaloneWorkload) HasRootCmdName() bool {
 	return s.Spec.CompanionCliRootcmd.Name != ""
+}
+
+func (s *StandaloneWorkload) HasRootCmdDescription() bool {
+	return s.Spec.CompanionCliRootcmd.Description != ""
 }
 
 func (*StandaloneWorkload) HasSubCmdName() bool {
@@ -113,6 +118,10 @@ func (*StandaloneWorkload) GetSubcommandFileName() string {
 
 func (s *StandaloneWorkload) GetRootcommandName() string {
 	return s.Spec.CompanionCliRootcmd.Name
+}
+
+func (s *StandaloneWorkload) GetRootcommandVarName() string {
+	return s.Spec.CompanionCliRootcmd.VarName
 }
 
 func (s *StandaloneWorkload) IsClusterScoped() bool {
@@ -187,6 +196,21 @@ func (*StandaloneWorkload) GetComponentResource(domain, repo string, clusterScop
 
 func (s *StandaloneWorkload) SetNames() {
 	s.PackageName = utils.ToPackageName(s.Name)
+
+	// default the root command name to the lowercase version of kind if unspecified
+	if !s.HasRootCmdName() {
+		s.Spec.CompanionCliRootcmd.Name = strings.ToLower(s.Spec.API.Kind)
+	}
+
+	if !s.HasRootCmdDescription() {
+		s.Spec.CompanionCliRootcmd.Description = fmt.Sprintf(
+			defaultCollectionDescription, strings.ToLower(s.Spec.API.Kind),
+		)
+	}
+
+	s.Spec.CompanionCliRootcmd.VarName = utils.ToPascalCase(s.Spec.CompanionCliRootcmd.Name)
+	s.Spec.CompanionCliRootcmd.FileName = utils.ToFileName(s.Spec.CompanionCliRootcmd.Name)
+
 	if s.HasRootCmdName() {
 		s.Spec.CompanionCliRootcmd.VarName = utils.ToPascalCase(s.Spec.CompanionCliRootcmd.Name)
 		s.Spec.CompanionCliRootcmd.FileName = utils.ToFileName(s.Spec.CompanionCliRootcmd.Name)
