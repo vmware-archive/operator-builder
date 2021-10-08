@@ -85,6 +85,10 @@ func (s *apiScaffolder) Scaffold() error {
 	var crdSampleFilenames []string
 
 	// companion CLI
+	err = s.scaffoldCLI(scaffold)
+	if err != nil {
+		return fmt.Errorf("error scaffolding CLI; %w", err)
+	}
 
 	// API types
 	if s.workload.IsStandalone() {
@@ -362,6 +366,7 @@ func (s *apiScaffolder) Scaffold() error {
 	return nil
 }
 
+// scaffoldCLI runs the specific logic to scaffold the companion CLI
 func (s *apiScaffolder) scaffoldCLI(scaffold *machinery.Scaffold) error {
 	workloadCommands := make([]workloadv1.WorkloadAPIBuilder, len(s.workload.GetComponents())+1)
 	workloadCommands[0] = s.workload
