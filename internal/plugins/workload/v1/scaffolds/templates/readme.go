@@ -84,7 +84,7 @@ To build the companion CLI:
 
     make build-cli
 
-The CLI binary will get saved to the bin directory.  You can see it's help
+The CLI binary will get saved to the bin directory.  You can see the help
 message with:
 
     ./bin/{{ .RootCmd }} help
