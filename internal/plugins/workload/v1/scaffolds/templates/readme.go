@@ -23,7 +23,6 @@ func (f *Readme) SetTemplateDefaults() error {
 	}
 
 	f.IfExistsAction = machinery.OverwriteFile
-
 	f.TemplateBody = readmefileTemplate
 
 	return nil
@@ -36,10 +35,8 @@ const readmefileTemplate = `A Kubernetes operator built with
 
 To install the custom resource/s for this operator:
 
-` + "```" + `
-bash
-make install
-` + "```" + `
+	bash
+	make install
 
 To run the controller locally against a test cluster, make sure you have a
 kubeconfig set up for a test cluster, then run:
@@ -50,12 +47,11 @@ You can then test the operator by creating the sample manifest/s:
 
     kubectl apply -f config/samples
 
-
 To clean up:
-` + "```" + `
-bash
-make uninstall
-` + "```" + `
+
+	bash
+	make uninstall
+
 
 ## Deploy the Controller Manager
 
@@ -63,42 +59,33 @@ First, set the image
 
     export IMG=myrepo/myproject:v0.1.0
 
-
 Now you can build and push the image
 
-` + "```" + `
-bash
-make docker-build
-make docker-push
-` + "```" + `
-
+	bash
+	make docker-build
+	make docker-push
 
 Then deploy:
 
-` + "```" + `
-bash
-make install
-make deploy
-` + "```" + `
+	bash
+	make install
+	make deploy
 
 To clean up:
 
-` + "```" + `
-bash
-make uninstall
-make undeploy
-` + "```" + `
+	bash
+	make uninstall
+	make undeploy
 
-{{ if ne .RootCmd "" -}}
+
 ## Companion CLI
 
 To build the companion CLI:
 
-    make build-{{ .RootCmd }}
+    make build-cli
 
 The CLI binary will get saved to the bin directory.  You can see it's help
 message with:
 
     ./bin/{{ .RootCmd }} help
-{{- end }}
 `
