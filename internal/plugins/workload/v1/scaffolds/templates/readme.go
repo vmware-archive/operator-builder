@@ -35,7 +35,6 @@ const readmefileTemplate = `A Kubernetes operator built with
 
 To install the custom resource/s for this operator:
 
-	bash
 	make install
 
 To run the controller locally against a test cluster, make sure you have a
@@ -49,7 +48,6 @@ You can then test the operator by creating the sample manifest/s:
 
 To clean up:
 
-	bash
 	make uninstall
 
 
@@ -61,19 +59,16 @@ First, set the image
 
 Now you can build and push the image
 
-	bash
 	make docker-build
 	make docker-push
 
 Then deploy:
 
-	bash
 	make install
 	make deploy
 
 To clean up:
 
-	bash
 	make uninstall
 	make undeploy
 
