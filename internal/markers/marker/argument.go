@@ -134,4 +134,3 @@ func (a *Argument) InitializeValue() {
 
 	a.Value = reflect.Indirect(reflect.New(a.Type))
 }
-

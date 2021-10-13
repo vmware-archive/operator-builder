@@ -54,4 +54,3 @@ func (l *Lexer) rawWarningf(format string, args ...interface{}) stateFn {
 
 	return lexComment
 }
-
