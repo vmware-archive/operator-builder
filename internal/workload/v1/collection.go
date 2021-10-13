@@ -206,7 +206,6 @@ func (c *WorkloadCollection) GetAPISpecFields() []*APISpecField {
 }
 
 func (c *WorkloadCollection) GetRBACRules() *[]RBACRule {
-	//return &[]RBACRule{}
 	return &c.Spec.RBACRules
 }
 
