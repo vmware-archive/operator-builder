@@ -12,15 +12,15 @@ import (
 	"strings"
 
 	"github.com/vmware-tanzu-labs/object-code-generator-for-k8s/pkg/generate"
-	"github.com/vmware-tanzu-labs/operator-builder/internal/markers/inspect"
-	"github.com/vmware-tanzu-labs/operator-builder/internal/markers/marker"
-	"github.com/vmware-tanzu-labs/operator-builder/internal/utils"
 	"gopkg.in/yaml.v3"
-
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/kubernetes/scheme"
+
+	"github.com/vmware-tanzu-labs/operator-builder/internal/markers/inspect"
+	"github.com/vmware-tanzu-labs/operator-builder/internal/markers/marker"
+	"github.com/vmware-tanzu-labs/operator-builder/internal/utils"
 )
 
 var (

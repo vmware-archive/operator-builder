@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
 	"github.com/vmware-tanzu-labs/operator-builder/internal/markers/lexer"
 )
 
