@@ -5,6 +5,7 @@ package v1
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
@@ -20,6 +21,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/kubernetes/scheme"
+)
+
+var (
+	ErrUnsupportedDataType    = errors.New("unsupported data type in workload marker")
+	ErrUnableToParseFieldType = errors.New("unable to parse field")
 )
 
 // SupportedMarkerDataTypes returns the supported data types that can be used in
@@ -318,7 +324,7 @@ func zeroValue(val interface{}) (string, error) {
 	case "int", "int32", "int64", "float32", "float64":
 		return "0", nil
 	default:
-		return "", fmt.Errorf("unsupported data type in workload marker; supported data types: %v", SupportedMarkerDataTypes())
+		return "", fmt.Errorf("%w; supported data types: %v", ErrUnsupportedDataType, SupportedMarkerDataTypes())
 	}
 }
 
@@ -410,7 +416,7 @@ func (f *FieldType) UnmarshalMarkerArg(in string) error {
 
 	if t, ok := types[in]; ok {
 		if t == FieldUnknownType {
-			return fmt.Errorf("unable to parse %s into FieldType", in)
+			return fmt.Errorf("%w, %s into FieldType", ErrUnableToParseFieldType, in)
 		}
 
 		*f = t
@@ -418,7 +424,7 @@ func (f *FieldType) UnmarshalMarkerArg(in string) error {
 		return nil
 	}
 
-	return fmt.Errorf("unable to parse %s into FieldType", in)
+	return fmt.Errorf("%w, %s into FieldType", ErrUnableToParseFieldType, in)
 }
 
 func (f FieldType) String() string {
