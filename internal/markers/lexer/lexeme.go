@@ -34,19 +34,15 @@ type Lexeme struct {
 const eof = -1
 
 const (
-	golangComment       = "//"
-	yamlComment         = "#"
-	markerStart         = "+"
-	markerSeparator     = ":"
-	argAssignment       = "="
-	argDelimiter        = ","
-	sliceStart          = "{"
-	sliceEnd            = "}"
-	sliceDelimiter      = ","
-	sliceNakedDelimiter = ";"
-	literalQuote        = "`"
-	doubleQuote         = `"`
-	singleQuote         = `'`
+	golangComment   = "//"
+	yamlComment     = "#"
+	markerStart     = "+"
+	markerSeparator = ":"
+	argAssignment   = "="
+	argDelimiter    = ","
+	literalQuote    = "`"
+	doubleQuote     = `"`
+	singleQuote     = `'`
 )
 
 func (l Lexeme) String() string {
