@@ -33,12 +33,12 @@ const readmefileTemplate = `A Kubernetes operator built with
 
 ## Local Development & Testing
 
-To install the custom resource/s for this operator:
-
-	make install
-
-To run the controller locally against a test cluster, make sure you have a
+To install the custom resource/s for this operator, make sure you have a
 kubeconfig set up for a test cluster, then run:
+
+    make install
+
+To run the controller locally against a test cluster:
 
     make run
 
@@ -48,30 +48,26 @@ You can then test the operator by creating the sample manifest/s:
 
 To clean up:
 
-	make uninstall
-
+    make uninstall
 
 ## Deploy the Controller Manager
 
-First, set the image
+First, set the image:
 
     export IMG=myrepo/myproject:v0.1.0
 
-Now you can build and push the image
+Now you can build and push the image:
 
-	make docker-build
-	make docker-push
+    make docker-build
+    make docker-push
 
 Then deploy:
 
-	make install
-	make deploy
+    make deploy
 
 To clean up:
 
-	make uninstall
-	make undeploy
-
+    make undeploy
 
 ## Companion CLI
 
