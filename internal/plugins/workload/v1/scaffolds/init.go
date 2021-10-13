@@ -5,6 +5,7 @@ package scaffolds
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/spf13/afero"
 	"sigs.k8s.io/kubebuilder/v3/pkg/config"
@@ -52,7 +53,7 @@ func (s *initScaffolder) InjectFS(fs machinery.Filesystem) {
 
 // scaffold implements cmdutil.Scaffolder.
 func (s *initScaffolder) Scaffold() error {
-	fmt.Println("Adding workload scaffolding...")
+	log.Println("Adding workload scaffolding...")
 
 	boilerplate, err := afero.ReadFile(s.fs.FS, s.boilerplatePath)
 	if err != nil {

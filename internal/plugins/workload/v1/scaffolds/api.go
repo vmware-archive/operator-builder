@@ -5,6 +5,7 @@ package scaffolds
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/spf13/afero"
 	"sigs.k8s.io/kubebuilder/v3/pkg/config"
@@ -66,7 +67,7 @@ func (s *apiScaffolder) InjectFS(fs machinery.Filesystem) {
 
 // scaffold implements cmdutil.Scaffolder.
 func (s *apiScaffolder) Scaffold() error {
-	fmt.Println("Building API...")
+	log.Println("Building API...")
 
 	boilerplate, err := afero.ReadFile(s.fs.FS, s.boilerplatePath)
 	if err != nil {
