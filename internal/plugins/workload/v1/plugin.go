@@ -30,8 +30,12 @@ type Plugin struct {
 	createAPISubcommand
 }
 
-func (Plugin) Name() string                                         { return pluginName }
-func (Plugin) Version() plugin.Version                              { return pluginVersion }
-func (Plugin) SupportedProjectVersions() []config.Version           { return supportedProjectVersions }
-func (p Plugin) GetInitSubcommand() plugin.InitSubcommand           { return &p.initSubcommand }
+func (Plugin) Name() string                               { return pluginName }
+func (Plugin) Version() plugin.Version                    { return pluginVersion }
+func (Plugin) SupportedProjectVersions() []config.Version { return supportedProjectVersions }
+
+//nolint:gocritic // needed to implement interface
+func (p Plugin) GetInitSubcommand() plugin.InitSubcommand { return &p.initSubcommand }
+
+//nolint:gocritic // needed to implement interface
 func (p Plugin) GetCreateAPISubcommand() plugin.CreateAPISubcommand { return &p.createAPISubcommand }
