@@ -12,6 +12,10 @@ import (
 	"github.com/vmware-tanzu-labs/operator-builder/internal/utils"
 )
 
+const (
+	defaultComponentDescription = `Manage %s workload`
+)
+
 func (c *ComponentWorkload) Validate() error {
 	missingFields := []string{}
 
@@ -195,35 +199,27 @@ func (c *ComponentWorkload) GetComponentResource(domain, repo string, clusterSco
 }
 
 func (c *ComponentWorkload) HasSubCmdName() bool {
-	return c.Spec.CompanionCliSubcmd.Name != ""
+	return c.Spec.CompanionCliSubcmd.hasName()
 }
 
 func (c *ComponentWorkload) HasSubCmdDescription() bool {
-	return c.Spec.CompanionCliSubcmd.Description != ""
+	return c.Spec.CompanionCliSubcmd.hasDescription()
 }
 
 func (c *ComponentWorkload) SetNames() {
 	c.PackageName = utils.ToPackageName(c.Name)
 
-	// default the sub command name to the defaultSubcommandCollection if unspecified
-	if !c.HasSubCmdName() {
-		c.Spec.CompanionCliSubcmd.Name = defaultCollectionSubcommandName
-	}
-
-	if !c.HasSubCmdDescription() {
-		c.Spec.CompanionCliSubcmd.Description = fmt.Sprintf(
-			defaultCollectionDescription, defaultCollectionSubcommandName,
-		)
-	}
-
-	c.Spec.CompanionCliSubcmd.VarName = utils.ToPascalCase(c.Spec.CompanionCliSubcmd.Name)
-	c.Spec.CompanionCliSubcmd.FileName = utils.ToFileName(c.Spec.CompanionCliSubcmd.Name)
+	// set the subcommand values
+	c.Spec.CompanionCliSubcmd.setSubCommandValues(
+		c.Spec.API.Kind,
+		defaultComponentDescription,
+	)
 }
 
 func (c *ComponentWorkload) GetSubcommands() *[]CliCommand {
 	commands := []CliCommand{}
 
-	if c.Spec.CompanionCliSubcmd.Name != "" {
+	if c.HasSubCmdName() {
 		commands = append(commands, c.Spec.CompanionCliSubcmd)
 	}
 

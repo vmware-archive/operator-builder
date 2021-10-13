@@ -7,6 +7,8 @@ spec:
     version: v1alpha1
     kind: CloudNativePlatform
     clusterScoped: true
+  companionCliRootcmd:
+    name: cnpctl
   resources:
   - rbac.yaml
   componentFiles:

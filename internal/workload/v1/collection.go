@@ -6,7 +6,6 @@ package v1
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	"sigs.k8s.io/kubebuilder/v3/pkg/model/resource"
 
@@ -14,8 +13,8 @@ import (
 )
 
 const (
-	defaultCollectionSubcommandName = "collection"
-	defaultCollectionDescription    = `Manage %s workloads`
+	defaultCollectionSubcommandDescription  = `Manage %s workload`
+	defaultCollectionRootcommandDescription = `Manage %s collection and components`
 )
 
 func (c *WorkloadCollection) Validate() error {
@@ -60,19 +59,19 @@ func (c *WorkloadCollection) GetDomain() string {
 }
 
 func (c *WorkloadCollection) HasRootCmdName() bool {
-	return c.Spec.CompanionCliRootcmd.Name != ""
+	return c.Spec.CompanionCliRootcmd.hasName()
 }
 
 func (c *WorkloadCollection) HasRootCmdDescription() bool {
-	return c.Spec.CompanionCliRootcmd.Description != ""
+	return c.Spec.CompanionCliRootcmd.hasDescription()
 }
 
 func (c *WorkloadCollection) HasSubCmdName() bool {
-	return c.Spec.CompanionCliSubcmd.Name != ""
+	return c.Spec.CompanionCliSubcmd.hasName()
 }
 
 func (c *WorkloadCollection) HasSubCmdDescription() bool {
-	return c.Spec.CompanionCliSubcmd.Description != ""
+	return c.Spec.CompanionCliSubcmd.hasDescription()
 }
 
 func (c *WorkloadCollection) GetRootCmdName() string {
@@ -265,33 +264,24 @@ func (c *WorkloadCollection) GetComponentResource(domain, repo string, clusterSc
 func (c *WorkloadCollection) SetNames() {
 	c.PackageName = utils.ToPackageName(c.Name)
 
-	// default the root command name to the lowercase version of kind if unspecified
+	// only set the names if we have specified the root command name else none
+	// of the following values will matter as the code for the cli will not be
+	// generated
 	if !c.HasRootCmdName() {
-		c.Spec.CompanionCliRootcmd.Name = strings.ToLower(c.Spec.API.Kind)
+		return
 	}
 
-	if !c.HasRootCmdDescription() {
-		c.Spec.CompanionCliRootcmd.Description = fmt.Sprintf(
-			defaultCollectionDescription, strings.ToLower(c.Spec.API.Kind),
-		)
-	}
+	// set the root command values
+	c.Spec.CompanionCliRootcmd.setCommonValues(
+		c.Spec.API.Kind,
+		defaultCollectionRootcommandDescription,
+	)
 
-	c.Spec.CompanionCliRootcmd.VarName = utils.ToPascalCase(c.Spec.CompanionCliRootcmd.Name)
-	c.Spec.CompanionCliRootcmd.FileName = utils.ToFileName(c.Spec.CompanionCliRootcmd.Name)
-
-	// default the sub command name to the defaultSubcommandCollection if unspecified
-	if !c.HasSubCmdName() {
-		c.Spec.CompanionCliSubcmd.Name = defaultCollectionSubcommandName
-	}
-
-	if !c.HasSubCmdDescription() {
-		c.Spec.CompanionCliSubcmd.Description = fmt.Sprintf(
-			defaultCollectionDescription, defaultCollectionSubcommandName,
-		)
-	}
-
-	c.Spec.CompanionCliSubcmd.VarName = utils.ToPascalCase(c.Spec.CompanionCliSubcmd.Name)
-	c.Spec.CompanionCliSubcmd.FileName = utils.ToFileName(c.Spec.CompanionCliSubcmd.Name)
+	// set the subcommand values
+	c.Spec.CompanionCliSubcmd.setSubCommandValues(
+		c.Spec.API.Kind,
+		defaultCollectionSubcommandDescription,
+	)
 }
 
 func (c *WorkloadCollection) GetSubcommands() *[]CliCommand {
@@ -304,7 +294,7 @@ func (c *WorkloadCollection) GetSubcommands() *[]CliCommand {
 	}
 
 	for _, comp := range c.Spec.Components {
-		if comp.Spec.CompanionCliSubcmd.Name != "" {
+		if comp.HasSubCmdName() {
 			commands = append(commands, comp.Spec.CompanionCliSubcmd)
 		}
 	}
