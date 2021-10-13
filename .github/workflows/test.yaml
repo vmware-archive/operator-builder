@@ -124,7 +124,7 @@ jobs:
             test-cli: true
           - name: Standalone Edge Cases Operator
             artifact: standalone-edge-codebase
-            test-cli: true
+            test-cli: false
           - name: Workload Collection Operator
             artifact: collection-codebase
             test-cli: false
