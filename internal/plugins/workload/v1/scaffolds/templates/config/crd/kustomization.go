@@ -15,13 +15,13 @@ var (
 	_ machinery.Inserter = &Kustomization{}
 )
 
-// Kustomization scaffolds a file that defines the kustomization scheme for the crd folder
+// Kustomization scaffolds a file that defines the kustomization scheme for the crd folder.
 type Kustomization struct {
 	machinery.TemplateMixin
 	machinery.ResourceMixin
 }
 
-// SetTemplateDefaults implements file.Template
+// SetTemplateDefaults implements file.Template.
 func (f *Kustomization) SetTemplateDefaults() error {
 	if f.Path == "" {
 		f.Path = filepath.Join("config", "crd", "kustomization.yaml")
@@ -44,7 +44,7 @@ const (
 	caInjectionPatchMarker = "crdkustomizecainjectionpatch"
 )
 
-// GetMarkers implements file.Inserter
+// GetMarkers implements file.Inserter.
 func (f *Kustomization) GetMarkers() []machinery.Marker {
 	return []machinery.Marker{
 		machinery.NewMarkerFor(f.Path, resourceMarker),
