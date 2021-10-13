@@ -210,7 +210,7 @@ func (s *StandaloneWorkload) SetNames() {
 	// set the root command values
 	s.Spec.CompanionCliRootcmd.setCommonValues(
 		s.Spec.API.Kind,
-		defaultCollectionRootcommandDescription,
+		defaultStandaloneDescription,
 	)
 }
 

@@ -13,6 +13,7 @@ import (
 )
 
 const (
+	defaultCollectionSubcommandName         = "collection"
 	defaultCollectionSubcommandDescription  = `Manage %s workload`
 	defaultCollectionRootcommandDescription = `Manage %s collection and components`
 )
@@ -278,6 +279,10 @@ func (c *WorkloadCollection) SetNames() {
 	)
 
 	// set the subcommand values
+	if !c.Spec.CompanionCliSubcmd.hasName() {
+		c.Spec.CompanionCliSubcmd.Name = defaultCollectionSubcommandName
+	}
+
 	c.Spec.CompanionCliSubcmd.setSubCommandValues(
 		c.Spec.API.Kind,
 		defaultCollectionSubcommandDescription,
