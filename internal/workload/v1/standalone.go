@@ -16,6 +16,8 @@ const (
 	defaultStandaloneDescription = `Manage %s workload`
 )
 
+var ErrNoComponentsOnStandalone = errors.New("cannot set component workloads on a component workload - only on collections")
+
 func (s *StandaloneWorkload) Validate() error {
 	missingFields := []string{}
 
@@ -41,8 +43,7 @@ func (s *StandaloneWorkload) Validate() error {
 	}
 
 	if len(missingFields) > 0 {
-		msg := fmt.Sprintf("Missing required fields: %s", missingFields)
-		return errors.New(msg)
+		return fmt.Errorf("%w: %s", ErrMissingRequiredFields, missingFields)
 	}
 
 	return nil
@@ -162,7 +163,7 @@ func (*StandaloneWorkload) GetDependencies() []*ComponentWorkload {
 }
 
 func (*StandaloneWorkload) SetComponents(components []*ComponentWorkload) error {
-	return errors.New("cannot set component workloads on a standalone workload - only on collections")
+	return ErrNoComponentsOnStandalone
 }
 
 func (s *StandaloneWorkload) HasChildResources() bool {

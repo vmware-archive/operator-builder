@@ -10,7 +10,7 @@ spec:
   companionCliRootcmd:
     name: cnpctl
   resources:
-  - rbac.yaml
+  - storage-class.yaml
   componentFiles:
   - tenancy/tenancy-common-component.yaml
   - tenancy/ns-operator-component.yaml

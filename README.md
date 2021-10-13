@@ -25,6 +25,21 @@ The custom resource defined in the source code can be cluster-scoped or
 namespace-scoped based on the requirements of the project.  More info
 [here](docs/resource-scope.md).
 
+## Prerequisites
+
+- Make
+- Go version 1.16 or later
+- Docker (for building/pushing controller images)
+- An available test cluster. A local kind or minikube cluster will work just
+  fine in many cases.
+- Operator Builder [installed](#installation).
+- [kubectl installed](https://kubernetes.io/docs/tasks/tools/#kubectl).
+- A set of static Kubernetes manifests that can be used to deploy
+  your workload.  It is highly recommended that you apply these manifests to a
+  test cluster and verify the resulting resources work as expected.
+  If you don't have a workload of your own to use, you can use the examples
+  provided in this guide.
+
 ## Installation
 
 Get the source code.
@@ -44,19 +59,8 @@ Put the binary on your path.
 
 This guide will walk you through the creation of a Kubernetes operator for a
 single workload.  This workload can consist of any number of Kubernetes
-resources and will be configured with a single custom resource.
-
-### Prerequisites
-
-- An available test cluster. A local kind or minikube cluster will work just
-  fine in many cases.
-- Operator Builder [installed](#installation).
-- [kubectl installed](https://kubernetes.io/docs/tasks/tools/#kubectl).
-- A set of static Kubernetes manifests that can be used to deploy
-  your workload.  It is highly recommended that you apply these manifests to a
-  test cluster and verify the resulting resources work as expected.
-  If you don't have a workload of your own to use, you can use the examples
-  provided in this guide.
+resources and will be configured with a single custom resource.  Please review
+the [prerequisites](#prerequisites) prior to attempting to follow this guide.
 
 This guide consists of the following steps:
 
@@ -103,7 +107,7 @@ configurable for deployment into different environments.  Let's look at a simple
 example to illustrate.  Following is a Deployment, Ingress and Service that may
 be used to deploy a workload.
 
-    # app.yaml
+    # .source-manifests/app.yaml
 
     apiVersion: apps/v1
     kind: Deployment
@@ -190,9 +194,8 @@ Following is the Deployment manifest with these markers in place.
 
 These markers should always be provided as an in-line comment or as a head
 comment.  The marker always begins with `+operator-builder:field:` or
-`+operator-builder:collection:field:` (more on this later).
-
-see [Markers](docs/markers.md)
+`+operator-builder:collection:field:` See [Markers](docs/markers.md) to learn
+more.
 
 ### Step 3
 
@@ -428,4 +431,3 @@ info [here](docs/license.md).
 ## Testing
 
 Testing of Operator Builder is documented [here](docs/testing.md).
-

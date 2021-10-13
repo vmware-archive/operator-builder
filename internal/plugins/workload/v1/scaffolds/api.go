@@ -5,7 +5,7 @@ package scaffolds
 
 import (
 	"fmt"
-	"strings"
+	"log"
 
 	"github.com/spf13/afero"
 	"sigs.k8s.io/kubebuilder/v3/pkg/config"
@@ -28,7 +28,6 @@ import (
 	"github.com/vmware-tanzu-labs/operator-builder/internal/plugins/workload/v1/scaffolds/templates/int/mutate"
 	resourcespkg "github.com/vmware-tanzu-labs/operator-builder/internal/plugins/workload/v1/scaffolds/templates/int/resources"
 	"github.com/vmware-tanzu-labs/operator-builder/internal/plugins/workload/v1/scaffolds/templates/int/wait"
-	"github.com/vmware-tanzu-labs/operator-builder/internal/utils"
 	workloadv1 "github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1"
 )
 
@@ -65,13 +64,14 @@ func (s *apiScaffolder) InjectFS(fs machinery.Filesystem) {
 	s.fs = fs
 }
 
+//nolint:funlen,gocognit,gocyclo //this will be refactored later
 // scaffold implements cmdutil.Scaffolder.
 func (s *apiScaffolder) Scaffold() error {
-	fmt.Println("Building API...")
+	log.Println("Building API...")
 
 	boilerplate, err := afero.ReadFile(s.fs.FS, s.boilerplatePath)
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to read boilerplate file %s, %w", s.boilerplatePath, err)
 	}
 
 	scaffold := machinery.NewScaffold(s.fs,
@@ -82,14 +82,14 @@ func (s *apiScaffolder) Scaffold() error {
 
 	createFuncNames, initFuncNames := s.workload.GetFuncNames()
 
-	var crdSampleFilenames []string
-
+	//nolint:nestif //this will be refactored later
 	// companion CLI
 	err = s.scaffoldCLI(scaffold)
 	if err != nil {
 		return fmt.Errorf("error scaffolding CLI; %w", err)
 	}
 
+	//nolint:nestif //this will be refactored later
 	// API types
 	if s.workload.IsStandalone() {
 		err = scaffold.Execute(
@@ -158,20 +158,10 @@ func (s *apiScaffolder) Scaffold() error {
 			},
 		)
 		if err != nil {
-			return err
+			return fmt.Errorf("unable to scaffold standalone workload, %w", err)
 		}
 	} else {
 		// collection API
-		crdSampleFilenames = append(
-			crdSampleFilenames,
-			strings.ToLower(fmt.Sprintf(
-				"%s.%s_%s.yaml",
-				s.workload.GetAPIGroup(),
-				s.workload.GetDomain(),
-				utils.PluralizeKind(s.workload.GetAPIKind()),
-			)),
-		)
-
 		err = scaffold.Execute(
 			&templates.MainUpdater{
 				WireResource:   true,
@@ -207,7 +197,7 @@ func (s *apiScaffolder) Scaffold() error {
 			&resourcespkg.ServiceType{},
 			&controller.Controller{
 				PackageName:       s.workload.GetPackageName(),
-				RBACRules:         &[]workloadv1.RBACRule{},
+				RBACRules:         s.workload.GetRBACRules(),
 				OwnershipRules:    s.workload.GetOwnershipRules(),
 				HasChildResources: s.workload.HasChildResources(),
 				IsStandalone:      s.workload.IsStandalone(),
@@ -236,12 +226,10 @@ func (s *apiScaffolder) Scaffold() error {
 			&samples.CRDSample{
 				SpecFields: s.workload.GetAPISpecFields(),
 			},
-			&crd.Kustomization{
-				CRDSampleFilenames: crdSampleFilenames,
-			},
+			&crd.Kustomization{},
 		)
 		if err != nil {
-			return err
+			return fmt.Errorf("unable to scaffold collection workload, %w", err)
 		}
 
 		for _, component := range s.workload.GetComponents() {
@@ -256,16 +244,6 @@ func (s *apiScaffolder) Scaffold() error {
 			)
 
 			createFuncNames, initFuncNames := component.GetFuncNames()
-
-			crdSampleFilenames = append(
-				crdSampleFilenames,
-				strings.ToLower(fmt.Sprintf(
-					"%s.%s_%s.yaml",
-					component.GetAPIGroup(),
-					s.workload.GetDomain(),
-					utils.PluralizeKind(component.GetAPIKind()),
-				)),
-			)
 
 			err = componentScaffold.Execute(
 				&templates.MainUpdater{
@@ -302,12 +280,10 @@ func (s *apiScaffolder) Scaffold() error {
 				&samples.CRDSample{
 					SpecFields: component.Spec.APISpecFields,
 				},
-				&crd.Kustomization{
-					CRDSampleFilenames: crdSampleFilenames,
-				},
+				&crd.Kustomization{},
 			)
 			if err != nil {
-				return err
+				return fmt.Errorf("unable to scaffold component workload %s, %w", component.Name, err)
 			}
 
 			// component child resource definition files
@@ -334,7 +310,7 @@ func (s *apiScaffolder) Scaffold() error {
 					},
 				)
 				if err != nil {
-					return err
+					return fmt.Errorf("unable to scaffold component workload resource files for %s, %w", component.Name, err)
 				}
 			}
 		}
@@ -359,13 +335,14 @@ func (s *apiScaffolder) Scaffold() error {
 			},
 		)
 		if err != nil {
-			return err
+			return fmt.Errorf("unable to scaffold resource files, %w", err)
 		}
 	}
 
 	return nil
 }
 
+//nolint:nestif //this will be refactored later
 // scaffoldCLI runs the specific logic to scaffold the companion CLI
 func (s *apiScaffolder) scaffoldCLI(scaffold *machinery.Scaffold) error {
 	// do not scaffold the cli if the root command name is blank

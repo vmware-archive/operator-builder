@@ -16,6 +16,8 @@ const (
 	defaultComponentDescription = `Manage %s workload`
 )
 
+var ErrNoComponentsOnComponent = errors.New("cannot set component workloads on a component workload - only on collections")
+
 func (c *ComponentWorkload) Validate() error {
 	missingFields := []string{}
 
@@ -37,9 +39,7 @@ func (c *ComponentWorkload) Validate() error {
 	}
 
 	if len(missingFields) > 0 {
-		msg := fmt.Sprintf("Missing required fields: %s", missingFields)
-
-		return errors.New(msg)
+		return fmt.Errorf("%w: %s", ErrMissingRequiredFields, missingFields)
 	}
 
 	return nil
@@ -135,7 +135,7 @@ func (c *ComponentWorkload) GetDependencies() []*ComponentWorkload {
 }
 
 func (*ComponentWorkload) SetComponents(components []*ComponentWorkload) error {
-	return errors.New("cannot set component workloads on a component workload - only on collections")
+	return ErrNoComponentsOnComponent
 }
 
 func (c *ComponentWorkload) HasChildResources() bool {
@@ -186,7 +186,7 @@ func (c *ComponentWorkload) GetComponentResource(domain, repo string, clusterSco
 			Version: c.Spec.API.Version,
 			Kind:    c.Spec.API.Kind,
 		},
-		Plural: utils.PluralizeKind(c.Spec.API.Kind),
+		Plural: resource.RegularPlural(c.Spec.API.Kind),
 		Path: fmt.Sprintf(
 			"%s/apis/%s/%s",
 			repo,
