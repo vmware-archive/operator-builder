@@ -56,7 +56,7 @@ func (s *initScaffolder) Scaffold() error {
 
 	boilerplate, err := afero.ReadFile(s.fs.FS, s.boilerplatePath)
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to read boilerplate file %s, %w", s.boilerplatePath, err)
 	}
 
 	// Initialize the machinery.Scaffold that will write the files to disk
@@ -78,7 +78,7 @@ func (s *initScaffolder) Scaffold() error {
 			},
 		)
 		if err != nil {
-			return err
+			return fmt.Errorf("unable to scaffold initial configuration for companionCli, %w", err)
 		}
 	}
 
@@ -94,7 +94,7 @@ func (s *initScaffolder) Scaffold() error {
 		},
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to scaffold initial configuration, %w", err)
 	}
 
 	return nil

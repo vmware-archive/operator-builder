@@ -70,7 +70,7 @@ func (s *apiScaffolder) Scaffold() error {
 
 	boilerplate, err := afero.ReadFile(s.fs.FS, s.boilerplatePath)
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to read boilerplate file %s, %w", s.boilerplatePath, err)
 	}
 
 	scaffold := machinery.NewScaffold(s.fs,
@@ -114,7 +114,7 @@ func (s *apiScaffolder) Scaffold() error {
 			},
 		)
 		if err != nil {
-			return err
+			return fmt.Errorf("unable to scaffold companionCLI, %w", err)
 		}
 	} else if s.workload.IsCollection() && s.workload.GetRootcommandName() != "" {
 		err = scaffold.Execute(
@@ -133,7 +133,7 @@ func (s *apiScaffolder) Scaffold() error {
 			},
 		)
 		if err != nil {
-			return err
+			return fmt.Errorf("unable to scaffold companionCLI, %w", err)
 		}
 
 		if s.workload.GetSubcommandName() != "" {
@@ -156,7 +156,7 @@ func (s *apiScaffolder) Scaffold() error {
 				},
 			)
 			if err != nil {
-				return err
+				return fmt.Errorf("unable to scaffold companionCLI sub commands, %w", err)
 			}
 			// we only need a generate command if there are collection resources
 			if s.workload.HasChildResources() {
@@ -180,7 +180,7 @@ func (s *apiScaffolder) Scaffold() error {
 					},
 				)
 				if err != nil {
-					return err
+					return fmt.Errorf("unable to scaffold companionCLI sub commands, %w", err)
 				}
 			}
 		}
@@ -223,7 +223,7 @@ func (s *apiScaffolder) Scaffold() error {
 					},
 				)
 				if err != nil {
-					return err
+					return fmt.Errorf("unable to scaffold companionCLI component sub commands, %w", err)
 				}
 			}
 		}
@@ -239,7 +239,7 @@ func (s *apiScaffolder) Scaffold() error {
 		)
 
 		if err != nil {
-			return fmt.Errorf("error updating root.go: %v", err)
+			return fmt.Errorf("unable to update root.go: %w", err)
 		}
 	}
 
@@ -311,7 +311,7 @@ func (s *apiScaffolder) Scaffold() error {
 			},
 		)
 		if err != nil {
-			return err
+			return fmt.Errorf("unable to scaffold standalone workload, %w", err)
 		}
 	} else {
 		// collection API
@@ -382,7 +382,7 @@ func (s *apiScaffolder) Scaffold() error {
 			&crd.Kustomization{},
 		)
 		if err != nil {
-			return err
+			return fmt.Errorf("unable to scaffold collection workload, %w", err)
 		}
 
 		for _, component := range s.workload.GetComponents() {
@@ -436,7 +436,7 @@ func (s *apiScaffolder) Scaffold() error {
 				&crd.Kustomization{},
 			)
 			if err != nil {
-				return err
+				return fmt.Errorf("unable to scaffold component workload %s, %w", component.Name, err)
 			}
 
 			// component child resource definition files
@@ -463,7 +463,7 @@ func (s *apiScaffolder) Scaffold() error {
 					},
 				)
 				if err != nil {
-					return err
+					return fmt.Errorf("unable to scaffold component workload resource files for %s, %w", component.Name, err)
 				}
 			}
 		}
@@ -488,7 +488,7 @@ func (s *apiScaffolder) Scaffold() error {
 			},
 		)
 		if err != nil {
-			return err
+			return fmt.Errorf("unable to scaffold resource files, %w", err)
 		}
 	}
 
