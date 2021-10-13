@@ -45,6 +45,8 @@ func processMarkers(
 	collection bool,
 	collectionResources bool,
 ) (*SourceCodeTemplateData, error) {
+	const dataTypeString = "string"
+
 	results := &SourceCodeTemplateData{
 		SourceFiles:    new([]SourceFile),
 		RBACRules:      new([]RBACRule),
@@ -116,7 +118,7 @@ func processMarkers(
 
 				//nolint:nestif //this will be refactored later
 				if r.Default != nil {
-					if specField.DataType == "string" {
+					if specField.DataType == dataTypeString {
 						specField.DefaultVal = fmt.Sprintf("%q", r.Default)
 						specField.SampleField = fmt.Sprintf("%s: %q", r.Name, r.Default)
 					} else {
@@ -124,7 +126,7 @@ func processMarkers(
 						specField.SampleField = fmt.Sprintf("%s: %v", r.Name, r.Default)
 					}
 				} else {
-					if specField.DataType == "string" {
+					if specField.DataType == dataTypeString {
 						specField.SampleField = fmt.Sprintf("%s: %q", r.Name, r.originalValue)
 					} else {
 						specField.SampleField = fmt.Sprintf("%s: %v", r.Name, r.originalValue)
@@ -162,7 +164,7 @@ func processMarkers(
 
 				//nolint:nestif //this will be refactored later
 				if r.Default != nil {
-					if specField.DataType == "string" {
+					if specField.DataType == dataTypeString {
 						specField.DefaultVal = fmt.Sprintf("%q", r.Default)
 						specField.SampleField = fmt.Sprintf("%s: %q", r.Name, r.Default)
 					} else {
@@ -170,7 +172,7 @@ func processMarkers(
 						specField.SampleField = fmt.Sprintf("%s: %v", r.Name, r.Default)
 					}
 				} else {
-					if specField.DataType == "string" {
+					if specField.DataType == dataTypeString {
 						specField.SampleField = fmt.Sprintf("%s: %q", r.Name, r.originalValue)
 					} else {
 						specField.SampleField = fmt.Sprintf("%s: %v", r.Name, r.originalValue)
@@ -351,6 +353,8 @@ func InitializeMarkerInspector() (*inspect.Inspector, error) {
 }
 
 func TransformYAML(results ...*inspect.YAMLResult) error {
+	const varTag = "!!var"
+
 	var key *yaml.Node
 
 	var value *yaml.Node
@@ -377,7 +381,7 @@ func TransformYAML(results ...*inspect.YAMLResult) error {
 
 			t.originalValue = value.Value
 
-			value.Tag = "!!var"
+			value.Tag = varTag
 			value.Value = fmt.Sprintf("parent.Spec." + strings.Title(t.Name))
 
 			r.Object = t
@@ -390,7 +394,7 @@ func TransformYAML(results ...*inspect.YAMLResult) error {
 
 			t.originalValue = value.Value
 
-			value.Tag = "!!var"
+			value.Tag = varTag
 			value.Value = fmt.Sprintf("collection.Spec." + strings.Title(t.Name))
 
 			r.Object = t
