@@ -368,6 +368,11 @@ func (s *apiScaffolder) Scaffold() error {
 
 // scaffoldCLI runs the specific logic to scaffold the companion CLI
 func (s *apiScaffolder) scaffoldCLI(scaffold *machinery.Scaffold) error {
+	// do not scaffold the cli if the root command name is blank
+	if s.cliRootCommandName == "" {
+		return nil
+	}
+
 	workloadCommands := make([]workloadv1.WorkloadAPIBuilder, len(s.workload.GetComponents())+1)
 	workloadCommands[0] = s.workload
 
