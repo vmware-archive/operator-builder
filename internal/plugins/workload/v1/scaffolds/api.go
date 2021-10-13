@@ -64,7 +64,7 @@ func (s *apiScaffolder) InjectFS(fs machinery.Filesystem) {
 	s.fs = fs
 }
 
-//nolint:funlen,gocognit,gocyclo //this will be refactored later
+//nolint:funlen //this will be refactored later
 // scaffold implements cmdutil.Scaffolder.
 func (s *apiScaffolder) Scaffold() error {
 	log.Println("Building API...")
@@ -82,7 +82,6 @@ func (s *apiScaffolder) Scaffold() error {
 
 	createFuncNames, initFuncNames := s.workload.GetFuncNames()
 
-	//nolint:nestif //this will be refactored later
 	// companion CLI
 	err = s.scaffoldCLI(scaffold)
 	if err != nil {
@@ -342,8 +341,8 @@ func (s *apiScaffolder) Scaffold() error {
 	return nil
 }
 
-//nolint:nestif //this will be refactored later
 // scaffoldCLI runs the specific logic to scaffold the companion CLI
+//nolint:funlen,gocyclo //this will be refactored later
 func (s *apiScaffolder) scaffoldCLI(scaffold *machinery.Scaffold) error {
 	// do not scaffold the cli if the root command name is blank
 	if s.cliRootCommandName == "" {
@@ -378,7 +377,7 @@ func (s *apiScaffolder) scaffoldCLI(scaffold *machinery.Scaffold) error {
 				},
 			)
 			if err != nil {
-				return err
+				return fmt.Errorf("unable to scaffold workload collection subcommand, %w", err)
 			}
 		}
 
@@ -404,7 +403,7 @@ func (s *apiScaffolder) scaffoldCLI(scaffold *machinery.Scaffold) error {
 			},
 		)
 		if err != nil {
-			return err
+			return fmt.Errorf("unable to scaffold init subcommand, %w", err)
 		}
 
 		// build generate subcommand
@@ -419,6 +418,7 @@ func (s *apiScaffolder) scaffoldCLI(scaffold *machinery.Scaffold) error {
 		}
 
 		if workloadCommand.IsCollection() || workloadCommand.IsComponent() {
+			//nolint:forcetypeassert // this will be refactored later
 			generateSubCommand.Collection = s.workload.(*workloadv1.WorkloadCollection)
 			generateSubCommand.SubCmdVarName = workloadCommand.GetSubcommandVarName()
 			generateSubCommand.SubCmdFileName = workloadCommand.GetSubcommandFileName()
@@ -433,7 +433,7 @@ func (s *apiScaffolder) scaffoldCLI(scaffold *machinery.Scaffold) error {
 		if (workloadCommand.HasChildResources() && workloadCommand.IsCollection()) || !workloadCommand.IsCollection() {
 			err = scaffold.Execute(generateSubCommand)
 			if err != nil {
-				return err
+				return fmt.Errorf("unable to scaffold generate subcommand, %w", err)
 			}
 		}
 	}
@@ -448,7 +448,7 @@ func (s *apiScaffolder) scaffoldCLI(scaffold *machinery.Scaffold) error {
 	)
 
 	if err != nil {
-		return fmt.Errorf("error updating root.go: %v", err)
+		return fmt.Errorf("error updating root.go, %w", err)
 	}
 
 	return nil

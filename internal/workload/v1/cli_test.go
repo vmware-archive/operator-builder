@@ -1,6 +1,7 @@
 // Copyright 2021 VMware, Inc.
 // SPDX-License-Identifier: MIT
 
+//nolint:testpackage
 package v1
 
 import (
@@ -10,6 +11,8 @@ import (
 )
 
 func Test_setCommonValues(t *testing.T) {
+	t.Parallel()
+
 	for _, tt := range []struct {
 		name                string
 		kind                string
@@ -47,7 +50,9 @@ func Test_setCommonValues(t *testing.T) {
 			},
 		},
 	} {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			tt.input.setCommonValues(tt.kind, tt.descriptionTemplate)
 			assert.Equal(t, tt.expected, tt.input)
 		})
@@ -55,6 +60,8 @@ func Test_setCommonValues(t *testing.T) {
 }
 
 func Test_setSubCommandValues(t *testing.T) {
+	t.Parallel()
+
 	for _, tt := range []struct {
 		name                string
 		kind                string
@@ -89,7 +96,9 @@ func Test_setSubCommandValues(t *testing.T) {
 			},
 		},
 	} {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			tt.input.setSubCommandValues(tt.kind, tt.descriptionTemplate)
 			assert.Equal(t, tt.expected, tt.input)
 		})
@@ -97,6 +106,8 @@ func Test_setSubCommandValues(t *testing.T) {
 }
 
 func Test_hasName(t *testing.T) {
+	t.Parallel()
+
 	for _, tt := range []struct {
 		name     string
 		input    CliCommand
@@ -115,7 +126,9 @@ func Test_hasName(t *testing.T) {
 			expected: false,
 		},
 	} {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			hasName := tt.input.hasName()
 			assert.Equal(t, tt.expected, hasName)
 		})
@@ -123,6 +136,8 @@ func Test_hasName(t *testing.T) {
 }
 
 func Test_hasDescription(t *testing.T) {
+	t.Parallel()
+
 	for _, tt := range []struct {
 		name     string
 		input    CliCommand
@@ -141,7 +156,9 @@ func Test_hasDescription(t *testing.T) {
 			expected: false,
 		},
 	} {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			hasDescription := tt.input.hasDescription()
 			assert.Equal(t, tt.expected, hasDescription)
 		})

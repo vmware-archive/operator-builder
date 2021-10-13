@@ -1,6 +1,7 @@
 // Copyright 2021 VMware, Inc.
 // SPDX-License-Identifier: MIT
 
+//nolint:testpackage
 package v1
 
 import (
@@ -10,6 +11,8 @@ import (
 )
 
 func Test_StandaloneSetNames(t *testing.T) {
+	t.Parallel()
+
 	sharedNameInput := WorkloadShared{
 		Name: "shared-name",
 		Kind: "StandaloneWorkload",
@@ -96,7 +99,9 @@ func Test_StandaloneSetNames(t *testing.T) {
 			},
 		},
 	} {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			tt.input.SetNames()
 			assert.Equal(t, tt.expected, tt.input)
 		})
