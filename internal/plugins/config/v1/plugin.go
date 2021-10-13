@@ -13,6 +13,7 @@ import (
 
 const pluginName = "config." + plugins.DefaultNameQualifier
 
+//nolint:gochecknoglobals //needed for plugin architecture
 var (
 	pluginVersion            = plugin.Version{Number: 1}
 	supportedProjectVersions = []config.Version{cfgv3.Version}
