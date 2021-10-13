@@ -38,6 +38,7 @@ func formatProcessError(manifestFile string, err error) error {
 	return fmt.Errorf("error processing file %s; %w", manifestFile, err)
 }
 
+//nolint:funlen,gocognit,gocyclo //this will be refactored later
 func processMarkers(
 	workloadPath string,
 	resources []string,
@@ -113,6 +114,7 @@ func processMarkers(
 
 				specField.ZeroVal = zv
 
+				//nolint:nestif //this will be refactored later
 				if r.Default != nil {
 					if specField.DataType == "string" {
 						specField.DefaultVal = fmt.Sprintf("%q", r.Default)
@@ -158,6 +160,7 @@ func processMarkers(
 
 				specField.ZeroVal = zv
 
+				//nolint:nestif //this will be refactored later
 				if r.Default != nil {
 					if specField.DataType == "string" {
 						specField.DefaultVal = fmt.Sprintf("%q", r.Default)

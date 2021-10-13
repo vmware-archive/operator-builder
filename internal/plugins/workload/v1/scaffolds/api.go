@@ -65,6 +65,7 @@ func (s *apiScaffolder) InjectFS(fs machinery.Filesystem) {
 	s.fs = fs
 }
 
+//nolint:funlen,gocognit,gocyclo //this will be refactored later
 // scaffold implements cmdutil.Scaffolder.
 func (s *apiScaffolder) Scaffold() error {
 	log.Println("Building API...")
@@ -82,6 +83,7 @@ func (s *apiScaffolder) Scaffold() error {
 
 	createFuncNames, initFuncNames := s.workload.GetFuncNames()
 
+	//nolint:nestif //this will be refactored later
 	// companion CLI
 	if s.workload.IsStandalone() && s.workload.GetRootcommandName() != "" {
 		// build a subcommand for standalone, e.g. `webstorectl init`
@@ -244,6 +246,7 @@ func (s *apiScaffolder) Scaffold() error {
 		}
 	}
 
+	//nolint:nestif //this will be refactored later
 	// API types
 	if s.workload.IsStandalone() {
 		err = scaffold.Execute(
