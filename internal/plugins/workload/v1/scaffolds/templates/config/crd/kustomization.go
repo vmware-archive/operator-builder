@@ -26,6 +26,7 @@ func (f *Kustomization) SetTemplateDefaults() error {
 	if f.Path == "" {
 		f.Path = filepath.Join("config", "crd", "kustomization.yaml")
 	}
+
 	f.Path = f.Resource.Replacer().Replace(f.Path)
 
 	f.TemplateBody = fmt.Sprintf(kustomizationTemplate,
@@ -81,9 +82,11 @@ func (f *Kustomization) GetCodeFragments() machinery.CodeFragmentsMap {
 	if len(res) != 0 {
 		fragments[machinery.NewMarkerFor(f.Path, resourceMarker)] = res
 	}
+
 	if len(webhookPatch) != 0 {
 		fragments[machinery.NewMarkerFor(f.Path, webhookPatchMarker)] = webhookPatch
 	}
+
 	if len(caInjectionPatch) != 0 {
 		fragments[machinery.NewMarkerFor(f.Path, caInjectionPatchMarker)] = caInjectionPatch
 	}

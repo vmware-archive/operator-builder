@@ -203,5 +203,6 @@ func (c *ComponentWorkload) GetSubcommands() *[]CliCommand {
 	if c.Spec.CompanionCliSubcmd.Name != "" {
 		commands = append(commands, c.Spec.CompanionCliSubcmd)
 	}
+
 	return &commands
 }
