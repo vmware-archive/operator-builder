@@ -62,7 +62,7 @@ const (
 `
 )
 
-// GetCodeFragments implements file.Inserter
+// GetCodeFragments implements file.Inserter.
 func (f *Kustomization) GetCodeFragments() machinery.CodeFragmentsMap {
 	fragments := make(machinery.CodeFragmentsMap, 3)
 
