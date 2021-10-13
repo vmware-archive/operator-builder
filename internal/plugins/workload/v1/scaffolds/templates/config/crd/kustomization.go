@@ -64,7 +64,8 @@ const (
 
 // GetCodeFragments implements file.Inserter.
 func (f *Kustomization) GetCodeFragments() machinery.CodeFragmentsMap {
-	fragments := make(machinery.CodeFragmentsMap, 3)
+	const codeFragmentsLen = 3
+	fragments := make(machinery.CodeFragmentsMap, codeFragmentsLen)
 
 	// Generate resource code fragments
 	res := make([]string, 0)
