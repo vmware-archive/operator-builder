@@ -40,21 +40,69 @@ namespace-scoped based on the requirements of the project.  More info
   If you don't have a workload of your own to use, you can use the examples
   provided in this guide.
 
-## Installation
+## Installation Options
 
-Get the source code.
+### [Download the latest binary](https://github.com/vmare-tanzu-labs/operator-builder/releases/latest)
 
-    git clone git@github.com:vmware-tanzu-labs/operator-builder.git
-    cd operator-builder
+### wget
+Use wget to download the pre-compiled binaries:
 
-Build the binary.
+```bash
+wget https://github.com/vmware-tanzu-labs/operator-builder/releases/download/${VERSION}/${BINARY}.tar.gz -O - |\
+  tar xz && mv ${BINARY} /usr/bin/operator-builder
+```
 
-    make build
+For instance, VERSION=v0.3.1 and BINARY=operator-builder_${VERSION}_linux_amd64
 
-Put the binary on your path.
+### MacOS / Linux via Homebrew install
 
-    mv bin/operator-builder /usr/local/bin/
+Using [Homebrew](https://brew.sh/)  
 
+```bash
+brew tap vmware-tanzu-labs/tap
+brew install operator-builder
+```
+
+### Linux snap install
+
+```bash
+snap install operator-builder
+```
+
+>**NOTE**: `operator-builder` installs with [_strict confinement_](https://docs.snapcraft.io/snap-confinement/6233) in snap, this means it doesn't have direct access to root files.
+
+### Docker image pull
+
+```bash
+docker pull ghcr.io/vmawre-tanzu-labs/operator-builder
+```
+
+#### One-shot container use
+
+```bash
+docker run --rm -v "${PWD}":/workdir ghcr.io/vmware-tanzu-labs/operator-builder [flags]
+```
+
+
+#### Run container commands interactively
+
+```bash
+docker run --rm -it -v "${PWD}":/workdir --entrypoint sh ghcr.io/vmawre-tanzu-labs/operator-builder
+```
+
+It can be useful to have a bash function to avoid typing the whole docker command:
+
+```bash
+operator-builder() {
+  docker run --rm -i -v "${PWD}":/workdir ghcr.io/vmware-tanzu-labs/operator-builder "$@"
+}
+```
+
+### Go install
+
+```bash
+GO111MODULE=on go get github.com/vmware-tanzu-labs/operator-builder/cmd/operator-builder
+```
 ## Getting Started
 
 This guide will walk you through the creation of a Kubernetes operator for a
