@@ -4,10 +4,8 @@
 package v1
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -29,161 +27,27 @@ var (
 	ErrUnableToParseFieldType = errors.New("unable to parse field")
 )
 
-// SupportedMarkerDataTypes returns the supported data types that can be used in
-// workload markers.
-func SupportedMarkerDataTypes() []string {
-	return []string{"bool", "string", "int", "int32", "int64", "float32", "float64"}
-}
-
 func formatProcessError(manifestFile string, err error) error {
 	return fmt.Errorf("error processing file %s; %w", manifestFile, err)
 }
 
-//nolint:funlen,gocognit,gocyclo //this will be refactored later
-func processMarkers(
+func processManifests(
 	workloadPath string,
 	resources []string,
 	collection bool,
 	collectionResources bool,
-) (*SourceCodeTemplateData, error) {
-	const dataTypeString = "string"
-
-	results := &SourceCodeTemplateData{
+) (*SourceCode, error) {
+	results := &SourceCode{
 		SourceFiles:    new([]SourceFile),
 		RBACRules:      new([]RBACRule),
 		OwnershipRules: new([]OwnershipRule),
 	}
 
-	specFields := make(map[string]*APISpecField)
-
 	for _, manifestFile := range resources {
 		// capture entire resource manifest file content
-		manifestContent, err := ioutil.ReadFile(filepath.Join(filepath.Dir(workloadPath), manifestFile))
+		manifests, err := results.processMarkers(filepath.Join(filepath.Dir(workloadPath), manifestFile), collection, collectionResources)
 		if err != nil {
-			return nil, formatProcessError(manifestFile, err)
-		}
-
-		insp, err := InitializeMarkerInspector()
-		if err != nil {
-			return nil, formatProcessError(manifestFile, err)
-		}
-
-		nodes, markerResults, err := insp.InspectYAML(manifestContent, TransformYAML)
-		if err != nil {
-			return nil, formatProcessError(manifestFile, err)
-		}
-
-		buf := bytes.Buffer{}
-
-		for _, node := range nodes {
-			m, err := yaml.Marshal(node)
-			if err != nil {
-				return nil, formatProcessError(manifestFile, err)
-			}
-
-			buf.WriteString("---\n")
-			buf.Write(m)
-		}
-
-		manifestContent = buf.Bytes()
-
-		for _, markerResult := range markerResults {
-			switch r := markerResult.Object.(type) {
-			case FieldMarker:
-				if collection && !collectionResources {
-					continue
-				}
-
-				specField := &APISpecField{
-					FieldName:         strings.ToTitle(r.Name),
-					ManifestFieldName: r.Name,
-					DataType:          r.Type.String(),
-					APISpecContent: fmt.Sprintf(
-						"%s %s `json:\"%s\"`",
-						strings.Title(r.Name),
-						r.Type,
-						r.Name,
-					),
-				}
-
-				if r.Description != nil {
-					specField.DocumentationLines = strings.Split(*r.Description, "\n")
-				}
-
-				zv, err := zeroValue(r.Type.String())
-				if err != nil {
-					return nil, formatProcessError(manifestFile, err)
-				}
-
-				specField.ZeroVal = zv
-
-				//nolint:nestif //this will be refactored later
-				if r.Default != nil {
-					if specField.DataType == dataTypeString {
-						specField.DefaultVal = fmt.Sprintf("%q", r.Default)
-						specField.SampleField = fmt.Sprintf("%s: %q", r.Name, r.Default)
-					} else {
-						specField.DefaultVal = fmt.Sprintf("%v", r.Default)
-						specField.SampleField = fmt.Sprintf("%s: %v", r.Name, r.Default)
-					}
-				} else {
-					if specField.DataType == dataTypeString {
-						specField.SampleField = fmt.Sprintf("%s: %q", r.Name, r.originalValue)
-					} else {
-						specField.SampleField = fmt.Sprintf("%s: %v", r.Name, r.originalValue)
-					}
-				}
-
-				specFields[r.Name] = specField
-			case CollectionFieldMarker:
-				if !collection {
-					continue
-				}
-
-				specField := &APISpecField{
-					FieldName:         strings.ToTitle(r.Name),
-					ManifestFieldName: r.Name,
-					DataType:          r.Type.String(),
-					APISpecContent: fmt.Sprintf(
-						"%s %s `json:\"%s\"`",
-						strings.Title(r.Name),
-						r.Type,
-						r.Name,
-					),
-				}
-
-				if r.Description != nil {
-					specField.DocumentationLines = strings.Split(*r.Description, "\n")
-				}
-
-				zv, err := zeroValue(r.Type.String())
-				if err != nil {
-					return nil, formatProcessError(manifestFile, err)
-				}
-
-				specField.ZeroVal = zv
-
-				//nolint:nestif //this will be refactored later
-				if r.Default != nil {
-					if specField.DataType == dataTypeString {
-						specField.DefaultVal = fmt.Sprintf("%q", r.Default)
-						specField.SampleField = fmt.Sprintf("%s: %q", r.Name, r.Default)
-					} else {
-						specField.DefaultVal = fmt.Sprintf("%v", r.Default)
-						specField.SampleField = fmt.Sprintf("%s: %v", r.Name, r.Default)
-					}
-				} else {
-					if specField.DataType == dataTypeString {
-						specField.SampleField = fmt.Sprintf("%s: %q", r.Name, r.originalValue)
-					} else {
-						specField.SampleField = fmt.Sprintf("%s: %v", r.Name, r.originalValue)
-					}
-				}
-
-				specFields[r.Name] = specField
-			default:
-				continue
-			}
+			return nil, err
 		}
 
 		if collection && !collectionResources {
@@ -191,31 +55,11 @@ func processMarkers(
 		}
 
 		// determine sourceFile filename
-		var sourceFile SourceFile
-		sourceFile.Filename = filepath.Base(manifestFile)                // get filename from path
-		sourceFile.Filename = strings.Split(sourceFile.Filename, ".")[0] // strip ".yaml"
-		sourceFile.Filename += ".go"                                     // add correct file ext
-		sourceFile.Filename = utils.ToFileName(sourceFile.Filename)      // kebab-case to snake_case
+		sourceFile := determineSourceFileName(manifestFile)
 
 		var childResources []ChildResource
 
-		manifests := extractManifests(manifestContent)
-
 		for _, manifest := range manifests {
-			// If processing manifests for collection resources there is no case
-			// where there should be collection markers - they will result in
-			// code that won't compile.  We will convert collection markers to
-			// field markers for the sake of UX.
-			if collection && collectionResources {
-				// find & replace collection markers with field markers
-				manifest = strings.Replace(
-					manifest,
-					"!!var collection",
-					"!!var parent",
-					-1,
-				)
-			}
-
 			// decode manifest into unstructured data type
 			var manifestObject unstructured.Unstructured
 
@@ -227,11 +71,7 @@ func processMarkers(
 			}
 
 			// generate a unique name for the resource using the kind and name
-			resourceUniqueName := strings.Replace(strings.Title(manifestObject.GetName()), "-", "", -1)
-			resourceUniqueName = strings.Replace(resourceUniqueName, ".", "", -1)
-			resourceUniqueName = strings.Replace(resourceUniqueName, ":", "", -1)
-			resourceUniqueName = fmt.Sprintf("%s%s", manifestObject.GetKind(), resourceUniqueName)
-
+			resourceUniqueName := generateUniqueResourceName(manifestObject)
 			// determine resource group and version
 			resourceVersion, resourceGroup := versionGroupFromAPIVersion(manifestObject.GetAPIVersion())
 
@@ -275,10 +115,6 @@ func processMarkers(
 		*results.SourceFiles = append(*results.SourceFiles, sourceFile)
 	}
 
-	for _, v := range specFields {
-		results.SpecFields = append(results.SpecFields, v)
-	}
-
 	// ensure no duplicate file names exist within the source files
 	deduplicateFileNames(results)
 
@@ -288,7 +124,7 @@ func processMarkers(
 // deduplicateFileNames dedeplicates the names of the files.  This is because
 // we cannot guarantee that files exist in different directories and may have
 // naming collisions.
-func deduplicateFileNames(templateData *SourceCodeTemplateData) {
+func deduplicateFileNames(templateData *SourceCode) {
 	// create a slice to track existing fileNames and preallocate an existing
 	// known conflict
 	fileNames := make([]string, len(*templateData.SourceFiles)+1)
@@ -316,21 +152,6 @@ func deduplicateFileNames(templateData *SourceCodeTemplateData) {
 		}
 
 		fileNames[i] = sourceFile.Filename
-	}
-}
-
-// zeroValue returns the zero value for the data type as a string.
-// It is returned as a string to be used in a template for Go source code.
-func zeroValue(val interface{}) (string, error) {
-	switch val {
-	case "bool":
-		return "false", nil
-	case "string":
-		return "\"\"", nil
-	case "int", "int32", "int64", "float32", "float64":
-		return "0", nil
-	default:
-		return "", fmt.Errorf("%w; supported data types: %v", ErrUnsupportedDataType, SupportedMarkerDataTypes())
 	}
 }
 
@@ -429,63 +250,55 @@ func TransformYAML(results ...*inspect.YAMLResult) error {
 	return nil
 }
 
-type FieldType int
+type Marker interface {
+	GetType() string
+	ExtractSpecField()
+}
 
-const (
-	FieldUnknownType FieldType = iota
-	FieldString
-	FieldInt
-	FieldBool
-)
+func processMarkerResults(markerResults []*inspect.YAMLResult, collection, collectionResources bool) map[string]*APISpecField {
+	specFields := make(map[string]*APISpecField)
 
-func (f *FieldType) UnmarshalMarkerArg(in string) error {
-	types := map[string]FieldType{
-		"":       FieldUnknownType,
-		"string": FieldString,
-		"int":    FieldInt,
-		"bool":   FieldBool,
-	}
+	for _, markerResult := range markerResults {
+		switch r := markerResult.Object.(type) {
+		case FieldMarker:
+			if collection && !collectionResources {
+				continue
+			}
 
-	if t, ok := types[in]; ok {
-		if t == FieldUnknownType {
-			return fmt.Errorf("%w, %s into FieldType", ErrUnableToParseFieldType, in)
+			specField := r.ExtractSpecField()
+
+			specFields[r.Name] = specField
+		case CollectionFieldMarker:
+			if !collection {
+				continue
+			}
+
+			specField := r.ExtractSpecField()
+
+			specFields[r.Name] = specField
+		default:
+			continue
 		}
-
-		*f = t
-
-		return nil
 	}
 
-	return fmt.Errorf("%w, %s into FieldType", ErrUnableToParseFieldType, in)
+	return specFields
 }
 
-func (f FieldType) String() string {
-	types := map[FieldType]string{
-		FieldUnknownType: "",
-		FieldString:      "string",
-		FieldInt:         "int",
-		FieldBool:        "bool",
-	}
+func determineSourceFileName(manifestFile string) SourceFile {
+	var sourceFile SourceFile
+	sourceFile.Filename = filepath.Base(manifestFile)                // get filename from path
+	sourceFile.Filename = strings.Split(sourceFile.Filename, ".")[0] // strip ".yaml"
+	sourceFile.Filename += ".go"                                     // add correct file ext
+	sourceFile.Filename = utils.ToFileName(sourceFile.Filename)      // kebab-case to snake_case
 
-	return types[f]
+	return sourceFile
 }
 
-type FieldMarker struct {
-	Name          string
-	Type          FieldType
-	Description   *string
-	Default       interface{} `marker:",optional"`
-	Replace       *string
-	originalValue interface{}
-}
+func generateUniqueResourceName(object unstructured.Unstructured) string {
+	resourceName := strings.Replace(strings.Title(object.GetName()), "-", "", -1)
+	resourceName = strings.Replace(resourceName, ".", "", -1)
+	resourceName = strings.Replace(resourceName, ":", "", -1)
+	resourceName = fmt.Sprintf("%s%s", object.GetKind(), resourceName)
 
-type CollectionFieldMarker FieldMarker
-
-func (fm FieldMarker) String() string {
-	return fmt.Sprintf("FieldMarker{Name: %s Type: %v Description: %q Default: %v}",
-		fm.Name,
-		fm.Type,
-		*fm.Description,
-		fm.Default,
-	)
+	return resourceName
 }

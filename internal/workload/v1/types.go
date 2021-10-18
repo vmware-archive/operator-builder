@@ -95,18 +95,6 @@ type WorkloadCollection struct {
 	Spec           WorkloadCollectionSpec `json:"spec" yaml:"spec" validate:"required"`
 }
 
-// APISpecField represents a single field in a custom API type.
-type APISpecField struct {
-	FieldName          string
-	ManifestFieldName  string
-	DataType           string
-	DefaultVal         string
-	ZeroVal            string
-	APISpecContent     string
-	SampleField        string
-	DocumentationLines []string
-}
-
 // SourceFile represents a golang source code file that contains one or more
 // child resource objects.
 type SourceFile struct {
@@ -125,14 +113,6 @@ type ChildResource struct {
 	Kind          string
 	StaticContent string
 	SourceCode    string
-}
-
-// SourceCodeTemplateData is a collection of variables used to generate source code.
-type SourceCodeTemplateData struct {
-	SpecFields     []*APISpecField
-	SourceFiles    *[]SourceFile
-	RBACRules      *[]RBACRule
-	OwnershipRules *[]OwnershipRule
 }
 
 // RBACRule contains the info needed to create the kubebuilder:rbac markers in

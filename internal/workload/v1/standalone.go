@@ -145,7 +145,7 @@ func (*StandaloneWorkload) IsCollection() bool {
 }
 
 func (s *StandaloneWorkload) SetResources(workloadPath string) error {
-	resources, err := processMarkers(workloadPath, s.Spec.Resources, false, false)
+	resources, err := processManifests(workloadPath, s.Spec.Resources, false, false)
 	if err != nil {
 		return err
 	}

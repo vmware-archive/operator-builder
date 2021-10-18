@@ -146,7 +146,7 @@ func (c *WorkloadCollection) IsCollection() bool {
 }
 
 func (c *WorkloadCollection) SetResources(workloadPath string) error {
-	resources, err := processMarkers(workloadPath, c.Spec.Resources, true, true)
+	resources, err := processManifests(workloadPath, c.Spec.Resources, true, true)
 	if err != nil {
 		return err
 	}
@@ -158,7 +158,7 @@ func (c *WorkloadCollection) SetResources(workloadPath string) error {
 	specFields := resources.SpecFields
 
 	for _, component := range c.Spec.Components {
-		componentResources, err := processMarkers(
+		componentResources, err := processManifests(
 			component.Spec.ConfigPath,
 			component.Spec.Resources,
 			true,

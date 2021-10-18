@@ -117,7 +117,7 @@ func (*ComponentWorkload) IsCollection() bool {
 }
 
 func (c *ComponentWorkload) SetResources(workloadPath string) error {
-	resources, err := processMarkers(workloadPath, c.Spec.Resources, false, false)
+	resources, err := processManifests(workloadPath, c.Spec.Resources, false, false)
 	if err != nil {
 		return err
 	}
