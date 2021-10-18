@@ -69,7 +69,7 @@ func (rs *RBACRules) groupResourceRecorded(newRBACRule *RBACRule) bool {
 	return false
 }
 
-func (rs *RBACRules) rbacRulesAddOrUpdate(newRule *RBACRule) {
+func (rs *RBACRules) AddOrUpdateRules(newRule *RBACRule) {
 	if !rs.groupResourceRecorded(newRule) {
 		newRule.VerbString = rbacVerbsToString(newRule.Verbs)
 		*rs = append(*rs, *newRule)
@@ -113,7 +113,7 @@ func valueFromInterface(in interface{}, key string) (out interface{}) {
 }
 
 func (rs *RBACRules) addRulesForManifest(kind, group string, rawContent interface{}) {
-	rs.rbacRulesAddOrUpdate(
+	rs.AddOrUpdateRules(
 		&RBACRule{
 			Group:    group,
 			Resource: getResourceForRBAC(kind),
@@ -154,7 +154,7 @@ func (rs *RBACRules) addRulesForManifest(kind, group string, rawContent interfac
 						verbs = append(verbs, verb.(string))
 					}
 
-					rs.rbacRulesAddOrUpdate(
+					rs.AddOrUpdateRules(
 						&RBACRule{
 							Group:    rbacGroupFromGroup(rbacGroup.(string)),
 							Resource: getResourceForRBAC(rbacKind.(string)),
