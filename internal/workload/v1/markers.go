@@ -39,7 +39,7 @@ func processManifests(
 ) (*SourceCode, error) {
 	results := &SourceCode{
 		SourceFiles:    new([]SourceFile),
-		RBACRules:      new([]RBACRule),
+		RBACRules:      new(RBACRules),
 		OwnershipRules: new([]OwnershipRule),
 	}
 
@@ -76,7 +76,7 @@ func processManifests(
 			resourceVersion, resourceGroup := versionGroupFromAPIVersion(manifestObject.GetAPIVersion())
 
 			// determine group and resource for RBAC rule generation
-			rbacRulesForManifest(manifestObject.GetKind(), resourceGroup, manifestObject.Object, results.RBACRules)
+			results.RBACRules.addRulesForManifest(manifestObject.GetKind(), resourceGroup, manifestObject.Object)
 
 			// determine group and kind for ownership rule generation
 			newOwnershipRule := OwnershipRule{

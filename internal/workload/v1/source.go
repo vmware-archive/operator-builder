@@ -12,7 +12,7 @@ import (
 type SourceCode struct {
 	SpecFields     []*APISpecField
 	SourceFiles    *[]SourceFile
-	RBACRules      *[]RBACRule
+	RBACRules      *RBACRules
 	OwnershipRules *[]OwnershipRule
 }
 

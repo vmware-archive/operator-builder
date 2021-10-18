@@ -115,15 +115,6 @@ type ChildResource struct {
 	SourceCode    string
 }
 
-// RBACRule contains the info needed to create the kubebuilder:rbac markers in
-// the controller.
-type RBACRule struct {
-	Group      string
-	Resource   string
-	Verbs      []string
-	VerbString string
-}
-
 // OwnershipRule contains the info needed to create the controller ownership
 // functionality when setting up the controller with the manager.  This allows
 // the controller to reconcile the state of a deleted resource that it manages.
