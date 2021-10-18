@@ -1,6 +1,11 @@
 package v1
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
+
+var ErrUnableToParseFieldType = errors.New("unable to parse field")
 
 type FieldType int
 
