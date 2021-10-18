@@ -115,15 +115,6 @@ type ChildResource struct {
 	SourceCode    string
 }
 
-// OwnershipRule contains the info needed to create the controller ownership
-// functionality when setting up the controller with the manager.  This allows
-// the controller to reconcile the state of a deleted resource that it manages.
-type OwnershipRule struct {
-	Version string
-	Kind    string
-	CoreAPI bool
-}
-
 const PluginConfigKey = "operatorBuilder"
 
 // PluginConfig contains the project config values which are stored in the

@@ -70,16 +70,6 @@ func extractManifests(manifestContent []byte) []string {
 	return manifests
 }
 
-func versionKindRecorded(ownershipRules *[]OwnershipRule, newOwnershipRule *OwnershipRule) bool {
-	for _, r := range *ownershipRules {
-		if r.Version == newOwnershipRule.Version && r.Kind == newOwnershipRule.Kind {
-			return true
-		}
-	}
-
-	return false
-}
-
 func versionGroupFromAPIVersion(apiVersion string) (version, group string) {
 	apiVersionElements := strings.Split(apiVersion, "/")
 

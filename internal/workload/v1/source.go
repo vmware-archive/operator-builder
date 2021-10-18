@@ -15,7 +15,7 @@ type SourceCode struct {
 	SpecFields          []*APISpecField
 	SourceFiles         *[]SourceFile
 	RBACRules           *RBACRules
-	OwnershipRules      *[]OwnershipRule
+	OwnershipRules      *OwnershipRules
 	collection          bool
 	collectionResources bool
 }

@@ -23,7 +23,7 @@ func processManifests(
 	results := &SourceCode{
 		SourceFiles:         new([]SourceFile),
 		RBACRules:           new(RBACRules),
-		OwnershipRules:      new([]OwnershipRule),
+		OwnershipRules:      new(OwnershipRules),
 		collection:          collection,
 		collectionResources: collectionResources,
 	}
@@ -63,17 +63,11 @@ func processManifests(
 			// determine group and resource for RBAC rule generation
 			results.RBACRules.addRulesForManifest(manifestObject.GetKind(), resourceGroup, manifestObject.Object)
 
-			// determine group and kind for ownership rule generation
-			newOwnershipRule := OwnershipRule{
-				Version: manifestObject.GetAPIVersion(),
-				Kind:    manifestObject.GetKind(),
-				CoreAPI: isCoreAPI(resourceGroup),
-			}
-
-			ownershipExists := versionKindRecorded(results.OwnershipRules, &newOwnershipRule)
-			if !ownershipExists {
-				*results.OwnershipRules = append(*results.OwnershipRules, newOwnershipRule)
-			}
+			results.OwnershipRules.addOrUpdateOwnership(
+				manifestObject.GetAPIVersion(),
+				manifestObject.GetKind(),
+				resourceGroup,
+			)
 
 			resource := ChildResource{
 				Name:       manifestObject.GetName(),
