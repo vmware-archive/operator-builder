@@ -3,11 +3,14 @@
 
 package v1
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // APISpecField represents a single field in a custom API type.
 type APISpecField struct {
 	FieldName          string
+	Path               string
 	ManifestFieldName  string
 	DataType           FieldType
 	DefaultVal         string
@@ -16,6 +19,8 @@ type APISpecField struct {
 	SampleField        string
 	DocumentationLines []string
 }
+
+type APISpecFields []APISpecField
 
 func (api *APISpecField) setSampleAndDefault(name string, value interface{}) {
 	if api.DataType == FieldString {
