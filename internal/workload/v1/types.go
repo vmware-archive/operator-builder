@@ -41,11 +41,7 @@ type CliCommand struct {
 type StandaloneWorkloadSpec struct {
 	API                 APISpec    `json:"api" yaml:"api"`
 	CompanionCliRootcmd CliCommand `json:"companionCliRootcmd" yaml:"companionCliRootcmd" validate:"omitempty"`
-	Resources           []string   `json:"resources" yaml:"resources"`
-	APISpecFields       []*APISpecField
-	SourceFiles         []SourceFile
-	RBACRules           []RBACRule
-	OwnershipRules      []OwnershipRule
+	WorkloadSpec
 }
 
 // StandaloneWorkload defines a standalone workload.
@@ -59,14 +55,10 @@ type StandaloneWorkload struct {
 type ComponentWorkloadSpec struct {
 	API                   APISpec    `json:"api" yaml:"api"`
 	CompanionCliSubcmd    CliCommand `json:"companionCliSubcmd" yaml:"companionCliSubcmd" validate:"omitempty"`
-	Resources             []string   `json:"resources" yaml:"resources"`
 	Dependencies          []string   `json:"dependencies" yaml:"dependencies"`
 	ConfigPath            string
 	ComponentDependencies []*ComponentWorkload
-	APISpecFields         []*APISpecField
-	SourceFiles           []SourceFile
-	RBACRules             []RBACRule
-	OwnershipRules        []OwnershipRule
+	WorkloadSpec
 }
 
 // ComponentWorkload defines a workload that is a component of a collection.
@@ -80,13 +72,9 @@ type WorkloadCollectionSpec struct {
 	API                 APISpec    `json:"api" yaml:"api"`
 	CompanionCliRootcmd CliCommand `json:"companionCliRootcmd" yaml:"companionCliRootcmd" validate:"omitempty"`
 	CompanionCliSubcmd  CliCommand `json:"companionCliSubcmd" yaml:"companionCliSubcmd" validate:"omitempty"`
-	Resources           []string   `json:"resources" yaml:"resources"`
 	ComponentFiles      []string   `json:"componentFiles" yaml:"componentFiles"`
 	Components          []*ComponentWorkload
-	APISpecFields       []*APISpecField
-	SourceFiles         []SourceFile
-	RBACRules           []RBACRule
-	OwnershipRules      []OwnershipRule
+	WorkloadSpec
 }
 
 // WorkloadCollection defines a workload collection.

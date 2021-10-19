@@ -146,36 +146,25 @@ func (c *WorkloadCollection) IsCollection() bool {
 }
 
 func (c *WorkloadCollection) SetResources(workloadPath string) error {
-	resources, err := processManifests(workloadPath, c.Spec.Resources, true, true)
+	err := c.Spec.processManifests(workloadPath, true, true)
 	if err != nil {
 		return err
 	}
 
-	c.Spec.SourceFiles = *resources.SourceFiles
-	c.Spec.RBACRules = *resources.RBACRules
-	c.Spec.OwnershipRules = *resources.OwnershipRules
-
-	specFields := resources.SpecFields
-
-	for _, component := range c.Spec.Components {
-		componentResources, err := processManifests(
-			component.Spec.ConfigPath,
-			component.Spec.Resources,
-			true,
-			false,
-		)
+	for _, cpt := range c.Spec.Components {
+		err := cpt.Spec.processManifests(cpt.Spec.ConfigPath, true, false)
 		if err != nil {
 			return err
 		}
 
 		// add to spec fields if not present
-		for _, csf := range componentResources.SpecFields {
+		for _, csf := range cpt.Spec.APISpecFields {
 			fieldPresent := false
 
-			for i, sf := range specFields {
+			for i, sf := range c.Spec.APISpecFields {
 				if sf.FieldName == csf.FieldName {
 					if len(csf.DocumentationLines) > 0 {
-						specFields[i].DocumentationLines = csf.DocumentationLines
+						c.Spec.APISpecFields[i].DocumentationLines = csf.DocumentationLines
 					}
 
 					fieldPresent = true
@@ -183,12 +172,10 @@ func (c *WorkloadCollection) SetResources(workloadPath string) error {
 			}
 
 			if !fieldPresent {
-				specFields = append(specFields, csf)
+				c.Spec.APISpecFields = append(c.Spec.APISpecFields, csf)
 			}
 		}
 	}
-
-	c.Spec.APISpecFields = specFields
 
 	return nil
 }
@@ -212,7 +199,7 @@ func (c *WorkloadCollection) GetComponents() []*ComponentWorkload {
 }
 
 func (c *WorkloadCollection) GetSourceFiles() *[]SourceFile {
-	return &c.Spec.SourceFiles
+	return c.Spec.SourceFiles
 }
 
 func (c *WorkloadCollection) GetFuncNames() (createFuncNames, initFuncNames []string) {
@@ -224,7 +211,9 @@ func (c *WorkloadCollection) GetAPISpecFields() []*APISpecField {
 }
 
 func (c *WorkloadCollection) GetRBACRules() *[]RBACRule {
-	return &c.Spec.RBACRules
+	var rules []RBACRule = *c.Spec.RBACRules
+
+	return &rules
 }
 
 func (*WorkloadCollection) GetOwnershipRules() *[]OwnershipRule {

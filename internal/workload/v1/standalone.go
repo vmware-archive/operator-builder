@@ -145,15 +145,10 @@ func (*StandaloneWorkload) IsCollection() bool {
 }
 
 func (s *StandaloneWorkload) SetResources(workloadPath string) error {
-	resources, err := processManifests(workloadPath, s.Spec.Resources, false, false)
+	err := s.Spec.processManifests(workloadPath, false, false)
 	if err != nil {
 		return err
 	}
-
-	s.Spec.APISpecFields = resources.SpecFields
-	s.Spec.SourceFiles = *resources.SourceFiles
-	s.Spec.RBACRules = *resources.RBACRules
-	s.Spec.OwnershipRules = *resources.OwnershipRules
 
 	return nil
 }
@@ -175,7 +170,7 @@ func (s *StandaloneWorkload) GetComponents() []*ComponentWorkload {
 }
 
 func (s *StandaloneWorkload) GetSourceFiles() *[]SourceFile {
-	return &s.Spec.SourceFiles
+	return s.Spec.SourceFiles
 }
 
 func (s *StandaloneWorkload) GetFuncNames() (createFuncNames, initFuncNames []string) {
@@ -187,11 +182,15 @@ func (s *StandaloneWorkload) GetAPISpecFields() []*APISpecField {
 }
 
 func (s *StandaloneWorkload) GetRBACRules() *[]RBACRule {
-	return &s.Spec.RBACRules
+	var rules []RBACRule = *s.Spec.RBACRules
+
+	return &rules
 }
 
 func (s *StandaloneWorkload) GetOwnershipRules() *[]OwnershipRule {
-	return &s.Spec.OwnershipRules
+	var rules []OwnershipRule = *s.Spec.OwnershipRules
+
+	return &rules
 }
 
 func (*StandaloneWorkload) GetComponentResource(domain, repo string, clusterScoped bool) *resource.Resource {
