@@ -31,7 +31,17 @@ type WorkloadSpec struct {
 	collectionResources bool
 }
 
+func (ws *WorkloadSpec) Init() {
+	ws.APISpecFields = []*APISpecField{}
+
+	ws.OwnershipRules = &OwnershipRules{}
+	ws.RBACRules = &RBACRules{}
+	ws.SourceFiles = &[]SourceFile{}
+}
+
 func (ws *WorkloadSpec) processManifests(workloadPath string, collection, collectionResources bool) error {
+	ws.Init()
+
 	for _, manifestFile := range ws.Resources {
 		// capture entire resource manifest file content
 		manifests, err := ws.processMarkers(filepath.Join(filepath.Dir(workloadPath), manifestFile))
@@ -95,6 +105,11 @@ func (ws *WorkloadSpec) processManifests(workloadPath string, collection, collec
 		}
 
 		sourceFile.Children = childResources
+
+		if ws.SourceFiles == nil {
+			ws.SourceFiles = &[]SourceFile{}
+		}
+
 		*ws.SourceFiles = append(*ws.SourceFiles, sourceFile)
 	}
 

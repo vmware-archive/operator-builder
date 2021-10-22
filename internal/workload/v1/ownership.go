@@ -15,6 +15,9 @@ type OwnershipRule struct {
 type OwnershipRules []OwnershipRule
 
 func (or *OwnershipRules) addOrUpdateOwnership(version, kind, group string) {
+	if or == nil {
+		or = &OwnershipRules{}
+	}
 	// determine group and kind for ownership rule generation
 	newOwnershipRule := OwnershipRule{
 		Version: version,

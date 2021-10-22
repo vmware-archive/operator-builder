@@ -59,6 +59,10 @@ func (r *RBACRule) groupResourceEqual(newRBACRule *RBACRule) bool {
 }
 
 func (rs *RBACRules) groupResourceRecorded(newRBACRule *RBACRule) bool {
+	if rs == nil {
+		return false
+	}
+
 	for _, r := range *rs {
 		r := r
 		if r.groupResourceEqual(newRBACRule) {
@@ -70,6 +74,10 @@ func (rs *RBACRules) groupResourceRecorded(newRBACRule *RBACRule) bool {
 }
 
 func (rs *RBACRules) AddOrUpdateRules(newRule *RBACRule) {
+	if rs == nil {
+		rs = &RBACRules{}
+	}
+
 	if !rs.groupResourceRecorded(newRule) {
 		newRule.VerbString = rbacVerbsToString(newRule.Verbs)
 		*rs = append(*rs, *newRule)
