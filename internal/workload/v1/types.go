@@ -41,7 +41,7 @@ type CliCommand struct {
 type StandaloneWorkloadSpec struct {
 	API                 APISpec    `json:"api" yaml:"api"`
 	CompanionCliRootcmd CliCommand `json:"companionCliRootcmd" yaml:"companionCliRootcmd" validate:"omitempty"`
-	WorkloadSpec
+	WorkloadSpec        `yaml:",inline"`
 }
 
 // StandaloneWorkload defines a standalone workload.
@@ -58,7 +58,7 @@ type ComponentWorkloadSpec struct {
 	Dependencies          []string   `json:"dependencies" yaml:"dependencies"`
 	ConfigPath            string
 	ComponentDependencies []*ComponentWorkload
-	WorkloadSpec
+	WorkloadSpec          `yaml:",inline"`
 }
 
 // ComponentWorkload defines a workload that is a component of a collection.
@@ -74,7 +74,7 @@ type WorkloadCollectionSpec struct {
 	CompanionCliSubcmd  CliCommand `json:"companionCliSubcmd" yaml:"companionCliSubcmd" validate:"omitempty"`
 	ComponentFiles      []string   `json:"componentFiles" yaml:"componentFiles"`
 	Components          []*ComponentWorkload
-	WorkloadSpec
+	WorkloadSpec        `yaml:",inline"`
 }
 
 // WorkloadCollection defines a workload collection.
