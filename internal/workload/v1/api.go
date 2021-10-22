@@ -52,7 +52,7 @@ func (api *APIFields) AddField(path string, fieldType FieldType, comments []stri
 		}
 
 		if !foundMatch {
-			child := obj.newChild(part, FieldStruct)
+			child := obj.newChild(part, FieldStruct, sample)
 
 			child.generateStructName(path)
 
@@ -61,13 +61,13 @@ func (api *APIFields) AddField(path string, fieldType FieldType, comments []stri
 		}
 	}
 
-	newChild := obj.newChild(last, fieldType)
+	newChild := obj.newChild(last, fieldType, sample)
 
 	newChild.setCommentsAndDefault(comments, sample, hasDefault)
 
 	for _, child := range obj.Children {
 		if child.manifestName == last {
-			if !child.IsEqual(newChild) {
+			if !child.isEqual(newChild) {
 				return fmt.Errorf("%w for api field %s", ErrOverwriteExistingValue, path)
 			}
 
@@ -80,38 +80,6 @@ func (api *APIFields) AddField(path string, fieldType FieldType, comments []stri
 	obj.Children = append(obj.Children, newChild)
 
 	return nil
-}
-
-func (api *APIFields) setSampleAndDefault(sampleVal interface{}, hasDefault bool) {
-	if hasDefault {
-		if api.Type == FieldString {
-			api.Default = fmt.Sprintf("%q", sampleVal)
-		} else {
-			api.Default = fmt.Sprintf("%v", sampleVal)
-		}
-
-		api.Markers = append(
-			api.Markers,
-			fmt.Sprintf("+kubebuilder:default=%s", api.Default),
-			"+kubebuilder:validation:Optional",
-		)
-	}
-
-	if api.Type == FieldString {
-		api.Sample = fmt.Sprintf("%s: %q", api.manifestName, sampleVal)
-	} else {
-		api.Sample = fmt.Sprintf("%s: %v", api.manifestName, sampleVal)
-	}
-}
-
-func (api *APIFields) setCommentsAndDefault(comments []string, sampleVal interface{}, hasDefault bool) {
-	if hasDefault {
-		api.setSampleAndDefault(sampleVal, hasDefault)
-	}
-
-	if comments != nil {
-		api.Comments = append(api.Comments, comments...)
-	}
 }
 
 func (api *APIFields) GenerateSampleSpec() string {
@@ -215,7 +183,7 @@ func (api *APIFields) generateStructName(path string) {
 	api.StructName = buf.String()
 }
 
-func (api *APIFields) IsEqual(input *APIFields) bool {
+func (api *APIFields) isEqual(input *APIFields) bool {
 	if api.Type == input.Type {
 		if api.Default == "" || api.Default == input.Default || input.Default == "" {
 			if len(api.Comments) == 0 || len(input.Comments) == 0 {
@@ -227,20 +195,60 @@ func (api *APIFields) IsEqual(input *APIFields) bool {
 	return false
 }
 
-func mustWrite(n int, err error) {
-	if err != nil {
-		panic(err)
+func (api *APIFields) setSample(sampleVal interface{}) {
+	switch api.Type {
+	case FieldString:
+		api.Sample = fmt.Sprintf("%s: %q", api.manifestName, sampleVal)
+	case FieldStruct:
+		api.Sample = fmt.Sprintf("%s:", api.manifestName)
+	default:
+		api.Sample = fmt.Sprintf("%s: %v", api.manifestName, sampleVal)
 	}
 }
 
-func (api *APIFields) newChild(name string, fieldType FieldType) *APIFields {
-	return &APIFields{
+func (api *APIFields) setDefault(sampleVal interface{}, hasDefault bool) {
+	if hasDefault {
+		if api.Type == FieldString {
+			api.Default = fmt.Sprintf("%q", sampleVal)
+		} else {
+			api.Default = fmt.Sprintf("%v", sampleVal)
+		}
+
+		api.Markers = append(
+			api.Markers,
+			fmt.Sprintf("+kubebuilder:default=%s", api.Default),
+			"+kubebuilder:validation:Optional",
+		)
+
+		api.setSample(sampleVal)
+	}
+}
+
+func (api *APIFields) setCommentsAndDefault(comments []string, sampleVal interface{}, hasDefault bool) {
+	api.setDefault(sampleVal, hasDefault)
+
+	if comments != nil {
+		api.Comments = append(api.Comments, comments...)
+	}
+}
+
+func (api *APIFields) newChild(name string, fieldType FieldType, sample interface{}) *APIFields {
+	child := &APIFields{
 		Name:         strings.Title(name),
 		manifestName: name,
 		Type:         fieldType,
 		Tags:         fmt.Sprintf("`json:%q`", name),
 		Comments:     []string{},
 		Markers:      []string{},
-		Sample:       fmt.Sprintf("%s:", name),
+	}
+
+	child.setSample(sample)
+
+	return child
+}
+
+func mustWrite(n int, err error) {
+	if err != nil {
+		panic(err)
 	}
 }
