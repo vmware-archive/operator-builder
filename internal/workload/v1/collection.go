@@ -6,6 +6,7 @@ package v1
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
 
 	"sigs.k8s.io/kubebuilder/v3/pkg/model/resource"
 
@@ -167,28 +168,15 @@ func (c *WorkloadCollection) SetResources(workloadPath string) error {
 		return err
 	}
 
+	c.Spec.collection = true
+	c.Spec.collectionResources = false
+
 	for _, cpt := range c.Spec.Components {
-		err := cpt.Spec.processManifests(cpt.Spec.ConfigPath, true, false)
-		if err != nil {
-			return err
-		}
-
-		// add to spec fields if not present
-		for _, csf := range cpt.Spec.APISpecFields {
-			fieldPresent := false
-
-			for i, sf := range c.Spec.APISpecFields {
-				if sf.FieldName == csf.FieldName {
-					if len(csf.DocumentationLines) > 0 {
-						c.Spec.APISpecFields[i].DocumentationLines = csf.DocumentationLines
-					}
-
-					fieldPresent = true
-				}
-			}
-
-			if !fieldPresent {
-				c.Spec.APISpecFields = append(c.Spec.APISpecFields, csf)
+		for _, csr := range cpt.Spec.Resources {
+			// add to spec fields if not present
+			_, err := c.Spec.processMarkers(filepath.Join(filepath.Dir(cpt.Spec.ConfigPath), csr))
+			if err != nil {
+				return err
 			}
 		}
 	}
@@ -222,7 +210,7 @@ func (c *WorkloadCollection) GetFuncNames() (createFuncNames, initFuncNames []st
 	return getFuncNames(*c.GetSourceFiles())
 }
 
-func (c *WorkloadCollection) GetAPISpecFields() []*APISpecField {
+func (c *WorkloadCollection) GetAPISpecFields() *APIFields {
 	return c.Spec.APISpecFields
 }
 

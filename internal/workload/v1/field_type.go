@@ -17,6 +17,7 @@ const (
 	FieldString
 	FieldInt
 	FieldBool
+	FieldStruct
 )
 
 func (f *FieldType) UnmarshalMarkerArg(in string) error {
@@ -46,24 +47,8 @@ func (f FieldType) String() string {
 		FieldString:      "string",
 		FieldInt:         "int",
 		FieldBool:        "bool",
+		FieldStruct:      "struct",
 	}
 
 	return types[f]
-}
-
-// zeroValue returns the zero value for the data type as a string.
-// It is returned as a string to be used in a template for Go source code.
-func (f FieldType) zeroValue() string {
-	switch f {
-	case FieldBool:
-		return "false"
-	case FieldString:
-		return "\"\""
-	case FieldInt:
-		return "0"
-	case FieldUnknownType:
-		return "nil"
-	}
-
-	return ""
 }

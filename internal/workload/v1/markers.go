@@ -32,25 +32,6 @@ func (fm FieldMarker) String() string {
 	)
 }
 
-func (fm FieldMarker) ExtractSpecField() *APISpecField {
-	specField := &APISpecField{
-		FieldName:          strings.ToTitle(fm.Name),
-		ManifestFieldName:  fm.Name,
-		DataType:           fm.Type,
-		APISpecContent:     getAPISpecContent(fm.Name, fm.Type),
-		DocumentationLines: getFieldDescription(fm.Description),
-		ZeroVal:            fm.Type.zeroValue(),
-	}
-
-	if fm.Default != nil {
-		specField.setSampleAndDefault(fm.Name, fm.Default)
-	} else {
-		specField.setSampleAndDefault(fm.Name, fm.originalValue)
-	}
-
-	return specField
-}
-
 type CollectionFieldMarker FieldMarker
 
 func (cfm CollectionFieldMarker) String() string {
@@ -60,37 +41,6 @@ func (cfm CollectionFieldMarker) String() string {
 		*cfm.Description,
 		cfm.Default,
 	)
-}
-
-func (cfm CollectionFieldMarker) ExtractSpecField() *APISpecField {
-	specField := &APISpecField{
-		FieldName:          strings.ToTitle(cfm.Name),
-		ManifestFieldName:  cfm.Name,
-		DataType:           cfm.Type,
-		APISpecContent:     getAPISpecContent(cfm.Name, cfm.Type),
-		DocumentationLines: getFieldDescription(cfm.Description),
-		ZeroVal:            cfm.Type.zeroValue(),
-	}
-
-	if cfm.Default != nil {
-		specField.setSampleAndDefault(cfm.Name, cfm.Default)
-	} else {
-		specField.setSampleAndDefault(cfm.Name, cfm.originalValue)
-	}
-
-	return specField
-}
-
-func getAPISpecContent(name string, fieldType FieldType) string {
-	return fmt.Sprintf("%s %s `json:%q`", strings.Title(name), fieldType, name)
-}
-
-func getFieldDescription(description *string) []string {
-	if description != nil {
-		return strings.Split(*description, "\n")
-	}
-
-	return nil
 }
 
 func InitializeMarkerInspector() (*inspect.Inspector, error) {

@@ -190,7 +190,7 @@ func (s *StandaloneWorkload) GetFuncNames() (createFuncNames, initFuncNames []st
 	return getFuncNames(*s.GetSourceFiles())
 }
 
-func (s *StandaloneWorkload) GetAPISpecFields() []*APISpecField {
+func (s *StandaloneWorkload) GetAPISpecFields() *APIFields {
 	return s.Spec.APISpecFields
 }
 

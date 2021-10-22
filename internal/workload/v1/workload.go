@@ -39,7 +39,7 @@ type WorkloadShared struct {
 // WorkloadSpec contains information required to generate source code.
 type WorkloadSpec struct {
 	Resources           []string `json:"resources" yaml:"resources"`
-	APISpecFields       []*APISpecField
+	APISpecFields       *APIFields
 	SourceFiles         *[]SourceFile
 	RBACRules           *RBACRules
 	OwnershipRules      *OwnershipRules
@@ -48,7 +48,12 @@ type WorkloadSpec struct {
 }
 
 func (ws *WorkloadSpec) init() {
-	ws.APISpecFields = []*APISpecField{}
+	ws.APISpecFields = &APIFields{
+		Name:   "Spec",
+		Type:   FieldStruct,
+		Tags:   fmt.Sprintf("`json: %q`", "spec"),
+		Sample: "spec:",
+	}
 
 	ws.OwnershipRules = &OwnershipRules{}
 	ws.RBACRules = &RBACRules{}
@@ -58,17 +63,14 @@ func (ws *WorkloadSpec) init() {
 func (ws *WorkloadSpec) processManifests(workloadPath string, collection, collectionResources bool) error {
 	ws.init()
 
-	specFields := make(map[string]*APISpecField)
+	ws.collection = collection
+	ws.collectionResources = collectionResources
 
 	for _, manifestFile := range ws.Resources {
 		// capture entire resource manifest file content
-		manifests, err := ws.processMarkers(filepath.Join(filepath.Dir(workloadPath), manifestFile), specFields)
+		manifests, err := ws.processMarkers(filepath.Join(filepath.Dir(workloadPath), manifestFile))
 		if err != nil {
 			return err
-		}
-
-		if collection && !collectionResources {
-			continue
 		}
 
 		// determine sourceFile filename
@@ -131,17 +133,13 @@ func (ws *WorkloadSpec) processManifests(workloadPath string, collection, collec
 		*ws.SourceFiles = append(*ws.SourceFiles, sourceFile)
 	}
 
-	for _, v := range specFields {
-		ws.APISpecFields = append(ws.APISpecFields, v)
-	}
-
 	// ensure no duplicate file names exist within the source files
 	ws.deduplicateFileNames()
 
 	return nil
 }
 
-func (ws *WorkloadSpec) processMarkers(manifestFile string, specFields map[string]*APISpecField) ([]string, error) {
+func (ws *WorkloadSpec) processMarkers(manifestFile string) ([]string, error) {
 	// capture entire resource manifest file content
 	manifestContent, err := ioutil.ReadFile(manifestFile)
 	if err != nil {
@@ -166,13 +164,16 @@ func (ws *WorkloadSpec) processMarkers(manifestFile string, specFields map[strin
 			return nil, formatProcessError(manifestFile, err)
 		}
 
-		buf.WriteString("---\n")
-		buf.Write(m)
+		mustWrite(buf.WriteString("---\n"))
+		mustWrite(buf.Write(m))
 	}
 
 	manifestContent = buf.Bytes()
 
-	ws.processMarkerResults(markerResults, specFields)
+	err = ws.processMarkerResults(markerResults)
+	if err != nil {
+		return nil, formatProcessError(manifestFile, err)
+	}
 
 	// If processing manifests for collection resources there is no case
 	// where there should be collection markers - they will result in
@@ -188,29 +189,75 @@ func (ws *WorkloadSpec) processMarkers(manifestFile string, specFields map[strin
 	return manifests, nil
 }
 
-func (ws *WorkloadSpec) processMarkerResults(markerResults []*inspect.YAMLResult, specFields map[string]*APISpecField) {
+func (ws *WorkloadSpec) processMarkerResults(markerResults []*inspect.YAMLResult) error {
 	for _, markerResult := range markerResults {
+		var defaultFound bool
+
+		var sampleVal interface{}
+
 		switch r := markerResult.Object.(type) {
 		case FieldMarker:
 			if ws.collection && !ws.collectionResources {
 				continue
 			}
 
-			specField := r.ExtractSpecField()
+			comments := []string{}
 
-			specFields[r.Name] = specField
+			if r.Description != nil {
+				comments = append(comments, strings.Split(*r.Description, "\n")...)
+			}
+
+			if r.Default != nil {
+				defaultFound = true
+				sampleVal = r.Default
+			} else {
+				sampleVal = r.originalValue
+			}
+
+			if err := ws.APISpecFields.AddField(
+				r.Name,
+				r.Type,
+				comments,
+				sampleVal,
+				defaultFound,
+			); err != nil {
+				return err
+			}
+
 		case CollectionFieldMarker:
 			if !ws.collection {
 				continue
 			}
 
-			specField := r.ExtractSpecField()
+			comments := []string{}
 
-			specFields[r.Name] = specField
+			if r.Description != nil {
+				comments = append(comments, strings.Split(*r.Description, "\n")...)
+			}
+
+			if r.Default != nil {
+				defaultFound = true
+				sampleVal = r.Default
+			} else {
+				sampleVal = r.originalValue
+			}
+
+			if err := ws.APISpecFields.AddField(
+				r.Name,
+				r.Type,
+				comments,
+				sampleVal,
+				defaultFound,
+			); err != nil {
+				return err
+			}
+
 		default:
 			continue
 		}
 	}
+
+	return nil
 }
 
 // deduplicateFileNames dedeplicates the names of the files.  This is because

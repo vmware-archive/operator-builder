@@ -166,7 +166,7 @@ func (c *ComponentWorkload) GetFuncNames() (createFuncNames, initFuncNames []str
 	return getFuncNames(*c.GetSourceFiles())
 }
 
-func (c *ComponentWorkload) GetAPISpecFields() []*APISpecField {
+func (c *ComponentWorkload) GetAPISpecFields() *APIFields {
 	return c.Spec.APISpecFields
 }
 
