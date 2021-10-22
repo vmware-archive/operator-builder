@@ -14,6 +14,13 @@ import (
 	"github.com/vmware-tanzu-labs/operator-builder/internal/markers/marker"
 )
 
+const (
+	FieldMarkerType MarkerType = iota
+	CollectionMarkerType
+)
+
+type MarkerType int
+
 type FieldMarker struct {
 	Name          string
 	Type          FieldType
@@ -43,7 +50,7 @@ func (cfm CollectionFieldMarker) String() string {
 	)
 }
 
-func InitializeMarkerInspector() (*inspect.Inspector, error) {
+func InitializeMarkerInspector(markerTypes ...MarkerType) (*inspect.Inspector, error) {
 	registry := marker.NewRegistry()
 
 	fieldMarker, err := marker.Define("+operator-builder:field", FieldMarker{})
@@ -56,8 +63,14 @@ func InitializeMarkerInspector() (*inspect.Inspector, error) {
 		return nil, fmt.Errorf("%w", err)
 	}
 
-	registry.Add(fieldMarker)
-	registry.Add(collectionMarker)
+	for _, markerType := range markerTypes {
+		switch markerType {
+		case FieldMarkerType:
+			registry.Add(fieldMarker)
+		case CollectionMarkerType:
+			registry.Add(collectionMarker)
+		}
+	}
 
 	return inspect.NewInspector(registry), nil
 }
@@ -136,4 +149,14 @@ func TransformYAML(results ...*inspect.YAMLResult) error {
 	}
 
 	return nil
+}
+
+func containsMarkerType(s []MarkerType, e MarkerType) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+
+	return false
 }

@@ -38,13 +38,11 @@ type WorkloadShared struct {
 
 // WorkloadSpec contains information required to generate source code.
 type WorkloadSpec struct {
-	Resources           []string `json:"resources" yaml:"resources"`
-	APISpecFields       *APIFields
-	SourceFiles         *[]SourceFile
-	RBACRules           *RBACRules
-	OwnershipRules      *OwnershipRules
-	collection          bool
-	collectionResources bool
+	Resources      []string `json:"resources" yaml:"resources"`
+	APISpecFields  *APIFields
+	SourceFiles    *[]SourceFile
+	RBACRules      *RBACRules
+	OwnershipRules *OwnershipRules
 }
 
 func (ws *WorkloadSpec) init() {
@@ -60,15 +58,12 @@ func (ws *WorkloadSpec) init() {
 	ws.SourceFiles = &[]SourceFile{}
 }
 
-func (ws *WorkloadSpec) processManifests(workloadPath string, collection, collectionResources bool) error {
+func (ws *WorkloadSpec) processManifests(workloadPath string, markerTypes ...MarkerType) error {
 	ws.init()
-
-	ws.collection = collection
-	ws.collectionResources = collectionResources
 
 	for _, manifestFile := range ws.Resources {
 		// capture entire resource manifest file content
-		manifests, err := ws.processMarkers(filepath.Join(filepath.Dir(workloadPath), manifestFile))
+		manifests, err := ws.processMarkers(filepath.Join(filepath.Dir(workloadPath), manifestFile), markerTypes...)
 		if err != nil {
 			return err
 		}
@@ -139,14 +134,14 @@ func (ws *WorkloadSpec) processManifests(workloadPath string, collection, collec
 	return nil
 }
 
-func (ws *WorkloadSpec) processMarkers(manifestFile string) ([]string, error) {
+func (ws *WorkloadSpec) processMarkers(manifestFile string, markerTypes ...MarkerType) ([]string, error) {
 	// capture entire resource manifest file content
 	manifestContent, err := ioutil.ReadFile(manifestFile)
 	if err != nil {
 		return nil, formatProcessError(manifestFile, err)
 	}
 
-	insp, err := InitializeMarkerInspector()
+	insp, err := InitializeMarkerInspector(markerTypes...)
 	if err != nil {
 		return nil, formatProcessError(manifestFile, err)
 	}
@@ -179,7 +174,7 @@ func (ws *WorkloadSpec) processMarkers(manifestFile string) ([]string, error) {
 	// where there should be collection markers - they will result in
 	// code that won't compile.  We will convert collection markers to
 	// field markers for the sake of UX.
-	if ws.collection && ws.collectionResources {
+	if containsMarkerType(markerTypes, FieldMarkerType) && containsMarkerType(markerTypes, CollectionMarkerType) {
 		// find & replace collection markers with field markers
 		manifestContent = []byte(strings.ReplaceAll(string(manifestContent), "!!var collection", "!!var parent"))
 	}
@@ -197,10 +192,6 @@ func (ws *WorkloadSpec) processMarkerResults(markerResults []*inspect.YAMLResult
 
 		switch r := markerResult.Object.(type) {
 		case FieldMarker:
-			if ws.collection && !ws.collectionResources {
-				continue
-			}
-
 			comments := []string{}
 
 			if r.Description != nil {
@@ -225,10 +216,6 @@ func (ws *WorkloadSpec) processMarkerResults(markerResults []*inspect.YAMLResult
 			}
 
 		case CollectionFieldMarker:
-			if !ws.collection {
-				continue
-			}
-
 			comments := []string{}
 
 			if r.Description != nil {

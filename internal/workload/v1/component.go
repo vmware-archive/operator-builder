@@ -134,7 +134,7 @@ func (*ComponentWorkload) IsCollection() bool {
 }
 
 func (c *ComponentWorkload) SetResources(workloadPath string) error {
-	err := c.Spec.processManifests(workloadPath, false, false)
+	err := c.Spec.processManifests(workloadPath, FieldMarkerType)
 	if err != nil {
 		return err
 	}

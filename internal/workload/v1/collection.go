@@ -163,18 +163,15 @@ func (c *WorkloadCollection) IsCollection() bool {
 }
 
 func (c *WorkloadCollection) SetResources(workloadPath string) error {
-	err := c.Spec.processManifests(workloadPath, true, true)
+	err := c.Spec.processManifests(workloadPath, FieldMarkerType, CollectionMarkerType)
 	if err != nil {
 		return err
 	}
 
-	c.Spec.collection = true
-	c.Spec.collectionResources = false
-
 	for _, cpt := range c.Spec.Components {
 		for _, csr := range cpt.Spec.Resources {
 			// add to spec fields if not present
-			_, err := c.Spec.processMarkers(filepath.Join(filepath.Dir(cpt.Spec.ConfigPath), csr))
+			_, err := c.Spec.processMarkers(filepath.Join(filepath.Dir(cpt.Spec.ConfigPath), csr), CollectionMarkerType)
 			if err != nil {
 				return err
 			}
