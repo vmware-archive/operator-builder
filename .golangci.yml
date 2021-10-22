@@ -153,6 +153,8 @@ issues:
     - linters:
         - gocritic
       text: "unnecessaryDefer:"
+  exclude:
+    - 'declaration of "(err|ctx)" shadows declaration at'
 
 run:
   skip-dirs:
