@@ -42,9 +42,11 @@ func (ws *WorkloadSpec) Init() {
 func (ws *WorkloadSpec) processManifests(workloadPath string, collection, collectionResources bool) error {
 	ws.Init()
 
+	specFields := make(map[string]*APISpecField)
+
 	for _, manifestFile := range ws.Resources {
 		// capture entire resource manifest file content
-		manifests, err := ws.processMarkers(filepath.Join(filepath.Dir(workloadPath), manifestFile))
+		manifests, err := ws.processMarkers(filepath.Join(filepath.Dir(workloadPath), manifestFile), specFields)
 		if err != nil {
 			return err
 		}
@@ -113,13 +115,17 @@ func (ws *WorkloadSpec) processManifests(workloadPath string, collection, collec
 		*ws.SourceFiles = append(*ws.SourceFiles, sourceFile)
 	}
 
+	for _, v := range specFields {
+		ws.APISpecFields = append(ws.APISpecFields, v)
+	}
+
 	// ensure no duplicate file names exist within the source files
 	ws.deduplicateFileNames()
 
 	return nil
 }
 
-func (ws *WorkloadSpec) processMarkers(manifestFile string) ([]string, error) {
+func (ws *WorkloadSpec) processMarkers(manifestFile string, specFields map[string]*APISpecField) ([]string, error) {
 	// capture entire resource manifest file content
 	manifestContent, err := ioutil.ReadFile(manifestFile)
 	if err != nil {
@@ -150,7 +156,7 @@ func (ws *WorkloadSpec) processMarkers(manifestFile string) ([]string, error) {
 
 	manifestContent = buf.Bytes()
 
-	ws.processMarkerResults(markerResults)
+	ws.processMarkerResults(markerResults, specFields)
 
 	// If processing manifests for collection resources there is no case
 	// where there should be collection markers - they will result in
@@ -166,9 +172,7 @@ func (ws *WorkloadSpec) processMarkers(manifestFile string) ([]string, error) {
 	return manifests, nil
 }
 
-func (ws *WorkloadSpec) processMarkerResults(markerResults []*inspect.YAMLResult) {
-	specFields := make(map[string]*APISpecField)
-
+func (ws *WorkloadSpec) processMarkerResults(markerResults []*inspect.YAMLResult, specFields map[string]*APISpecField) {
 	for _, markerResult := range markerResults {
 		switch r := markerResult.Object.(type) {
 		case FieldMarker:
@@ -190,10 +194,6 @@ func (ws *WorkloadSpec) processMarkerResults(markerResults []*inspect.YAMLResult
 		default:
 			continue
 		}
-	}
-
-	for _, v := range specFields {
-		ws.APISpecFields = append(ws.APISpecFields, v)
 	}
 }
 
