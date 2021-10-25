@@ -17,12 +17,20 @@ import (
 var (
 	ErrNamesMustBeUnique   = errors.New("each workload name must be unique")
 	ErrConfigMustExist     = errors.New("no workload config provided - workload config required")
-	ErrInvalidKind         = errors.New("unrecognized workload kind in workload config")
 	ErrMultipleConfigs     = errors.New("multiple configs found - please provide only one standalone or collection workload")
 	ErrCollectionRequired  = errors.New("a WorkloadCollection is required when using WorkloadComponents")
 	ErrMissingWorkload     = errors.New("could not find either standalone or collection workload, please provide one")
 	ErrMissingDependencies = errors.New("missing dependencies - no workload config provided")
 )
+
+const PluginConfigKey = "operatorBuilder"
+
+// PluginConfig contains the project config values which are stored in the
+// PROJECT file under plugins.operatorBuilder.
+type PluginConfig struct {
+	WorkloadConfigPath string `json:"workloadConfigPath" yaml:"workloadConfigPath"`
+	CliRootCommandName string `json:"cliRootCommandName" yaml:"cliRootCommandName"`
+}
 
 func ProcessInitConfig(workloadConfig string) (WorkloadInitializer, error) {
 	workloads, err := parseConfig(workloadConfig)

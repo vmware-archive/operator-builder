@@ -75,7 +75,7 @@ linters:
     - durationcheck
     - errcheck
     - errorlint
-    - exhaustive
+    # - exhaustive
     # - exhaustivestruct
     - exportloopref
     - forbidigo

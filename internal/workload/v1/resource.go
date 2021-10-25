@@ -5,44 +5,30 @@ package v1
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
+
+	"github.com/vmware-tanzu-labs/operator-builder/internal/utils"
 )
 
-const (
-	coreRBACGroup = "core"
-)
-
-func defaultResourceVerbs() []string {
-	return []string{
-		"get", "list", "watch", "create", "update", "patch", "delete",
-	}
+// SourceFile represents a golang source code file that contains one or more
+// child resource objects.
+type SourceFile struct {
+	Filename  string
+	Children  []ChildResource
+	HasStatic bool
 }
 
-func coreAPIs() []string {
-	return []string{
-		"apps", "batch", "autoscaling", "extensions", "policy",
-	}
-}
-
-func isCoreAPI(group string) bool {
-	// return if the group is missing or labeled as core
-	if group == "" || group == "core" {
-		return true
-	}
-
-	// return if the group contains the kubernetes api group strings
-	if strings.Contains(group, "k8s.io") || strings.Contains(group, "kubernetes.io") {
-		return true
-	}
-
-	// loop through known groups and return true if found
-	for _, coreGroup := range coreAPIs() {
-		if group == coreGroup {
-			return true
-		}
-	}
-
-	return false
+// ChildResource contains attributes for resources created by the custom resource.
+// These definitions are inferred from the resource manifests.
+type ChildResource struct {
+	Name          string
+	UniqueName    string
+	Group         string
+	Version       string
+	Kind          string
+	StaticContent string
+	SourceCode    string
 }
 
 func extractManifests(manifestContent []byte) []string {
@@ -70,20 +56,6 @@ func extractManifests(manifestContent []byte) []string {
 	return manifests
 }
 
-func versionGroupFromAPIVersion(apiVersion string) (version, group string) {
-	apiVersionElements := strings.Split(apiVersion, "/")
-
-	if len(apiVersionElements) == 1 {
-		version = apiVersionElements[0]
-		group = coreRBACGroup
-	} else {
-		version = apiVersionElements[1]
-		group = rbacGroupFromGroup(apiVersionElements[0])
-	}
-
-	return version, group
-}
-
 func getFuncNames(sourceFiles []SourceFile) (createFuncNames, initFuncNames []string) {
 	for _, sourceFile := range sourceFiles {
 		for _, childResource := range sourceFile.Children {
@@ -98,4 +70,14 @@ func getFuncNames(sourceFiles []SourceFile) (createFuncNames, initFuncNames []st
 	}
 
 	return createFuncNames, initFuncNames
+}
+
+func determineSourceFileName(manifestFile string) SourceFile {
+	var sourceFile SourceFile
+	sourceFile.Filename = filepath.Base(manifestFile)                // get filename from path
+	sourceFile.Filename = strings.Split(sourceFile.Filename, ".")[0] // strip ".yaml"
+	sourceFile.Filename += ".go"                                     // add correct file ext
+	sourceFile.Filename = utils.ToFileName(sourceFile.Filename)      // kebab-case to snake_case
+
+	return sourceFile
 }

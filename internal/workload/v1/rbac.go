@@ -10,6 +10,10 @@ import (
 	"sigs.k8s.io/kubebuilder/v3/pkg/model/resource"
 )
 
+const (
+	coreRBACGroup = "core"
+)
+
 // RBACRule contains the info needed to create the kubebuilder:rbac markers in
 // the controller.
 type RBACRule struct {
@@ -172,5 +176,11 @@ func (rs *RBACRules) addRulesForManifest(kind, group string, rawContent interfac
 				}
 			}
 		}
+	}
+}
+
+func defaultResourceVerbs() []string {
+	return []string{
+		"get", "list", "watch", "create", "update", "patch", "delete",
 	}
 }

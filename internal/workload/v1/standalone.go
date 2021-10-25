@@ -18,6 +18,19 @@ const (
 
 var ErrNoComponentsOnStandalone = errors.New("cannot set component workloads on a component workload - only on collections")
 
+// StandaloneWorkloadSpec defines the attributes for a standalone workload.
+type StandaloneWorkloadSpec struct {
+	API                 WorkloadAPISpec `json:"api" yaml:"api"`
+	CompanionCliRootcmd CliCommand      `json:"companionCliRootcmd" yaml:"companionCliRootcmd" validate:"omitempty"`
+	WorkloadSpec        `yaml:",inline"`
+}
+
+// StandaloneWorkload defines a standalone workload.
+type StandaloneWorkload struct {
+	WorkloadShared `yaml:",inline"`
+	Spec           StandaloneWorkloadSpec `json:"spec" yaml:"spec" validate:"required"`
+}
+
 func (s *StandaloneWorkload) Validate() error {
 	missingFields := []string{}
 

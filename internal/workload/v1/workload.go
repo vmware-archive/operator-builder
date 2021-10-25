@@ -20,6 +20,22 @@ import (
 	"github.com/vmware-tanzu-labs/operator-builder/internal/markers/inspect"
 )
 
+// WorkloadAPISpec contains fields shared by all workload specs.
+type WorkloadAPISpec struct {
+	Domain        string `json:"domain" yaml:"domain"`
+	Group         string `json:"group" yaml:"group"`
+	Version       string `json:"version" yaml:"version"`
+	Kind          string `json:"kind" yaml:"kind"`
+	ClusterScoped bool   `json:"clusterScoped" yaml:"clusterScoped"`
+}
+
+// WorkloadShared contains fields shared by all workloads.
+type WorkloadShared struct {
+	Name        string       `json:"name"  yaml:"name" validate:"required"`
+	Kind        WorkloadKind `json:"kind"  yaml:"kind" validate:"required"`
+	PackageName string
+}
+
 // WorkloadSpec contains information required to generate source code.
 type WorkloadSpec struct {
 	Resources           []string `json:"resources" yaml:"resources"`
@@ -31,7 +47,7 @@ type WorkloadSpec struct {
 	collectionResources bool
 }
 
-func (ws *WorkloadSpec) Init() {
+func (ws *WorkloadSpec) init() {
 	ws.APISpecFields = []*APISpecField{}
 
 	ws.OwnershipRules = &OwnershipRules{}
@@ -40,7 +56,7 @@ func (ws *WorkloadSpec) Init() {
 }
 
 func (ws *WorkloadSpec) processManifests(workloadPath string, collection, collectionResources bool) error {
-	ws.Init()
+	ws.init()
 
 	specFields := make(map[string]*APISpecField)
 
@@ -229,4 +245,31 @@ func (ws *WorkloadSpec) deduplicateFileNames() {
 
 		fileNames[i] = sourceFile.Filename
 	}
+}
+
+func formatProcessError(manifestFile string, err error) error {
+	return fmt.Errorf("error processing file %s; %w", manifestFile, err)
+}
+
+func generateUniqueResourceName(object unstructured.Unstructured) string {
+	resourceName := strings.Replace(strings.Title(object.GetName()), "-", "", -1)
+	resourceName = strings.Replace(resourceName, ".", "", -1)
+	resourceName = strings.Replace(resourceName, ":", "", -1)
+	resourceName = fmt.Sprintf("%s%s", object.GetKind(), resourceName)
+
+	return resourceName
+}
+
+func versionGroupFromAPIVersion(apiVersion string) (version, group string) {
+	apiVersionElements := strings.Split(apiVersion, "/")
+
+	if len(apiVersionElements) == 1 {
+		version = apiVersionElements[0]
+		group = coreRBACGroup
+	} else {
+		version = apiVersionElements[1]
+		group = rbacGroupFromGroup(apiVersionElements[0])
+	}
+
+	return version, group
 }

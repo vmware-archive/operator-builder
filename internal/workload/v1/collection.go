@@ -20,6 +20,22 @@ const (
 
 var ErrMissingRequiredFields = errors.New("missing required fields")
 
+// WorkloadCollectionSpec defines the attributes for a workload collection.
+type WorkloadCollectionSpec struct {
+	API                 WorkloadAPISpec `json:"api" yaml:"api"`
+	CompanionCliRootcmd CliCommand      `json:"companionCliRootcmd" yaml:"companionCliRootcmd" validate:"omitempty"`
+	CompanionCliSubcmd  CliCommand      `json:"companionCliSubcmd" yaml:"companionCliSubcmd" validate:"omitempty"`
+	ComponentFiles      []string        `json:"componentFiles" yaml:"componentFiles"`
+	Components          []*ComponentWorkload
+	WorkloadSpec        `yaml:",inline"`
+}
+
+// WorkloadCollection defines a workload collection.
+type WorkloadCollection struct {
+	WorkloadShared `yaml:",inline"`
+	Spec           WorkloadCollectionSpec `json:"spec" yaml:"spec" validate:"required"`
+}
+
 func (c *WorkloadCollection) Validate() error {
 	missingFields := []string{}
 
