@@ -344,6 +344,122 @@ func TestLexer(t *testing.T) {
 				{Type: lexer.LexemeEOF, Value: ""},
 			},
 		},
+		{
+			name:  "simple string slice",
+			input: `+operator-builder:slice={"hello","world"}`,
+			expected: []lexer.Lexeme{
+				{Type: lexer.LexemeMarkerStart, Value: "+"},
+				{Type: lexer.LexemeScope, Value: "operator-builder"},
+				{Type: lexer.LexemeSeparator, Value: ":"},
+				{Type: lexer.LexemeArg, Value: "slice"},
+				{Type: lexer.LexemeSliceBegin, Value: "{"},
+				{Type: lexer.LexemeStringLiteral, Value: "hello"},
+				{Type: lexer.LexemeSliceDelimiter, Value: ","},
+				{Type: lexer.LexemeStringLiteral, Value: "world"},
+				{Type: lexer.LexemeSliceEnd, Value: "}"},
+				{Type: lexer.LexemeMarkerEnd, Value: "\n"},
+				{Type: lexer.LexemeEOF, Value: ""},
+			},
+		},
+		{
+			name:  "simple int slice",
+			input: `+operator-builder:slice={1,2}`,
+			expected: []lexer.Lexeme{
+				{Type: lexer.LexemeMarkerStart, Value: "+"},
+				{Type: lexer.LexemeScope, Value: "operator-builder"},
+				{Type: lexer.LexemeSeparator, Value: ":"},
+				{Type: lexer.LexemeArg, Value: "slice"},
+				{Type: lexer.LexemeSliceBegin, Value: "{"},
+				{Type: lexer.LexemeIntegerLiteral, Value: "1"},
+				{Type: lexer.LexemeSliceDelimiter, Value: ","},
+				{Type: lexer.LexemeIntegerLiteral, Value: "2"},
+				{Type: lexer.LexemeSliceEnd, Value: "}"},
+				{Type: lexer.LexemeMarkerEnd, Value: "\n"},
+				{Type: lexer.LexemeEOF, Value: ""},
+			},
+		},
+		{
+			name:  "simple bool slice",
+			input: `+operator-builder:slice={true,false}`,
+			expected: []lexer.Lexeme{
+				{Type: lexer.LexemeMarkerStart, Value: "+"},
+				{Type: lexer.LexemeScope, Value: "operator-builder"},
+				{Type: lexer.LexemeSeparator, Value: ":"},
+				{Type: lexer.LexemeArg, Value: "slice"},
+				{Type: lexer.LexemeSliceBegin, Value: "{"},
+				{Type: lexer.LexemeBoolLiteral, Value: "true"},
+				{Type: lexer.LexemeSliceDelimiter, Value: ","},
+				{Type: lexer.LexemeBoolLiteral, Value: "false"},
+				{Type: lexer.LexemeSliceEnd, Value: "}"},
+				{Type: lexer.LexemeMarkerEnd, Value: "\n"},
+				{Type: lexer.LexemeEOF, Value: ""},
+			},
+		},
+		{
+			name:  "simple mixed slice",
+			input: `+operator-builder:slice={"Hello",1,false}`,
+			expected: []lexer.Lexeme{
+				{Type: lexer.LexemeMarkerStart, Value: "+"},
+				{Type: lexer.LexemeScope, Value: "operator-builder"},
+				{Type: lexer.LexemeSeparator, Value: ":"},
+				{Type: lexer.LexemeArg, Value: "slice"},
+				{Type: lexer.LexemeSliceBegin, Value: "{"},
+				{Type: lexer.LexemeStringLiteral, Value: "Hello"},
+				{Type: lexer.LexemeSliceDelimiter, Value: ","},
+				{Type: lexer.LexemeIntegerLiteral, Value: "1"},
+				{Type: lexer.LexemeSliceDelimiter, Value: ","},
+				{Type: lexer.LexemeBoolLiteral, Value: "false"},
+				{Type: lexer.LexemeSliceEnd, Value: "}"},
+				{Type: lexer.LexemeMarkerEnd, Value: "\n"},
+				{Type: lexer.LexemeEOF, Value: ""},
+			},
+		},
+		{
+			name:  "empty slice",
+			input: `+operator-builder:slice={}`,
+			expected: []lexer.Lexeme{
+				{Type: lexer.LexemeMarkerStart, Value: "+"},
+				{Type: lexer.LexemeScope, Value: "operator-builder"},
+				{Type: lexer.LexemeSeparator, Value: ":"},
+				{Type: lexer.LexemeArg, Value: "slice"},
+				{Type: lexer.LexemeSliceBegin, Value: "{"},
+				{Type: lexer.LexemeSliceEnd, Value: "}"},
+				{Type: lexer.LexemeMarkerEnd, Value: "\n"},
+				{Type: lexer.LexemeEOF, Value: ""},
+			},
+		},
+		{
+			name:  "incomplete slice",
+			input: `+operator-builder:slice={"hello","world"`,
+			expected: []lexer.Lexeme{
+				{Type: lexer.LexemeMarkerStart, Value: "+"},
+				{Type: lexer.LexemeScope, Value: "operator-builder"},
+				{Type: lexer.LexemeSeparator, Value: ":"},
+				{Type: lexer.LexemeArg, Value: "slice"},
+				{Type: lexer.LexemeSliceBegin, Value: "{"},
+				{Type: lexer.LexemeStringLiteral, Value: "hello"},
+				{Type: lexer.LexemeSliceDelimiter, Value: ","},
+				{Type: lexer.LexemeStringLiteral, Value: "world"},
+				{Type: lexer.LexemeError, Value: "malformed slice:  at position: {line:1 column:41}, following \"world\""},
+			},
+		},
+		{
+			name:  "incomplete slice in args",
+			input: `+operator-builder:slice={"hello","world",test=newArg`,
+			expected: []lexer.Lexeme{
+				{Type: lexer.LexemeMarkerStart, Value: "+"},
+				{Type: lexer.LexemeScope, Value: "operator-builder"},
+				{Type: lexer.LexemeSeparator, Value: ":"},
+				{Type: lexer.LexemeArg, Value: "slice"},
+				{Type: lexer.LexemeSliceBegin, Value: "{"},
+				{Type: lexer.LexemeStringLiteral, Value: "hello"},
+				{Type: lexer.LexemeSliceDelimiter, Value: ","},
+				{Type: lexer.LexemeStringLiteral, Value: "world"},
+				{Type: lexer.LexemeSliceDelimiter, Value: ","},
+				{Type: lexer.LexemeStringLiteral, Value: "test"},
+				{Type: lexer.LexemeError, Value: "malformed slice:  at position: {line:1 column:46}, following \"test\""},
+			},
+		},
 	}
 
 	focused := false
@@ -376,7 +492,7 @@ func TestLexer(t *testing.T) {
 				}
 
 				actual = append(actual, testLexeme)
-				if lexeme.Type == lexer.LexemeEOF {
+				if lexeme.Type == lexer.LexemeEOF || lexeme.Type == lexer.LexemeError {
 					break
 				}
 			}
@@ -385,6 +501,6 @@ func TestLexer(t *testing.T) {
 	}
 
 	if focused {
-		t.Fatalf("testcase(s) still focussed")
+		t.Fatalf("testcase(s) still focused")
 	}
 }

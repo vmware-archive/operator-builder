@@ -76,10 +76,6 @@ func InitializeMarkerInspector(markerTypes ...MarkerType) (*inspect.Inspector, e
 }
 
 func TransformYAML(results ...*inspect.YAMLResult) error {
-	const varTag = "!!var"
-
-	const strTag = "!!str"
-
 	var key *yaml.Node
 
 	var value *yaml.Node
@@ -99,49 +95,33 @@ func TransformYAML(results ...*inspect.YAMLResult) error {
 
 		switch t := r.Object.(type) {
 		case FieldMarker:
-			if t.Description != nil {
-				*t.Description = strings.TrimPrefix(*t.Description, "\n")
-				key.HeadComment = "# " + *t.Description + ", controlled by " + t.Name
+			setDescription(key, t.Description, t.Name)
+
+			originalValue, err := getOrginalValue(value)
+			if err != nil {
+				return fmt.Errorf("unable to get original value, %w", err)
 			}
 
-			t.originalValue = value.Value
+			t.originalValue = originalValue
 
-			if t.Replace != nil {
-				value.Tag = strTag
-
-				re, err := regexp.Compile(*t.Replace)
-				if err != nil {
-					return fmt.Errorf("unable to convert %s to regex, %w", *t.Replace, err)
-				}
-
-				value.Value = re.ReplaceAllString(value.Value, fmt.Sprintf("!!start parent.Spec.%s !!end", strings.Title((t.Name))))
-			} else {
-				value.Tag = varTag
-				value.Value = fmt.Sprintf("parent.Spec." + strings.Title(t.Name))
+			if err := insertVariable(value, t.Name, "parent", t.Replace); err != nil {
+				return err
 			}
 
 			r.Object = t
 
 		case CollectionFieldMarker:
-			if t.Description != nil {
-				*t.Description = strings.TrimPrefix(*t.Description, "\n")
-				key.HeadComment = "# " + *t.Description + ", controlled by " + t.Name
+			setDescription(key, t.Description, t.Name)
+
+			originalValue, err := getOrginalValue(value)
+			if err != nil {
+				return fmt.Errorf("unable to get original value, %w", err)
 			}
 
-			t.originalValue = value.Value
+			t.originalValue = originalValue
 
-			if t.Replace != nil {
-				value.Tag = strTag
-
-				re, err := regexp.Compile(*t.Replace)
-				if err != nil {
-					return fmt.Errorf("unable to convert %s to regex, %w", *t.Replace, err)
-				}
-
-				value.Value = re.ReplaceAllString(value.Value, fmt.Sprintf("!!start collection.Spec.%s !!end", strings.Title((t.Name))))
-			} else {
-				value.Tag = varTag
-				value.Value = fmt.Sprintf("collection.Spec." + strings.Title(t.Name))
+			if err := insertVariable(value, t.Name, "collection", t.Replace); err != nil {
+				return err
 			}
 
 			r.Object = t
@@ -159,4 +139,50 @@ func containsMarkerType(s []MarkerType, e MarkerType) bool {
 	}
 
 	return false
+}
+
+func insertVariable(value *yaml.Node, name, root string, replace *string) error {
+	const varTag = "!!var"
+
+	if replace != nil {
+		re, err := regexp.Compile(*replace)
+		if err != nil {
+			return fmt.Errorf("unable to convert %s to regex, %w", *replace, err)
+		}
+
+		b, _ := yaml.Marshal(value)
+
+		newContent := re.ReplaceAllString(string(b), fmt.Sprintf("!!start %s.Spec.%s !!end", root, strings.Title((name))))
+
+		var newNode *yaml.Node
+
+		if err := yaml.Unmarshal([]byte(newContent), newNode); err != nil {
+			return fmt.Errorf("unable to replace content, %w", err)
+		}
+
+		*value = *newNode.Content[0]
+	} else {
+		value.Tag = varTag
+		value.Kind = yaml.ScalarNode
+		value.Value = fmt.Sprintf("%s.Spec.%s", root, strings.Title(name))
+		value.Content = nil
+	}
+
+	return nil
+}
+
+func getOrginalValue(value *yaml.Node) (interface{}, error) {
+	var v interface{}
+	if err := value.Decode(&v); err != nil {
+		return nil, fmt.Errorf("unable to decode value, %w", err)
+	}
+
+	return v, nil
+}
+
+func setDescription(key *yaml.Node, description *string, name string) {
+	if description != nil {
+		*description = strings.TrimPrefix(*description, "\n")
+		key.HeadComment = "# " + *description + ", controlled by " + name
+	}
 }

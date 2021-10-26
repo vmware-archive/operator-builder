@@ -5,6 +5,7 @@ package v1
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -93,7 +94,10 @@ func (api *APIFields) GenerateSampleSpec() string {
 }
 
 func (api *APIFields) generateSampleSpec(b io.StringWriter, indent int) {
-	mustWrite(b.WriteString(fmt.Sprintf("%s%s\n", strings.Repeat("  ", indent), api.Sample)))
+	lines := strings.Split(api.Sample, "\n")
+	for _, line := range lines {
+		mustWrite(b.WriteString(fmt.Sprintf("%s%s\n", strings.Repeat("  ", indent), line)))
+	}
 
 	for _, child := range api.Children {
 		child.generateSampleSpec(b, indent+1)
@@ -201,6 +205,9 @@ func (api *APIFields) setSample(sampleVal interface{}) {
 		api.Sample = fmt.Sprintf("%s: %q", api.manifestName, sampleVal)
 	case FieldStruct:
 		api.Sample = fmt.Sprintf("%s:", api.manifestName)
+	case FieldSliceString, FieldSliceInt, FieldSliceBool:
+		b, _ := json.Marshal(sampleVal)
+		api.Sample = fmt.Sprintf("%s: %s", api.manifestName, b)
 	default:
 		api.Sample = fmt.Sprintf("%s: %v", api.manifestName, sampleVal)
 	}
@@ -208,9 +215,13 @@ func (api *APIFields) setSample(sampleVal interface{}) {
 
 func (api *APIFields) setDefault(sampleVal interface{}, hasDefault bool) {
 	if hasDefault {
-		if api.Type == FieldString {
+		switch api.Type {
+		case FieldString:
 			api.Default = fmt.Sprintf("%q", sampleVal)
-		} else {
+		case FieldSliceString, FieldSliceInt, FieldSliceBool:
+			b, _ := json.Marshal(sampleVal)
+			api.Default = fmt.Sprintf("{%s}", strings.Trim(string(b), "[]"))
+		default:
 			api.Default = fmt.Sprintf("%v", sampleVal)
 		}
 

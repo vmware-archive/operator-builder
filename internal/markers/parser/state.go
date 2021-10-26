@@ -88,6 +88,8 @@ func parseArg(p *Parser) stateFn {
 
 func parseArgValue(p *Parser, argName string) stateFn {
 	switch {
+	case p.consumed(lexer.LexemeSliceBegin):
+		return parseSlice(p, argName)
 	case p.consumed(lexer.LexemeBoolLiteral):
 		b, err := strconv.ParseBool(p.currentLexeme.Value)
 		if err != nil {
@@ -142,4 +144,77 @@ func parseMoreArgs(p *Parser) stateFn {
 	default:
 		return parse
 	}
+}
+
+func parseSlice(p *Parser, argName string) stateFn {
+	switch {
+	case p.peeked(lexer.LexemeBoolLiteral):
+		if err := p.currentDefinition.SetArgument(argName, []bool{}); err != nil {
+			return p.error(err)
+		}
+	case p.peeked(lexer.LexemeIntegerLiteral):
+		if err := p.currentDefinition.SetArgument(argName, []int{}); err != nil {
+			return p.error(err)
+		}
+	case p.peeked(lexer.LexemeStringLiteral):
+		if err := p.currentDefinition.SetArgument(argName, []string{}); err != nil {
+			return p.error(err)
+		}
+	}
+
+	return parseSliceValue(p, argName)
+}
+
+func parseSliceValue(p *Parser, argName string) stateFn {
+	switch {
+	case p.consumed(lexer.LexemeBoolLiteral):
+		b, err := strconv.ParseBool(p.currentLexeme.Value)
+		if err != nil {
+			return p.error(err)
+		}
+
+		if err := p.currentDefinition.AppendArgument(argName, b); err != nil {
+			return p.error(err)
+		}
+	case p.consumed(lexer.LexemeIntegerLiteral):
+		v, err := strconv.Atoi(p.currentLexeme.Value)
+		if err != nil {
+			return p.error(err)
+		}
+
+		if err := p.currentDefinition.AppendArgument(argName, v); err != nil {
+			return p.error(err)
+		}
+	case p.consumed(lexer.LexemeFloatLiteral):
+		const floatSize = 32
+
+		v, err := strconv.ParseFloat(p.currentLexeme.Value, floatSize)
+		if err != nil {
+			return p.error(err)
+		}
+
+		if err := p.currentDefinition.AppendArgument(argName, v); err != nil {
+			return p.error(err)
+		}
+	case p.consumed(lexer.LexemeStringLiteral):
+		if err := p.currentDefinition.AppendArgument(argName, p.currentLexeme.Value); err != nil {
+			return p.error(err)
+		}
+	case p.consumed(lexer.LexemeSliceEnd):
+		return parseMoreArgs
+	}
+
+	return parseMoreSlice(p, argName)
+}
+
+func parseMoreSlice(p *Parser, argName string) stateFn {
+	if p.consumed(lexer.LexemeSliceDelimiter) {
+		return parseSliceValue(p, argName)
+	}
+
+	if p.consumed(lexer.LexemeSliceEnd) {
+		return parseMoreArgs
+	}
+
+	return parse
 }

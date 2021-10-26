@@ -43,6 +43,9 @@ const (
 	literalQuote    = "`"
 	doubleQuote     = `"`
 	singleQuote     = `'`
+	sliceStart      = `{`
+	sliceDelimiter  = `,`
+	sliceEnd        = `}`
 )
 
 func (l Lexeme) String() string {

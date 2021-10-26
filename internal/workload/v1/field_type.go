@@ -17,15 +17,21 @@ const (
 	FieldString
 	FieldInt
 	FieldBool
+	FieldSliceString
+	FieldSliceInt
+	FieldSliceBool
 	FieldStruct
 )
 
 func (f *FieldType) UnmarshalMarkerArg(in string) error {
 	types := map[string]FieldType{
-		"":       FieldUnknownType,
-		"string": FieldString,
-		"int":    FieldInt,
-		"bool":   FieldBool,
+		"":         FieldUnknownType,
+		"string":   FieldString,
+		"int":      FieldInt,
+		"bool":     FieldBool,
+		"[]string": FieldSliceString,
+		"[]int":    FieldSliceInt,
+		"[]bool":   FieldSliceBool,
 	}
 
 	if t, ok := types[in]; ok {
@@ -47,6 +53,9 @@ func (f FieldType) String() string {
 		FieldString:      "string",
 		FieldInt:         "int",
 		FieldBool:        "bool",
+		FieldSliceString: "[]string",
+		FieldSliceInt:    "[]int",
+		FieldSliceBool:   "[]bool",
 		FieldStruct:      "struct",
 	}
 

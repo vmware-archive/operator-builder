@@ -153,6 +153,10 @@ func lexArgs(l *Lexer) stateFn {
 }
 
 func lexArgValueInitial(l *Lexer) stateFn {
+	if l.consumed(sliceStart) {
+		return lexSliceStart
+	}
+
 	if nextState, present := lexStringLiteral(l, lexMoreArgs); present {
 		return nextState
 	}
@@ -285,8 +289,8 @@ func lexBooleanLiteral(l *Lexer, nextState stateFn) (stateFn, bool) {
 func lexNakedStringLiteral(l *Lexer, nextState stateFn) (stateFn, bool) {
 	exceptions := []rune{
 		':', '=', ' ', '"', '\'', '`',
-		',', '+', '{', '}', '[', ']',
-		'(', ')', ';', '\n', eof,
+		',', '+', '{', '}', '(', ')',
+		';', '\n', eof,
 	}
 
 	if argValue := l.consumeUntil(exceptions...); !argValue {
@@ -296,6 +300,57 @@ func lexNakedStringLiteral(l *Lexer, nextState stateFn) (stateFn, bool) {
 	l.emit(LexemeStringLiteral)
 
 	return nextState, true
+}
+
+func lexSliceStart(l *Lexer) stateFn {
+	l.emit(LexemeSliceBegin)
+	l.push(lexSliceEnd)
+
+	return lexSliceValue
+}
+
+func lexSliceValue(l *Lexer) stateFn {
+	if l.peeked(sliceEnd) {
+		return l.pop()
+	}
+
+	if nextState, present := lexStringLiteral(l, lexMoreSlice); present {
+		return nextState
+	}
+
+	if nextState, present := lexNumericLiteral(l, lexMoreSlice); present {
+		return nextState
+	}
+
+	if nextState, present := lexBooleanLiteral(l, lexMoreSlice); present {
+		return nextState
+	}
+
+	if nextState, present := lexNakedStringLiteral(l, lexMoreSlice); present {
+		return nextState
+	}
+
+	return l.errorf("malformed slice: %s", l.buffer)
+}
+
+func lexMoreSlice(l *Lexer) stateFn {
+	if l.consumed(sliceDelimiter) {
+		l.emit(LexemeSliceDelimiter)
+
+		return lexSliceValue
+	}
+
+	return l.pop()
+}
+
+func lexSliceEnd(l *Lexer) stateFn {
+	if l.consumed(sliceEnd) {
+		l.emit(LexemeSliceEnd)
+
+		return lexMoreArgs
+	}
+
+	return l.errorf("malformed slice: %s", l.buffer)
 }
 
 func lexMoreArgs(l *Lexer) stateFn {
