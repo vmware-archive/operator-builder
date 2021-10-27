@@ -150,17 +150,13 @@ func insertVariable(value *yaml.Node, name, root string, replace *string) error 
 			return fmt.Errorf("unable to convert %s to regex, %w", *replace, err)
 		}
 
-		b, _ := yaml.Marshal(value)
-
-		newContent := re.ReplaceAllString(string(b), fmt.Sprintf("!!start %s.Spec.%s !!end", root, strings.Title((name))))
-
-		var newNode *yaml.Node
-
-		if err := yaml.Unmarshal([]byte(newContent), newNode); err != nil {
-			return fmt.Errorf("unable to replace content, %w", err)
+		if value.Content != nil {
+			for _, node := range value.Content {
+				node.Value = re.ReplaceAllString(node.Value, fmt.Sprintf("!!start %s.Spec.%s !!end", root, strings.Title((name))))
+			}
+		} else {
+			value.Value = re.ReplaceAllString(value.Value, fmt.Sprintf("!!start %s.Spec.%s !!end", root, strings.Title((name))))
 		}
-
-		*value = *newNode.Content[0]
 	} else {
 		value.Tag = varTag
 		value.Kind = yaml.ScalarNode
