@@ -134,7 +134,7 @@ func (*ComponentWorkload) IsCollection() bool {
 }
 
 func (c *ComponentWorkload) SetResources(workloadPath string) error {
-	err := c.Spec.processManifests(workloadPath, FieldMarkerType)
+	err := c.Spec.processManifests(FieldMarkerType)
 	if err != nil {
 		return err
 	}
@@ -240,4 +240,14 @@ func (c *ComponentWorkload) GetSubcommands() *[]CliCommand {
 	}
 
 	return &commands
+}
+
+func (c *ComponentWorkload) LoadManifests(workloadPath string) error {
+	for _, r := range c.Spec.Resources {
+		if err := r.loadManifest(workloadPath); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

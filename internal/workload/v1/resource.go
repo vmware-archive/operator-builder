@@ -5,8 +5,11 @@ package v1
 
 import (
 	"fmt"
+	"io/ioutil"
 	"path/filepath"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 
 	"github.com/vmware-tanzu-labs/operator-builder/internal/utils"
 )
@@ -29,6 +32,31 @@ type ChildResource struct {
 	Kind          string
 	StaticContent string
 	SourceCode    string
+}
+
+// Resource represents a single input manifest for a given config.
+type Resource struct {
+	FileName string
+	Content  []byte
+}
+
+func (r *Resource) UnmarshalYAML(node *yaml.Node) error {
+	r.FileName = node.Value
+
+	return nil
+}
+
+func (r *Resource) loadManifest(path string) error {
+	manifestFile := filepath.Join(path, r.FileName)
+
+	manifestContent, err := ioutil.ReadFile(manifestFile)
+	if err != nil {
+		return formatProcessError(manifestFile, err)
+	}
+
+	r.Content = manifestContent
+
+	return nil
 }
 
 func extractManifests(manifestContent []byte) []string {

@@ -158,7 +158,7 @@ func (*StandaloneWorkload) IsCollection() bool {
 }
 
 func (s *StandaloneWorkload) SetResources(workloadPath string) error {
-	err := s.Spec.processManifests(workloadPath, FieldMarkerType)
+	err := s.Spec.processManifests(FieldMarkerType)
 	if err != nil {
 		return err
 	}
@@ -230,4 +230,14 @@ func (s *StandaloneWorkload) SetNames() {
 func (s *StandaloneWorkload) GetSubcommands() *[]CliCommand {
 	// no subcommands for a standalone workload
 	return &[]CliCommand{}
+}
+
+func (s *StandaloneWorkload) LoadManifests(workloadPath string) error {
+	for _, r := range s.Spec.Resources {
+		if err := r.loadManifest(workloadPath); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

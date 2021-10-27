@@ -6,7 +6,6 @@ package v1
 import (
 	"errors"
 	"fmt"
-	"path/filepath"
 
 	"sigs.k8s.io/kubebuilder/v3/pkg/model/resource"
 
@@ -163,7 +162,7 @@ func (c *WorkloadCollection) IsCollection() bool {
 }
 
 func (c *WorkloadCollection) SetResources(workloadPath string) error {
-	err := c.Spec.processManifests(workloadPath, FieldMarkerType, CollectionMarkerType)
+	err := c.Spec.processManifests(FieldMarkerType, CollectionMarkerType)
 	if err != nil {
 		return err
 	}
@@ -171,7 +170,7 @@ func (c *WorkloadCollection) SetResources(workloadPath string) error {
 	for _, cpt := range c.Spec.Components {
 		for _, csr := range cpt.Spec.Resources {
 			// add to spec fields if not present
-			_, err := c.Spec.processMarkers(filepath.Join(filepath.Dir(cpt.Spec.ConfigPath), csr), CollectionMarkerType)
+			err := c.Spec.processMarkers(csr, CollectionMarkerType)
 			if err != nil {
 				return err
 			}
@@ -296,4 +295,14 @@ func (c *WorkloadCollection) GetSubcommands() *[]CliCommand {
 	}
 
 	return &commands
+}
+
+func (c *WorkloadCollection) LoadManifests(workloadPath string) error {
+	for _, r := range c.Spec.Resources {
+		if err := r.loadManifest(workloadPath); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

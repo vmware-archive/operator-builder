@@ -6,8 +6,6 @@ package v1
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
-	"path/filepath"
 	"strings"
 
 	"github.com/vmware-tanzu-labs/object-code-generator-for-k8s/pkg/generate"
@@ -38,7 +36,7 @@ type WorkloadShared struct {
 
 // WorkloadSpec contains information required to generate source code.
 type WorkloadSpec struct {
-	Resources      []string `json:"resources" yaml:"resources"`
+	Resources      []*Resource `json:"resources" yaml:"resources"`
 	APISpecFields  *APIFields
 	SourceFiles    *[]SourceFile
 	RBACRules      *RBACRules
@@ -58,22 +56,21 @@ func (ws *WorkloadSpec) init() {
 	ws.SourceFiles = &[]SourceFile{}
 }
 
-func (ws *WorkloadSpec) processManifests(workloadPath string, markerTypes ...MarkerType) error {
+func (ws *WorkloadSpec) processManifests(markerTypes ...MarkerType) error {
 	ws.init()
 
 	for _, manifestFile := range ws.Resources {
-		// capture entire resource manifest file content
-		manifests, err := ws.processMarkers(filepath.Join(filepath.Dir(workloadPath), manifestFile), markerTypes...)
+		err := ws.processMarkers(manifestFile, markerTypes...)
 		if err != nil {
 			return err
 		}
 
 		// determine sourceFile filename
-		sourceFile := determineSourceFileName(manifestFile)
+		sourceFile := determineSourceFileName(manifestFile.FileName)
 
 		var childResources []ChildResource
 
-		for _, manifest := range manifests {
+		for _, manifest := range extractManifests(manifestFile.Content) {
 			// decode manifest into unstructured data type
 			var manifestObject unstructured.Unstructured
 
@@ -81,7 +78,7 @@ func (ws *WorkloadSpec) processManifests(workloadPath string, markerTypes ...Mar
 
 			err := runtime.DecodeInto(decoder, []byte(manifest), &manifestObject)
 			if err != nil {
-				return formatProcessError(manifestFile, err)
+				return formatProcessError(manifestFile.FileName, err)
 			}
 
 			// generate a unique name for the resource using the kind and name
@@ -109,7 +106,7 @@ func (ws *WorkloadSpec) processManifests(workloadPath string, markerTypes ...Mar
 			// generate the object source code
 			resourceDefinition, err := generate.Generate([]byte(manifest), "resourceObj")
 			if err != nil {
-				return formatProcessError(manifestFile, err)
+				return formatProcessError(manifestFile.FileName, err)
 			}
 
 			// add the source code to the resource
@@ -134,21 +131,15 @@ func (ws *WorkloadSpec) processManifests(workloadPath string, markerTypes ...Mar
 	return nil
 }
 
-func (ws *WorkloadSpec) processMarkers(manifestFile string, markerTypes ...MarkerType) ([]string, error) {
-	// capture entire resource manifest file content
-	manifestContent, err := ioutil.ReadFile(manifestFile)
-	if err != nil {
-		return nil, formatProcessError(manifestFile, err)
-	}
-
+func (ws *WorkloadSpec) processMarkers(manifestFile *Resource, markerTypes ...MarkerType) error {
 	insp, err := InitializeMarkerInspector(markerTypes...)
 	if err != nil {
-		return nil, formatProcessError(manifestFile, err)
+		return formatProcessError(manifestFile.FileName, err)
 	}
 
-	nodes, markerResults, err := insp.InspectYAML(manifestContent, TransformYAML)
+	nodes, markerResults, err := insp.InspectYAML(manifestFile.Content, TransformYAML)
 	if err != nil {
-		return nil, formatProcessError(manifestFile, err)
+		return formatProcessError(manifestFile.FileName, err)
 	}
 
 	buf := bytes.Buffer{}
@@ -156,18 +147,18 @@ func (ws *WorkloadSpec) processMarkers(manifestFile string, markerTypes ...Marke
 	for _, node := range nodes {
 		m, err := yaml.Marshal(node)
 		if err != nil {
-			return nil, formatProcessError(manifestFile, err)
+			return formatProcessError(manifestFile.FileName, err)
 		}
 
 		mustWrite(buf.WriteString("---\n"))
 		mustWrite(buf.Write(m))
 	}
 
-	manifestContent = buf.Bytes()
+	manifestFile.Content = buf.Bytes()
 
 	err = ws.processMarkerResults(markerResults)
 	if err != nil {
-		return nil, formatProcessError(manifestFile, err)
+		return formatProcessError(manifestFile.FileName, err)
 	}
 
 	// If processing manifests for collection resources there is no case
@@ -176,12 +167,10 @@ func (ws *WorkloadSpec) processMarkers(manifestFile string, markerTypes ...Marke
 	// field markers for the sake of UX.
 	if containsMarkerType(markerTypes, FieldMarkerType) && containsMarkerType(markerTypes, CollectionMarkerType) {
 		// find & replace collection markers with field markers
-		manifestContent = []byte(strings.ReplaceAll(string(manifestContent), "!!var collection", "!!var parent"))
+		manifestFile.Content = []byte(strings.ReplaceAll(string(manifestFile.Content), "!!var collection", "!!var parent"))
 	}
 
-	manifests := extractManifests(manifestContent)
-
-	return manifests, nil
+	return nil
 }
 
 func (ws *WorkloadSpec) processMarkerResults(markerResults []*inspect.YAMLResult) error {

@@ -38,10 +38,6 @@ func ProcessInitConfig(workloadConfig string) (WorkloadInitializer, error) {
 		return nil, err
 	}
 
-	if len(workloads[WorkloadKindComponent]) != 0 && len(workloads[WorkloadKindCollection]) != 1 {
-		return nil, fmt.Errorf("no %s found - %w", WorkloadKindCollection, ErrCollectionRequired)
-	}
-
 	var workload WorkloadInitializer
 
 	for k := range workloads {
@@ -62,15 +58,10 @@ func ProcessInitConfig(workloadConfig string) (WorkloadInitializer, error) {
 	return workload, nil
 }
 
-//nolint:gocyclo // this will be refactored later
 func ProcessAPIConfig(workloadConfig string) (WorkloadAPIBuilder, error) {
 	workloads, err := parseConfig(workloadConfig)
 	if err != nil {
 		return nil, err
-	}
-
-	if len(workloads[WorkloadKindComponent]) != 0 && len(workloads[WorkloadKindCollection]) != 1 {
-		return nil, fmt.Errorf("no %s found - %w", WorkloadKindCollection, ErrCollectionRequired)
 	}
 
 	var workload WorkloadAPIBuilder
@@ -82,41 +73,44 @@ func ProcessAPIConfig(workloadConfig string) (WorkloadAPIBuilder, error) {
 			switch v := w.(type) {
 			case *StandaloneWorkload:
 				workload = v
-				if err := workload.SetResources(workloadConfig); err != nil {
-					return nil, fmt.Errorf("%w", err)
-				}
-
-				workload.SetNames()
 			case *WorkloadCollection:
 				workload = v
-				if err := workload.SetResources(workloadConfig); err != nil {
-					return nil, fmt.Errorf("%w", err)
-				}
-
-				workload.SetNames()
 			case *ComponentWorkload:
-				if err := v.SetResources(v.Spec.ConfigPath); err != nil {
+				if err := v.LoadManifests(filepath.Dir(v.Spec.ConfigPath)); err != nil {
 					return nil, err
 				}
 
-				v.SetNames()
 				components = append(components, v)
 			}
 		}
+	}
+
+	if err := workload.LoadManifests(filepath.Dir(workloadConfig)); err != nil {
+		return nil, fmt.Errorf("unable to load resource manifests for %s, %w", workloadConfig, err)
 	}
 
 	if err := handleDependencies(&components); err != nil {
 		return nil, err
 	}
 
-	if len(workloads[WorkloadKindCollection]) == 1 {
+	if len(components) > 0 {
 		if err := workload.SetComponents(components); err != nil {
 			return nil, fmt.Errorf("%w", err)
 		}
+	}
 
-		if err := workload.SetResources(workloadConfig); err != nil {
-			return nil, fmt.Errorf("%w", err)
+	if err := workload.SetResources(workloadConfig); err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+
+	workload.SetNames()
+
+	for _, component := range components {
+		if err := component.SetResources(component.Spec.ConfigPath); err != nil {
+			return nil, err
 		}
+
+		component.SetNames()
 	}
 
 	return workload, nil
@@ -201,6 +195,10 @@ func parseConfig(workloadConfig string) (map[WorkloadKind][]WorkloadIdentifier, 
 			}
 
 			workloads[WorkloadKindComponent] = append(workloads[WorkloadKindComponent], cws...)
+
+			if len(workloads[WorkloadKindComponent]) != 0 && len(workloads[WorkloadKindCollection]) == 0 {
+				return nil, fmt.Errorf("no %s found - %w", WorkloadKindCollection, ErrCollectionRequired)
+			}
 		}
 	}
 

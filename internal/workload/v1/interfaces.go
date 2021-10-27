@@ -63,4 +63,6 @@ type WorkloadAPIBuilder interface {
 	SetNames()
 	SetResources(workloadPath string) error
 	SetComponents(components []*ComponentWorkload) error
+
+	LoadManifests(workloadPath string) error
 }
