@@ -214,11 +214,13 @@ func (api *APIFields) setDefault(sampleVal interface{}, hasDefault bool) {
 			api.Default = fmt.Sprintf("%v", sampleVal)
 		}
 
-		api.Markers = append(
-			api.Markers,
-			fmt.Sprintf("+kubebuilder:default=%s", api.Default),
-			"+kubebuilder:validation:Optional",
-		)
+		if len(api.Markers) == 0 {
+			api.Markers = append(
+				api.Markers,
+				fmt.Sprintf("+kubebuilder:default=%s", api.Default),
+				"+kubebuilder:validation:Optional",
+			)
+		}
 
 		api.setSample(sampleVal)
 	}
