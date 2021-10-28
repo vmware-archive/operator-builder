@@ -62,6 +62,20 @@ func (m *Definition) SetArgument(argName string, value interface{}) error {
 	return fmt.Errorf("%w %q for marker %s", ErrArgNotFound, argName, m.Name)
 }
 
+func (m *Definition) AppendArgument(argName string, value interface{}) error {
+	if arg, found := m.Fields[argName]; found {
+		if err := arg.AppendValue(value); err != nil {
+			return fmt.Errorf("%w on arg %s", err, argName)
+		}
+
+		m.Fields[argName] = arg
+
+		return nil
+	}
+
+	return fmt.Errorf("%w %q for marker %s", ErrArgNotFound, argName, m.Name)
+}
+
 func (m *Definition) InflateObject() (interface{}, error) {
 	o := reflect.Indirect(reflect.New(m.Output))
 

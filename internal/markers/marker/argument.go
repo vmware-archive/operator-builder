@@ -13,8 +13,9 @@ import (
 )
 
 var (
-	ErrWrongType = errors.New("incorrect type")
-	ErrUnmarshal = errors.New("unable to unmarshal arg value")
+	ErrWrongType        = errors.New("incorrect type")
+	ErrUnmarshal        = errors.New("unable to unmarshal arg value")
+	ErrAppendNotAllowed = errors.New("cannot append to non-slice type")
 )
 
 // Argument is the type of a marker argument.
@@ -134,4 +135,22 @@ func (a *Argument) InitializeValue() {
 	}
 
 	a.Value = reflect.Indirect(reflect.New(a.Type))
+}
+
+func (a *Argument) AppendValue(value interface{}) error {
+	if a.Value.Elem().Kind() != reflect.Slice {
+		return ErrAppendNotAllowed
+	}
+
+	if a.Pointer {
+		if !reflect.TypeOf(value).ConvertibleTo(a.Type.Elem()) {
+			return fmt.Errorf("%w, wanted %q but received %q", ErrWrongType, a.Type.Elem(), reflect.TypeOf(value))
+		}
+	}
+
+	slice := a.Value.Elem()
+	slice = reflect.Append(slice, reflect.ValueOf(value))
+	a.Value.Set(slice)
+
+	return nil
 }

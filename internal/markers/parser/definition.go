@@ -7,6 +7,7 @@ type Definition interface {
 	GetName() string
 	LookupArgument(name string) bool
 	SetArgument(name string, value interface{}) error
+	AppendArgument(name string, value interface{}) error
 	InflateObject() (interface{}, error)
 }
 
