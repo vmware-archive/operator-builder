@@ -133,11 +133,11 @@ func (api *APIFields) generateAPISpecField(b io.StringWriter, kind string) {
 	}
 
 	for _, m := range api.Markers {
-		mustWrite(b.WriteString(fmt.Sprintf("//%s\n", m)))
+		mustWrite(b.WriteString(fmt.Sprintf("// %s\n", m)))
 	}
 
 	for _, c := range api.Comments {
-		mustWrite(b.WriteString(fmt.Sprintf("//%s\n", c)))
+		mustWrite(b.WriteString(fmt.Sprintf("// %s\n", c)))
 	}
 
 	mustWrite(b.WriteString(fmt.Sprintf("%s %s %s\n\n", api.Name, typeName, api.Tags)))
