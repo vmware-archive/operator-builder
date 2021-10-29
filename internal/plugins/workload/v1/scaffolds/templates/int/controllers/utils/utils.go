@@ -39,7 +39,6 @@ import (
 
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -131,18 +130,28 @@ func needsReconciliation(r common.ComponentReconciler, existing, requested clien
 	// to the existing object fields
 	desired, err := GetDesiredObject(requested, r)
 	if err != nil {
-		r.GetLogger().V(0).Error(err,
-			"unable to get object in memory")
+		r.GetLogger().V(0).Error(
+			err, "unable to get object in memory",
+			"kind", requested.GetObjectKind().GroupVersionKind().Kind,
+			"name", requested.GetName(),
+			"namespace", requested.GetNamespace(),
+		)
+
 		return false
 	}
+
 	if desired == nil {
 		return true
 	}
 
 	equal, err := resources.AreEqual(desired, requested)
 	if err != nil {
-		r.GetLogger().V(0).Error(err,
-			"unable to determine equality for reconciliation")
+		r.GetLogger().V(0).Error(
+			err, "unable to determine equality for reconciliation",
+			"kind", desired.GetObjectKind().GroupVersionKind().Kind,
+			"name", desired.GetName(),
+			"namespace", desired.GetNamespace(),
+		)
 
 		return true
 	}

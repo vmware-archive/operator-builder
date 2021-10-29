@@ -31,6 +31,7 @@ const resourcePersistTemplate = `{{ .Boilerplate }}
 package phases
 
 import (
+	"fmt"
 	"time"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -70,11 +71,16 @@ func persistResource(
 	if err := r.CreateOrUpdate(resource); err != nil {
 		if IsOptimisticLockError(err) {
 			return nil
-		} else {
-			r.GetLogger().V(0).Info(err.Error())
-
-			return err
 		}
+
+		r.GetLogger().V(0).Error(
+			err, "unable to create or update",
+			"kind", resource.GetObjectKind().GroupVersionKind().Kind,
+			"name", resource.GetName(),
+			"namespace", resource.GetNamespace(),
+		)
+
+		return fmt.Errorf("unable to create or update resource %s, %w", resource.GetName(), err)
 	}
 
 	// set attributes related to the persistence of this child resource

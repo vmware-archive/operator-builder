@@ -31,6 +31,8 @@ const dependenciesTemplate = `{{ .Boilerplate }}
 package phases
 
 import (
+	"fmt"
+
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -48,9 +50,11 @@ func (phase *DependencyPhase) DefaultRequeue() ctrl.Result {
 func (phase *DependencyPhase) Execute(r common.ComponentReconciler) (proceedToNextPhase bool, err error) {
 	if !r.GetComponent().GetDependencyStatus() {
 		satisfied, err := dependenciesSatisfied(r)
-		if err != nil || !satisfied {
-			return false, err
+		if err != nil {
+			return false, fmt.Errorf("unable to list dependencies, %w", err)
 		}
+
+		return satisfied, nil
 	}
 
 	return true, nil
@@ -86,8 +90,12 @@ func dependencySatisfied(r common.ComponentReconciler, dependency common.Compone
 
 	// get the status.created field on the object and return the status and any errors found
 	status, found, err := unstructured.NestedBool(dependencyList.Items[0].Object, "status", "created")
-	if err != nil || !found {
-		return false, err
+	if err != nil {
+		return false, fmt.Errorf("unable to retrieve status.created field, %w", err)
+	}
+
+	if !found {
+		return false, nil
 	}
 
 	return status, nil

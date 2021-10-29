@@ -33,7 +33,7 @@ const createResourceTemplate = `{{ .Boilerplate }}
 package phases
 
 import (
-	"fmt"
+	"reflect"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -74,7 +74,11 @@ func (phase *CreateResourcesPhase) Execute(
 		resourceCondition := &common.ResourceCondition{}
 
 		for _, resourcePhase := range createResourcePhases() {
-			r.GetLogger().V(7).Info(fmt.Sprintf("enter resource phase: %T", resourcePhase))
+			r.GetLogger().V(7).Info(
+				"enter resource phase",
+				"phase", reflect.TypeOf(resourcePhase).String(),
+			)
+
 			_, proceed, err := resourcePhase.Execute(r, resource.(client.Object), *resourceCondition)
 
 			// set a message, return the error and result on error or when unable to proceed
@@ -85,7 +89,10 @@ func (phase *CreateResourcesPhase) Execute(
 			// set attributes on the resource condition before updating the status
 			resourceCondition.LastResourcePhase = getResourcePhaseName(resourcePhase)
 
-			r.GetLogger().V(5).Info(fmt.Sprintf("completed resource phase: %T", resourcePhase))
+			r.GetLogger().V(5).Info(
+				"completed resource phase",
+				"phase", reflect.TypeOf(resourcePhase).String(),
+			)
 		}
 	}
 

@@ -81,11 +81,10 @@ func Get(reconciler common.ComponentReconciler, resource client.Object) (metav1.
 // Create creates a resource.
 func Create(reconciler common.ComponentReconciler, resource client.Object) error {
 	reconciler.GetLogger().V(0).Info(
-		fmt.Sprintf("creating resource; kind: [%s], name: [%s], namespace: [%s]",
-			resource.GetObjectKind().GroupVersionKind().Kind,
-			resource.GetName(),
-			resource.GetNamespace(),
-		),
+		"creating resource",
+		"kind", resource.GetObjectKind().GroupVersionKind().Kind,
+		"name", resource.GetName(),
+		"namespace", resource.GetNamespace(),
 	)
 
 	if err := reconciler.Create(
@@ -108,12 +107,10 @@ func Update(reconciler common.ComponentReconciler, newResource, oldResource clie
 
 	if needsUpdate {
 		reconciler.GetLogger().V(0).Info(
-			fmt.Sprintf(
-				"updating resource; kind: [%s], name: [%s], namespace: [%s]",
-				oldResource.GetObjectKind().GroupVersionKind().Kind,
-				oldResource.GetName(),
-				oldResource.GetNamespace(),
-			),
+			"updating resource",
+			"kind", oldResource.GetObjectKind().GroupVersionKind().Kind,
+			"name", oldResource.GetName(),
+			"namespace", oldResource.GetNamespace(),
 		)
 
 		if err := reconciler.Patch(
@@ -159,14 +156,12 @@ func NeedsUpdate(reconciler common.ComponentReconciler, desired, actual client.O
 	// e.g. resources provisioned by the resource definition would not
 	// understand the update to a spec
 	if desired.GetObjectKind().GroupVersionKind().Kind == "CustomResourceDefinition" {
-		message := fmt.Sprintf("skipping update of CustomResourceDefinition "+
-			"[%s]", desired.GetName())
-		messageVerbose := fmt.Sprintf("if updates to CustomResourceDefinition "+
-			"[%s] are desired, consider re-deploying the parent "+
-			"resource or generating a new api version with the desired "+
-			"changes", desired.GetName())
-		reconciler.GetLogger().V(4).Info(message)
-		reconciler.GetLogger().V(7).Info(messageVerbose)
+		messageVerbose := fmt.Sprintf("if updates are desired, consider re-deploying the parent " +
+		"resource or generating a new api version with the desired " +
+		"changes")
+
+		reconciler.GetLogger().V(4).Info("skipping update", "CustomResourceDefinition", desired.GetName())
+		reconciler.GetLogger().V(7).Info(messageVerbose, "CustomResourceDefinition", desired.GetName())	
 
 		return false, nil
 	}

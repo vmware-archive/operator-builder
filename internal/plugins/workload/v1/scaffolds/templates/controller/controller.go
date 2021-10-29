@@ -52,6 +52,7 @@ package {{ .Resource.Group }}
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -114,9 +115,18 @@ func (r *{{ .Resource.Kind }}Reconciler) Reconcile(ctx context.Context, req ctrl
 	// get and store the component
 	r.Component = &{{ .Resource.ImportAlias }}.{{ .Resource.Kind }}{}
 	if err := r.Get(r.Context, req.NamespacedName, r.Component); err != nil {
+		if err = utils.IgnoreNotFound(err); err != nil {
+			log.V(0).Error(
+				err, "unable to fetch resource",
+				"kind", "{{ .Resource.Kind }}",
+			)
+
+			return ctrl.Result{}, err
+		}
+
 		log.V(0).Info("unable to fetch {{ .Resource.Kind }}")
 
-		return ctrl.Result{}, utils.IgnoreNotFound(err)
+		return ctrl.Result{}, err
 	}
 
 	{{ if .IsComponent }}
@@ -142,18 +152,34 @@ func (r *{{ .Resource.Kind }}Reconciler) Reconcile(ctx context.Context, req ctrl
 
 	// execute the phases
 	for _, phase := range utils.Phases(r.Component) {
-		r.GetLogger().V(7).Info(fmt.Sprintf("enter phase: %T", phase))
+		log.V(7).Info(
+			"enter phase",
+			"phase", reflect.TypeOf(phase).String(),
+		)
+
 		proceed, err := phase.Execute(r)
 		result, err := phases.HandlePhaseExit(r, phase, proceed, err)
 
-		// return only if we have an error or are told not to proceed
 		if err != nil || !proceed {
-			log.V(2).Info(fmt.Sprintf("not ready; requeuing phase: %T", phase))
+			log.V(2).Info(
+				"not ready; requeuing",
+				"phase", reflect.TypeOf(phase),
+			)
 
-			return result, err
+			// return only if we have an error or are told not to proceed
+			if err != nil {
+				return result, fmt.Errorf("unable to complete %T phase for %s, %w", phase, r.Component.GetName(), err)
+			}
+
+			if !proceed {
+				return result, nil
+			}
 		}
 
-		r.GetLogger().V(5).Info(fmt.Sprintf("completed phase: %T", phase))
+		log.V(5).Info(
+			"completed phase",
+			"phase", reflect.TypeOf(phase).String(),
+		)
 	}
 
 	return phases.DefaultReconcileResult(), nil
@@ -194,7 +220,11 @@ func (r *{{ .Resource.Kind }}Reconciler) GetResources() ([]metav1.Object, error)
 func (r *{{ .Resource.Kind }}Reconciler) CreateOrUpdate(resource client.Object) error {
 	// set ownership on the underlying resource being created or updated
 	if err := ctrl.SetControllerReference(r.Component, resource, r.Scheme); err != nil {
-		r.GetLogger().V(0).Info("unable to set owner reference on resource")
+		r.GetLogger().V(0).Error(
+			err, "unable to set owner reference on resource",
+			"name", resource.GetName(),
+			"namespace", resource.GetNamespace(),
+		)
 
 		return err
 	}
