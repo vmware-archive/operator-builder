@@ -121,16 +121,14 @@ func (r *{{ .Resource.Kind }}Reconciler) Reconcile(ctx context.Context, req ctrl
 
 	// get and store the component
 	if err := r.Get(r.Context, req.NamespacedName, r.Component); err != nil {
-		if !apierrs.IsNotFound(err) {
+		if err = utils.IgnoreNotFound(err); err != nil {
 			log.V(0).Error(
 				err, "unable to fetch resource",
 				"kind", "{{ .Resource.Kind }}",
 			)
 
-			return ctrl.Result{}, fmt.Errorf("unable to fetch resource, %w", err)
+			return ctrl.Result{}, err
 		}
-
-		log.V(0).Info("unable to fetch {{ .Resource.Kind }}")
 
 		return ctrl.Result{}, nil
 	}
@@ -226,14 +224,14 @@ func (r *{{ .Resource.Kind }}Reconciler) GetResources() ([]client.Object, error)
 // if it does already exist.
 func (r *{{ .Resource.Kind }}Reconciler) CreateOrUpdate(resource client.Object) error {
 	// set ownership on the underlying resource being created or updated
-	if err := ctrl.SetControllerReference(r.Component, resource, r.Scheme()); err != nil {
+	if err := ctrl.SetControllerReference(r.Component, resource, r.Scheme); err != nil {
 		r.GetLogger().V(0).Error(
 			err, "unable to set owner reference on resource",
 			"name", resource.GetName(),
 			"namespace", resource.GetNamespace(),
 		)
 
-		return fmt.Errorf("unable to set owner reference on %s, %w", resource.GetName(), err)
+		return err
 	}
 
 	// get the resource from the cluster

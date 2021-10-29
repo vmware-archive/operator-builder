@@ -33,7 +33,6 @@ const createResourceTemplate = `{{ .Boilerplate }}
 package phases
 
 import (
-	"fmt"
 	"reflect"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -79,7 +78,7 @@ func (phase *CreateResourcesPhase) Execute(
 				"phase", reflect.TypeOf(resourcePhase).String(),
 			)
 
-			_, proceed, err := resourcePhase.Execute(r, resource, resourceCondition)
+			_, proceed, err := resourcePhase.Execute(r, resource.(client.Object), *resourceCondition)
 
 			// set a message, return the error and result on error or when unable to proceed
 			if err != nil || !proceed {
