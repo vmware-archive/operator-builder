@@ -36,8 +36,10 @@ import (
 	"fmt"
 
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"{{ .Repo }}/apis/common"
+	"{{ .Repo }}/internal/resources"
 )
 
 // CreateResourcesPhase.DefaultRequeue executes checking for a parent components readiness status.
@@ -62,16 +64,16 @@ func (phase *CreateResourcesPhase) Execute(
 ) (proceedToNextPhase bool, err error) {
 	// execute the resource phases against each resource
 	for _, resource := range r.GetResources() {
-		resourceCommon := resource.ToCommonResource()
+		resourceObject := *resources.ToCommonResource(resource.(client.Object))
 		resourceCondition := &common.ResourceCondition{}
 
 		for _, resourcePhase := range createResourcePhases() {
 			r.GetLogger().V(7).Info(fmt.Sprintf("enter resource phase: %T", resourcePhase))
-			_, proceed, err := resourcePhase.Execute(resource, *resourceCondition)
+			_, proceed, err := resourcePhase.Execute(r, resource.(client.Object), *resourceCondition)
 
 			// set a message, return the error and result on error or when unable to proceed
 			if err != nil || !proceed {
-				return handleResourcePhaseExit(r, *resourceCommon, *resourceCondition, resourcePhase, proceed, err)
+				return handleResourcePhaseExit(r, resourceObject, *resourceCondition, resourcePhase, proceed, err)
 			}
 
 			// set attributes on the resource condition before updating the status

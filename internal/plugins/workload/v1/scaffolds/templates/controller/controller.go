@@ -77,6 +77,8 @@ import (
 	"{{ .Repo }}/internal/mutate"
 	"{{ .Repo }}/internal/resources"
 	"{{ .Repo }}/internal/wait"
+
+	rsrcs "github.com/nukleros/operator-builder-tools/pkg/resources"
 )
 
 // {{ .Resource.Kind }}Reconciler reconciles a {{ .Resource.Kind }} object.
@@ -88,7 +90,7 @@ type {{ .Resource.Kind }}Reconciler struct {
 	Context    context.Context
 	Controller controller.Controller
 	Watches    []client.Object
-	Resources  []common.ComponentResource
+	Resources  []metav1.Object
 	Component  *{{ .Resource.ImportAlias }}.{{ .Resource.Kind }}
 	{{- if .IsComponent }}
 	Collection *{{ .Collection.Spec.API.Group }}{{ .Collection.Spec.API.Version }}.{{ .Collection.Spec.API.Kind }}
@@ -189,7 +191,7 @@ func (r *{{ .Resource.Kind }}Reconciler) ConstructResources() ([]metav1.Object, 
 }
 
 // GetResources will return the resources associated with the reconciler.
-func (r *{{ .Resource.Kind }}Reconciler) GetResources() []common.ComponentResource {
+func (r *{{ .Resource.Kind }}Reconciler) GetResources() []metav1.Object {
 	return r.Resources
 }
 
@@ -213,10 +215,7 @@ func (r *{{ .Resource.Kind }}Reconciler) SetResources() error {
 		}
 
 		for _, mutated := range mutatedResources {
-			resourceObject := resources.NewResourceFromClient(mutated.(client.Object))
-			resourceObject.Reconciler = r
-
-			r.SetResource(resourceObject)
+			r.SetResource(mutated)
 		}
 	}
 
@@ -224,7 +223,7 @@ func (r *{{ .Resource.Kind }}Reconciler) SetResources() error {
 }
 
 // SetResource will set a resource on the objects if the relevant object does not already exist.
-func (r *{{ .Resource.Kind }}Reconciler) SetResource(new common.ComponentResource) {
+func (r *{{ .Resource.Kind }}Reconciler) SetResource(new metav1.Object) {
 
 	// set and return immediately if nothing exists
 	if len(r.Resources) == 0 {
@@ -233,9 +232,12 @@ func (r *{{ .Resource.Kind }}Reconciler) SetResource(new common.ComponentResourc
 		return
 	}
 
+	// convert new object to runtime object
+	newObject := new.(runtime.Object)
+
 	// loop through the resources and set or update when found
 	for i, existing := range r.Resources {
-		if new.EqualGVK(existing) && new.EqualNamespaceName(existing) {
+		if rsrcs.EqualGVK(newObject, existing.(runtime.Object)) && rsrcs.EqualNamespaceName(new, existing) {
 			r.Resources[i] = new
 
 			return
@@ -248,9 +250,7 @@ func (r *{{ .Resource.Kind }}Reconciler) SetResource(new common.ComponentResourc
 
 // CreateOrUpdate creates a resource if it does not already exist or updates a resource
 // if it does already exist.
-func (r *{{ .Resource.Kind }}Reconciler) CreateOrUpdate(
-	resource metav1.Object,
-) error {
+func (r *{{ .Resource.Kind }}Reconciler) CreateOrUpdate(resource client.Object) error {
 	// set ownership on the underlying resource being created or updated
 	if err := ctrl.SetControllerReference(r.Component, resource, r.Scheme); err != nil {
 		r.GetLogger().V(0).Info("unable to set owner reference on resource")
@@ -260,19 +260,16 @@ func (r *{{ .Resource.Kind }}Reconciler) CreateOrUpdate(
 
 	// create a stub object to store the current resource in the cluster so that we do not affect
 	// the desired state of the resource object in memory
-	newResource := resources.NewResourceFromClient(resource.(client.Object), r)
-	resourceStub := &unstructured.Unstructured{}
-	resourceStub.SetGroupVersionKind(newResource.Object.GetObjectKind().GroupVersionKind())
-	oldResource := resources.NewResourceFromClient(resourceStub, r)
+	resourceStore := &unstructured.Unstructured{}
 
 	if err := r.Get(
 		r.Context,
-		client.ObjectKeyFromObject(newResource.Object),
-		oldResource.Object,
+		client.ObjectKeyFromObject(resource),
+		resourceStore,
 	); err != nil {
 		// create the resource if we cannot find one
 		if errors.IsNotFound(err) {
-			if err := newResource.Create(); err != nil {
+			if err := resources.Create(r, resource); err != nil {
 				return err
 			}
 		} else {
@@ -280,12 +277,12 @@ func (r *{{ .Resource.Kind }}Reconciler) CreateOrUpdate(
 		}
 	} else {
 		// update the resource
-		if err := newResource.Update(oldResource); err != nil {
+		if err := resources.Update(r, resource, resourceStore); err != nil {
 			return err
 		}
 	}
 
-	return utils.Watch(r, newResource.Object)
+	return utils.Watch(r, resource)
 }
 
 // GetLogger returns the logger from the reconciler.

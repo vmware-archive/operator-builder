@@ -36,7 +36,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"{{ .Repo }}/apis/common"
-	"{{ .Repo }}/internal/resources"
+
+	"github.com/nukleros/operator-builder-tools/pkg/resources"
 )
 
 // CheckReadyPhase.DefaultRequeue executes checking for a parent components readiness status.
