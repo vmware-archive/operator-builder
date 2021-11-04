@@ -261,6 +261,7 @@ func (r *{{ .Resource.Kind }}Reconciler) CreateOrUpdate(resource client.Object) 
 	// create a stub object to store the current resource in the cluster so that we do not affect
 	// the desired state of the resource object in memory
 	resourceStore := &unstructured.Unstructured{}
+	resourceStore.SetGroupVersionKind(resource.GetObjectKind().GroupVersionKind())
 
 	if err := r.Get(
 		r.Context,
