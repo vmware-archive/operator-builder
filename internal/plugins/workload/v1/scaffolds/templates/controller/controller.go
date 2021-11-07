@@ -61,7 +61,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"{{ .Repo }}/apis/common"
 	{{ .Resource.ImportAlias }} "{{ .Resource.Path }}"
@@ -201,27 +200,20 @@ func (r *{{ .Resource.Kind }}Reconciler) CreateOrUpdate(resource client.Object) 
 		return err
 	}
 
-	// create a stub object to store the current resource in the cluster so that we do not affect
-	// the desired state of the resource object in memory
-	resourceStore := &unstructured.Unstructured{}
-	resourceStore.SetGroupVersionKind(resource.GetObjectKind().GroupVersionKind())
+	// get the resource from the cluster
+	clusterResource, err := resources.Get(r, resource)
+	if err != nil {
+		return err
+	}
 
-	if err := r.Get(
-		r.Context,
-		client.ObjectKeyFromObject(resource),
-		resourceStore,
-	); err != nil {
-		// create the resource if we cannot find one
-		if errors.IsNotFound(err) {
-			if err := resources.Create(r, resource); err != nil {
-				return err
-			}
-		} else {
+	// create the resource if we have a nil object, or update the resource if we have one
+	// that exists in the cluster already
+	if clusterResource == nil {
+		if err := resources.Create(r, resource); err != nil {
 			return err
 		}
 	} else {
-		// update the resource
-		if err := resources.Update(r, resource, resourceStore); err != nil {
+		if err := resources.Update(r, resource, clusterResource.(client.Object)); err != nil {
 			return err
 		}
 	}

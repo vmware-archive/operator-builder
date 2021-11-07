@@ -40,6 +40,8 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -51,6 +53,30 @@ import (
 const (
 	FieldManager = "reconciler"
 )
+
+// Get gets a resource.
+func Get(reconciler common.ComponentReconciler, resource client.Object) (metav1.Object, error) {
+	// create a stub object to store the current resource in the cluster so that we do not affect
+	// the desired state of the resource object in memory
+	resourceStore := &unstructured.Unstructured{}
+	resourceStore.SetGroupVersionKind(resource.GetObjectKind().GroupVersionKind())
+
+	if err := reconciler.Get(
+		reconciler.GetContext(),
+		client.ObjectKeyFromObject(resource),
+		resourceStore,
+	); err != nil {
+		if errors.IsNotFound(err) {
+			// return nil here so we can easily determine if a resource was not
+			// found without having to worry about its type
+			return nil, nil
+		} else {
+			return nil, err
+		}
+	}
+
+	return resourceStore, nil
+}
 
 // Create creates a resource.
 func Create(reconciler common.ComponentReconciler, resource client.Object) error {

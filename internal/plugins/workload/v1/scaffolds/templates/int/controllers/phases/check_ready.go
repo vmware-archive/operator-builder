@@ -36,8 +36,9 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"{{ .Repo }}/apis/common"
+	"{{ .Repo }}/internal/resources"
 
-	"github.com/nukleros/operator-builder-tools/pkg/resources"
+	rsrcs "github.com/nukleros/operator-builder-tools/pkg/resources"
 )
 
 // CheckReadyPhase.DefaultRequeue executes checking for a parent components readiness status.
@@ -76,7 +77,18 @@ func resourcesAreReady(r common.ComponentReconciler) (bool, error) {
 		return false, err
 	}
 
+	// get resources from cluster
+	clusterResources := make([]metav1.Object, len(desiredResources))
+	for i, rsrc := range desiredResources {
+		clusterResource, err := resources.Get(r, rsrc.(client.Object))
+		if err != nil {
+			return false, err
+		}
+
+		clusterResources[i] = clusterResource
+	}
+
 	// check to see if known types are ready
-	return resources.AreReady(desiredResources...)
+	return rsrcs.AreReady(clusterResources...)
 }
 `
