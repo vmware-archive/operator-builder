@@ -31,15 +31,12 @@ const dependenciesTemplate = `{{ .Boilerplate }}
 package phases
 
 import (
-	"fmt"
-
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"{{ .Repo }}/apis/common"
-	"{{ .Repo }}/internal/helpers"
 )
 
 // DependencyPhase.DefaultRequeue executes checking for a parent components readiness status.
