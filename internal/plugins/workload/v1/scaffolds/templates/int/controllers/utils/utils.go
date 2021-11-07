@@ -93,16 +93,22 @@ func Phases(component common.Component) []controllerphases.Phase {
 	return phases
 }
 
-// getDesiredObject returns the desired object from a list stored on the
-// reconciler.
-func getDesiredObject(compared client.Object, r common.ComponentReconciler) (desired client.Object) {
-	for _, resource := range r.GetResources() {
+// GetDesiredObject returns the desired object from a list stored in memory.
+func GetDesiredObject(compared client.Object, r common.ComponentReconciler) (client.Object, error) {
+	var desired client.Object
+
+	allObjects, err := r.GetResources()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, resource := range allObjects {
 		if resources.EqualGVK(compared, resource.(client.Object)) && resources.EqualNamespaceName(compared, resource.(client.Object)) {
-			return resource.(client.Object)
+			return resource.(client.Object), nil
 		}
 	}
 
-	return desired
+	return desired, nil
 }
 
 // needsReconciliation performs some simple checks and returns whether or not a
@@ -123,7 +129,12 @@ func needsReconciliation(r common.ComponentReconciler, existing, requested clien
 	// get the desired object from the reconciler and ensure that we both
 	// found that desired object and that the desired object fields are equal
 	// to the existing object fields
-	desired := getDesiredObject(requested, r)
+	desired, err := GetDesiredObject(requested, r)
+	if err != nil {
+		r.GetLogger().V(0).Error(err,
+			"unable to get object in memory")
+		return false
+	}
 	if desired == nil {
 		return true
 	}

@@ -77,8 +77,6 @@ import (
 	"{{ .Repo }}/internal/mutate"
 	"{{ .Repo }}/internal/resources"
 	"{{ .Repo }}/internal/wait"
-
-	rsrcs "github.com/nukleros/operator-builder-tools/pkg/resources"
 )
 
 // {{ .Resource.Kind }}Reconciler reconciles a {{ .Resource.Kind }} object.
@@ -90,7 +88,6 @@ type {{ .Resource.Kind }}Reconciler struct {
 	Context    context.Context
 	Controller controller.Controller
 	Watches    []client.Object
-	Resources  []metav1.Object
 	Component  *{{ .Resource.ImportAlias }}.{{ .Resource.Kind }}
 	{{- if .IsComponent }}
 	Collection *{{ .Collection.Spec.API.Group }}{{ .Collection.Spec.API.Version }}.{{ .Collection.Spec.API.Kind }}
@@ -145,11 +142,6 @@ func (r *{{ .Resource.Kind }}Reconciler) Reconcile(ctx context.Context, req ctrl
 	r.Collection = &collectionList.Items[0]
 	{{ end }}
 
-	// get and store the resources
-	if err := r.SetResources(); err != nil {
-		return ctrl.Result{}, err
-	}
-
 	// execute the phases
 	for _, phase := range utils.Phases(r.Component) {
 		r.GetLogger().V(7).Info(fmt.Sprintf("enter phase: %T", phase))
@@ -169,83 +161,34 @@ func (r *{{ .Resource.Kind }}Reconciler) Reconcile(ctx context.Context, req ctrl
 	return phases.DefaultReconcileResult(), nil
 }
 
-// Construct resources runs the methods to properly construct the resources.
-func (r *{{ .Resource.Kind }}Reconciler) ConstructResources() ([]metav1.Object, error) {
+// GetResources resources runs the methods to properly construct the resources in memory.
+func (r *{{ .Resource.Kind }}Reconciler) GetResources() ([]metav1.Object, error) {
 	{{ if .HasChildResources }}
-	resourceObjects := make([]metav1.Object, len({{ .PackageName }}.CreateFuncs))
+	resourceObjects := []metav1.Object{}
 
 	// create resources in memory
-	for i, f := range {{ .PackageName }}.CreateFuncs {
-		resource, err := f(r.Component{{ if .IsComponent }}, r.Collection){{ else }}){{ end }}
+	for _, f := range webstore.CreateFuncs {
+		resource, err := f(r.Component)
 		if err != nil {
 			return nil, err
 		}
 
-		resourceObjects[i] = resource
+		// run through the mutation functions to mutate the resources
+		mutatedResources, skip, err := r.Mutate(&resource)
+		if err != nil {
+			return []metav1.Object{}, err
+		}
+		if skip {
+			continue
+		}
+
+		resourceObjects = append(resourceObjects, mutatedResources...)
 	}
 
 	return resourceObjects, nil
 {{- else -}}
 	return []metav1.Object{}, nil
 {{ end -}}
-}
-
-// GetResources will return the resources associated with the reconciler.
-func (r *{{ .Resource.Kind }}Reconciler) GetResources() []metav1.Object {
-	return r.Resources
-}
-
-// SetResources will create and return the resources in memory.
-func (r *{{ .Resource.Kind }}Reconciler) SetResources() error {
-	// create resources in memory
-	baseResources, err := r.ConstructResources()
-	if err != nil {
-		return err
-	}
-
-	// loop through the in memory resources and store them on the reconciler
-	for _, base := range baseResources {
-		// run through the mutation functions to mutate the resources
-		mutatedResources, skip, err := r.Mutate(&base)
-		if err != nil {
-			return err
-		}
-		if skip {
-			continue
-		}
-
-		for _, mutated := range mutatedResources {
-			r.SetResource(mutated)
-		}
-	}
-
-	return nil
-}
-
-// SetResource will set a resource on the objects if the relevant object does not already exist.
-func (r *{{ .Resource.Kind }}Reconciler) SetResource(new metav1.Object) {
-
-	// set and return immediately if nothing exists
-	if len(r.Resources) == 0 {
-		r.Resources = append(r.Resources, new)
-
-		return
-	}
-
-	// convert new object to runtime object
-	newObject := new.(runtime.Object)
-
-	// loop through the resources and set or update when found
-	for i, existing := range r.Resources {
-		if rsrcs.EqualGVK(newObject, existing.(runtime.Object)) && rsrcs.EqualNamespaceName(new, existing) {
-			r.Resources[i] = new
-
-			return
-		}
-	}
-
-	// if we haven't returned yet, we have not found the resource and must add it
-	r.Resources = append(r.Resources, new)
 }
 
 // CreateOrUpdate creates a resource if it does not already exist or updates a resource

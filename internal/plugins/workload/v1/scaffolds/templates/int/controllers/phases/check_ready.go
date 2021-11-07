@@ -53,7 +53,7 @@ func (phase *CheckReadyPhase) Execute(
 	r common.ComponentReconciler,
 ) (proceedToNextPhase bool, err error) {
 	// check to see if known types are ready
-	knownReady, err := resources.AreReady(r.GetResources()...)
+	knownReady, err := resourcesAreReady(r)
 	if err != nil {
 		return false, err
 	}
@@ -65,5 +65,18 @@ func (phase *CheckReadyPhase) Execute(
 	}
 
 	return (knownReady && customReady), nil
+}
+
+// resourcesAreReady gets the resources in memory, pulls the current state from the
+// clusters and determines if they are in a ready condition.
+func resourcesAreReady(r common.ComponentReconciler) (bool, error) {
+	// get resources in memory
+	desiredResources, err := r.GetResources()
+	if err != nil {
+		return false, err
+	}
+
+	// check to see if known types are ready
+	return resources.AreReady(desiredResources...)
 }
 `

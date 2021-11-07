@@ -67,7 +67,7 @@ type ComponentReconciler interface {
 	GetController() controller.Controller
 	GetLogger() logr.Logger
 	GetScheme() *runtime.Scheme
-	GetResources() []metav1.Object
+	GetResources() ([]metav1.Object, error)
 	GetWatches() []client.Object
 	SetWatch(client.Object)
 

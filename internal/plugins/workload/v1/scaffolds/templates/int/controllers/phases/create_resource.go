@@ -62,8 +62,14 @@ func createResourcePhases() []ResourcePhase {
 func (phase *CreateResourcesPhase) Execute(
 	r common.ComponentReconciler,
 ) (proceedToNextPhase bool, err error) {
+	// get the resources in memory
+	desiredResources, err := r.GetResources()
+	if err != nil {
+		return false, err
+	}
+
 	// execute the resource phases against each resource
-	for _, resource := range r.GetResources() {
+	for _, resource := range desiredResources {
 		resourceObject := *resources.ToCommonResource(resource.(client.Object))
 		resourceCondition := &common.ResourceCondition{}
 
