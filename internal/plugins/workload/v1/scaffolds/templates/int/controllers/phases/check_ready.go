@@ -33,7 +33,9 @@ package phases
 import (
 	"time"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrl "sigs.k8s.io/controller-runtime"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"{{ .Repo }}/apis/common"
 	"{{ .Repo }}/internal/resources"
