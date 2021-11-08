@@ -166,7 +166,7 @@ func (r *{{ .Resource.Kind }}Reconciler) GetResources() ([]metav1.Object, error)
 
 	// create resources in memory
 	for _, f := range {{ .PackageName }}.CreateFuncs {
-		resource, err := f(r.Component)
+		resource, err := f(r.Component{{ if .IsComponent }}, r.Collection){{ else }}){{ end }}
 		if err != nil {
 			return nil, err
 		}
