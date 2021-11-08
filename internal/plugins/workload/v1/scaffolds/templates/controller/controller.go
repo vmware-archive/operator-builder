@@ -165,7 +165,7 @@ func (r *{{ .Resource.Kind }}Reconciler) GetResources() ([]metav1.Object, error)
 	resourceObjects := []metav1.Object{}
 
 	// create resources in memory
-	for _, f := range webstore.CreateFuncs {
+	for _, f := range {{ .PackageName }}.CreateFuncs {
 		resource, err := f(r.Component)
 		if err != nil {
 			return nil, err
