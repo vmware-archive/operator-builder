@@ -1,6 +1,6 @@
 ---
-name: Run Integration Test
-description: Run Integration Test
+name: Run E2E Test
+description: Run E2E Test
 
 inputs:
   codebase-artifact:
@@ -37,48 +37,29 @@ runs:
       shell: bash
       run: kind create cluster --name operator-builder-test
 
-    - name: Install Custom Resources
+    - name: Run E2E Tests
       shell: bash
       working-directory: /tmp/operator-builder-test
       run: |
+        # ensure the kustomize/controller-gen binaries are downloaded
+        # and executable
         make controller-gen && make kustomize
         chmod +x bin/controller-gen && chmod +x bin/kustomize
-        make install
 
-    - name: Build Container
-      shell: bash
-      working-directory: /tmp/operator-builder-test
-      run: IMG=localhost:5000/${IMAGE_NAME}:latest make docker-build
+        # TODO: this is temporary to ensure we test the reconciliation loop
+        # for our test workloads.  the end goal would be to genericize this
+        # to ensure we can test any workload.
+        if [[ -f .workloadConfig/v1alpha1_workloads_test.go.test ]]; then
+          cp .workloadConfig/v1alpha1_workloads_test.go.test test/e2e/v1alpha1_workloads_test.go
+        fi
+
+        # run the e2e tests
+        make test-e2e
       env:
-        IMAGE_NAME: ${{ inputs.codebase-artifact }}
-
-    - name: Push Container
-      shell: bash
-      working-directory: /tmp/operator-builder-test
-      run: IMG=localhost:5000/${IMAGE_NAME}:latest make docker-push
-      env:
-        IMAGE_NAME: ${{ inputs.codebase-artifact }}
-
-    - name: Deploy Operator
-      shell: bash
-      working-directory: /tmp/operator-builder-test
-      run: IMG=localhost:5000/${IMAGE_NAME}:latest make deploy
-      env:
-        IMAGE_NAME: ${{ inputs.codebase-artifact }}
-
-    - name: Ensure Operator Runs
-      shell: bash
-      working-directory: /tmp/operator-builder-test
-      run: |
-        # this is a placeholder for proper e2e testing that the operator is
-        # running
-        sleep 30
-        cat Makefile
-
-    - name: Install Samples
-      shell: bash
-      working-directory: /tmp/operator-builder-test
-      run: kubectl apply -f config/samples
+        IMG: localhost:5000/${{ inputs.codebase-artifact }}:latest
+        USE_CONTROLLER: "true"
+        DEPLOY: "true"
+        TEARDOWN: "true"
 
     # TODO: this is a stub until this action is fixed.  currently, the make
     # targets are inconsistently missing.
@@ -86,10 +67,3 @@ runs:
     #   shell: bash
     #   working-directory: /tmp/operator-builder-test
     #   run: make docs
-
-    - name: Undeploy Operator
-      shell: bash
-      working-directory: /tmp/operator-builder-test
-      run: IMG=localhost:5000/${IMAGE_NAME}:latest make undeploy
-      env:
-        IMAGE_NAME: ${{ inputs.codebase-artifact }}
