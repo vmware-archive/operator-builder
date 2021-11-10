@@ -121,7 +121,7 @@ func (r *{{ .Resource.Kind }}Reconciler) Reconcile(ctx context.Context, req ctrl
 
 	// get and store the component
 	if err := r.Get(r.Context, req.NamespacedName, r.Component); err != nil {
-		if err = utils.IgnoreNotFound(err); err != nil {
+		if !apierrs.IsNotFound(err) {
 			log.V(0).Error(
 				err, "unable to fetch resource",
 				"kind", "{{ .Resource.Kind }}",
@@ -190,9 +190,9 @@ func (r *{{ .Resource.Kind }}Reconciler) Reconcile(ctx context.Context, req ctrl
 }
 
 // GetResources resources runs the methods to properly construct the resources in memory.
-func (r *{{ .Resource.Kind }}Reconciler) GetResources() ([]metav1.Object, error) {
+func (r *{{ .Resource.Kind }}Reconciler) GetResources() ([]client.Object, error) {
 	{{- if .HasChildResources }}
-	resourceObjects := []metav1.Object{}
+	resourceObjects := []client.Object{}
 
 	// create resources in memory
 	for _, f := range {{ .PackageName }}.CreateFuncs {
@@ -224,7 +224,7 @@ func (r *{{ .Resource.Kind }}Reconciler) GetResources() ([]metav1.Object, error)
 // if it does already exist.
 func (r *{{ .Resource.Kind }}Reconciler) CreateOrUpdate(resource client.Object) error {
 	// set ownership on the underlying resource being created or updated
-	if err := ctrl.SetControllerReference(r.Component, resource, r.Scheme); err != nil {
+	if err := ctrl.SetControllerReference(r.Component, resource, r.Scheme()); err != nil {
 		r.GetLogger().V(0).Error(
 			err, "unable to set owner reference on resource",
 			"name", resource.GetName(),
@@ -247,7 +247,7 @@ func (r *{{ .Resource.Kind }}Reconciler) CreateOrUpdate(resource client.Object) 
 			return fmt.Errorf("unable to create resource %s, %w", resource.GetName(), err)
 		}
 	} else {
-		if err := resources.Update(r, resource, clusterResource.(client.Object)); err != nil {
+		if err := resources.Update(r, resource, clusterResource); err != nil {
 			return fmt.Errorf("unable to update resource %s, %w", resource.GetName(), err)
 		}
 	}
@@ -297,14 +297,14 @@ func (r *{{ .Resource.Kind }}Reconciler) CheckReady() (bool, error) {
 
 // Mutate will run the mutate phase of a resource.
 func (r *{{ .Resource.Kind }}Reconciler) Mutate(
-	object metav1.Object,
-) ([]metav1.Object, bool, error) {
+	object client.Object,
+) ([]client.Object, bool, error) {
 	return mutate.{{ .Resource.Kind }}Mutate(r, object)
 }
 
 // Wait will run the wait phase of a resource.
 func (r *{{ .Resource.Kind }}Reconciler) Wait(
-	object metav1.Object,
+	object client.Object,
 ) (bool, error) {
 	return wait.{{ .Resource.Kind }}Wait(r, object)
 }

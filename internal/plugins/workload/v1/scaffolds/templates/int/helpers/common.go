@@ -60,7 +60,7 @@ func SkipResourceCreation(
 }
 
 // GetProperObject gets a proper object type given an existing source metav1.object.
-func GetProperObject(destination, source client.Object) error {
+func GetProperObject(destination client.Object, source client.Object) error {
 	// convert the source object to an unstructured type
 	unstructuredObject, err := runtime.DefaultUnstructuredConverter.ToUnstructured(source)
 	if err != nil {
@@ -71,7 +71,7 @@ func GetProperObject(destination, source client.Object) error {
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(unstructuredObject, destination); err != nil {
 		return fmt.Errorf("unable to decode unstructed object into type for object %s, %w", source.GetName(), err)
 	}
-	
+
 	return nil
 }
 

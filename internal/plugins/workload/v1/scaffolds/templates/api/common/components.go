@@ -73,7 +73,7 @@ type ComponentReconciler interface {
 
 	// custom methods which are managed by consumers
 	CheckReady() (bool, error)
-	Mutate(metav1.Object) ([]metav1.Object, bool, error)
-	Wait(metav1.Object) (bool, error)
+	Mutate(client.Object) ([]client.Object, bool, error)
+	Wait(client.Object) (bool, error)
 }
 `
