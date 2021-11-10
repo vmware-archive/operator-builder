@@ -155,7 +155,7 @@ func (component *{{ .Resource.Kind }}) GetResources() []*common.Resource {
 }
 
 // SetResources sets the phase conditions for a component.
-func (component *{{ .Resource.Kind }}) SetResource(resource common.Resource) {
+func (component *{{ .Resource.Kind }}) SetResource(resource *common.Resource) {
 	if found := resource.GetResourceIndex(component); found >= 0 {
 		if resource.ResourceCondition.LastModified == "" {
 			resource.ResourceCondition.LastModified = time.Now().UTC().String()

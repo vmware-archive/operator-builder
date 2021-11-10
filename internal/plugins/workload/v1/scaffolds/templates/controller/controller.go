@@ -297,14 +297,14 @@ func (r *{{ .Resource.Kind }}Reconciler) CheckReady() (bool, error) {
 
 // Mutate will run the mutate phase of a resource.
 func (r *{{ .Resource.Kind }}Reconciler) Mutate(
-	object client.Object,
-) ([]client.Object, bool, error) {
+	object metav1.Object,
+) ([]metav1.Object, bool, error) {
 	return mutate.{{ .Resource.Kind }}Mutate(r, object)
 }
 
 // Wait will run the wait phase of a resource.
 func (r *{{ .Resource.Kind }}Reconciler) Wait(
-	object client.Object,
+	object metav1.Object,
 ) (bool, error) {
 	return wait.{{ .Resource.Kind }}Wait(r, object)
 }

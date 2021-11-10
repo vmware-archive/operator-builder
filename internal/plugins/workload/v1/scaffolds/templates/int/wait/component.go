@@ -47,7 +47,7 @@ import (
 // {{ .Resource.Kind }}Wait performs the logic to wait for resources that belong to the parent.
 func {{ .Resource.Kind }}Wait(
 	reconciler common.ComponentReconciler,
-	object client.Object,
+	object metav1.Object,
 ) (ready bool, err error) {
 	return true, nil
 }
