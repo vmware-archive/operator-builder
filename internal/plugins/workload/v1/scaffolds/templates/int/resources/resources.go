@@ -69,8 +69,6 @@ func Get(reconciler common.ComponentReconciler, resource client.Object) (client.
 			// return nil here so we can easily determine if a resource was not
 			// found without having to worry about its type
 			return nil, nil
-		} else {
-			return nil, fmt.Errorf("unable to get resource %s, %w", resource.GetName(), err)
 		}
 
 		return nil, fmt.Errorf("unable to get resource %s, %w", resource.GetName(), err)
@@ -149,8 +147,12 @@ func NeedsUpdate(reconciler common.ComponentReconciler, desired, actual client.O
 	// when resources that need to be skipped explicitly (e.g. CRDs) are seen
 	// as equal anyway
 	equal, err := rsrcs.AreEqual(desired, actual)
-	if equal || err != nil {
-		return !equal, fmt.Errorf("unable to determine if resources are equal, %w", err)
+	if err != nil {
+		return false, fmt.Errorf("unable to determine if resources are equal, %w", err)
+	}
+
+	if equal {
+		return false, nil
 	}
 
 	// always skip custom resource updates as they are sensitive to modification
@@ -182,8 +184,6 @@ func NamespaceForResourceIsReady(r common.ComponentReconciler, resource client.O
 	if err := r.Get(r.GetContext(), namespacedName, namespace); err != nil {
 		if errors.IsNotFound(err) {
 			return false, nil
-		} else {
-			return false, fmt.Errorf("unable to get namespace, %w", err)
 		}
 		
 		return false, fmt.Errorf("unable to get namespace, %w", err)

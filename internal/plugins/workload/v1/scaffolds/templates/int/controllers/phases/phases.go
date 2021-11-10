@@ -120,9 +120,7 @@ func HandlePhaseExit(
 		// adjust the message if we had both an update error and a phase error
 		if !IsOptimisticLockError(updateError) {
 			if phaseError != nil {
-				phaseError = fmt.Errorf("failed to update status conditions; %v; %w", updateError, phaseError)
-			} else {
-				phaseError = updateError
+				return result, fmt.Errorf("failed to update status conditions; %v; %w", updateError, phaseError)
 			}
 
 			return result, updateError
@@ -157,9 +155,7 @@ func handleResourcePhaseExit(
 		// adjust the message if we had both an update error and a phase error
 		if !IsOptimisticLockError(updateError) {
 			if phaseError != nil {
-				phaseError = fmt.Errorf("failed to update resource conditions; %v; %w", updateError, phaseError)
-			} else {
-				phaseError = updateError
+				return false, fmt.Errorf("failed to update resource conditions; %v; %w", updateError, phaseError)
 			}
 
 			return false, updateError
