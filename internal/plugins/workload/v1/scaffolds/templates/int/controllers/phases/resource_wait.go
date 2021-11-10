@@ -43,7 +43,7 @@ import (
 func (phase *WaitForResourcePhase) Execute(
 	r common.ComponentReconciler,
 	resource client.Object,
-	resourceCondition common.ResourceCondition,
+	resourceCondition *common.ResourceCondition,
 ) (ctrl.Result, bool, error) {
 	// TODO: loop through functions instead of repeating logic
 	// common wait logic for a resource
@@ -60,7 +60,7 @@ func (phase *WaitForResourcePhase) Execute(
 	// specific wait logic for a resource
 	meta := resource.(metav1.Object)
 	
-	ready, err = r.Wait(&meta)
+	ready, err = r.Wait(meta)
 	if err != nil {
 		return ctrl.Result{}, false, err
 	}

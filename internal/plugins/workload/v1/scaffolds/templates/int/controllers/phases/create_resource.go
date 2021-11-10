@@ -70,7 +70,7 @@ func (phase *CreateResourcesPhase) Execute(
 
 	// execute the resource phases against each resource
 	for _, resource := range desiredResources {
-		resourceObject := *resources.ToCommonResource(resource.(client.Object))
+		resourceObject := resources.ToCommonResource(resource.(client.Object))
 		resourceCondition := &common.ResourceCondition{}
 
 		for _, resourcePhase := range createResourcePhases() {
@@ -79,11 +79,11 @@ func (phase *CreateResourcesPhase) Execute(
 				"phase", reflect.TypeOf(resourcePhase).String(),
 			)
 
-			_, proceed, err := resourcePhase.Execute(r, resource.(client.Object), *resourceCondition)
+			_, proceed, err := resourcePhase.Execute(r, resource.(client.Object), resourceCondition)
 
 			// set a message, return the error and result on error or when unable to proceed
 			if err != nil || !proceed {
-				return handleResourcePhaseExit(r, resourceObject, *resourceCondition, resourcePhase, proceed, err)
+				return handleResourcePhaseExit(r, resourceObject, resourceCondition, resourcePhase, proceed, err)
 			}
 
 			// set attributes on the resource condition before updating the status

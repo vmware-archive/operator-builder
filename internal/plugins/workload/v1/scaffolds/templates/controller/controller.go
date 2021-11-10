@@ -198,7 +198,7 @@ func (r *{{ .Resource.Kind }}Reconciler) GetResources() ([]metav1.Object, error)
 		}
 
 		// run through the mutation functions to mutate the resources
-		mutatedResources, skip, err := r.Mutate(&resource)
+		mutatedResources, skip, err := r.Mutate(resource)
 		if err != nil {
 			return []metav1.Object{}, err
 		}
@@ -308,14 +308,14 @@ func (r *{{ .Resource.Kind }}Reconciler) CheckReady() (bool, error) {
 
 // Mutate will run the mutate phase of a resource.
 func (r *{{ .Resource.Kind }}Reconciler) Mutate(
-	object *metav1.Object,
+	object metav1.Object,
 ) ([]metav1.Object, bool, error) {
 	return mutate.{{ .Resource.Kind }}Mutate(r, object)
 }
 
 // Wait will run the wait phase of a resource.
 func (r *{{ .Resource.Kind }}Reconciler) Wait(
-	object *metav1.Object,
+	object metav1.Object,
 ) (bool, error) {
 	return wait.{{ .Resource.Kind }}Wait(r, object)
 }

@@ -50,13 +50,13 @@ type Component interface {
 	GetDependencies() []Component
 	GetDependencyStatus() bool
 	GetReadyStatus() bool
-	GetPhaseConditions() []PhaseCondition
-	GetResources() []Resource
+	GetPhaseConditions() []*PhaseCondition
+	GetResources() []*Resource
 
 	SetReadyStatus(bool)
 	SetDependencyStatus(bool)
-	SetPhaseCondition(PhaseCondition)
-	SetResource(Resource)
+	SetPhaseCondition(*PhaseCondition)
+	SetResource(*Resource)
 }
 
 type ComponentReconciler interface {
@@ -84,7 +84,7 @@ type ComponentReconciler interface {
 
 	// custom methods which are managed by consumers
 	CheckReady() (bool, error)
-	Mutate(*metav1.Object) ([]metav1.Object, bool, error)
-	Wait(*metav1.Object) (bool, error)
+	Mutate(metav1.Object) ([]metav1.Object, bool, error)
+	Wait(metav1.Object) (bool, error)
 }
 `

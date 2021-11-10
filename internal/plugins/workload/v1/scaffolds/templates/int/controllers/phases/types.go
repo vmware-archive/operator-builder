@@ -49,7 +49,7 @@ type Phase interface {
 
 // ResourcePhase defines the specific phase of reconcilication associated with creating resources.
 type ResourcePhase interface {
-	Execute(common.ComponentReconciler, client.Object, common.ResourceCondition) (ctrl.Result, bool, error)
+	Execute(common.ComponentReconciler, client.Object, *common.ResourceCondition) (ctrl.Result, bool, error)
 }
 
 // Below are the phase types which satisfy the Phase interface.

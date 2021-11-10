@@ -45,7 +45,7 @@ import (
 func (phase *PersistResourcePhase) Execute(
 	r common.ComponentReconciler,
 	resource client.Object,
-	resourceCondition common.ResourceCondition,
+	resourceCondition *common.ResourceCondition,
 ) (ctrl.Result, bool, error) {
 	// persist the resource
 	if err := persistResource(
@@ -64,7 +64,7 @@ func (phase *PersistResourcePhase) Execute(
 func persistResource(
 	r common.ComponentReconciler,
 	resource client.Object,
-	condition common.ResourceCondition,
+	condition *common.ResourceCondition,
 	phase *PersistResourcePhase,
 ) error {
 	// persist resource
@@ -90,6 +90,6 @@ func persistResource(
 	condition.Created = true
 
 	// update the condition to notify that we have created a child resource
-	return updateResourceConditions(r, *resources.ToCommonResource(resource), &condition)
+	return updateResourceConditions(r, resources.ToCommonResource(resource), condition)
 }
 `

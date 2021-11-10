@@ -61,7 +61,7 @@ func updatePhaseConditions(
 	r common.ComponentReconciler,
 	condition *common.PhaseCondition,
 ) error {
-	r.GetComponent().SetPhaseCondition(*condition)
+	r.GetComponent().SetPhaseCondition(condition)
 
 	return r.UpdateStatus()
 }
@@ -69,7 +69,7 @@ func updatePhaseConditions(
 // updateResourceConditions updates the status.resourceConditions field of the parent custom resource.
 func updateResourceConditions(
 	r common.ComponentReconciler,
-	resource common.Resource,
+	resource *common.Resource,
 	condition *common.ResourceCondition,
 ) error {
 	resource.ResourceCondition = *condition
@@ -125,8 +125,8 @@ func HandlePhaseExit(
 // handleResourcePhaseExit will perform the steps required to exit a phase.
 func handleResourcePhaseExit(
 	reconciler common.ComponentReconciler,
-	resource common.Resource,
-	condition common.ResourceCondition,
+	resource *common.Resource,
+	condition *common.ResourceCondition,
 	phase ResourcePhase,
 	phaseIsReady bool,
 	phaseError error,
@@ -141,7 +141,7 @@ func handleResourcePhaseExit(
 	}
 
 	// update the status conditions and return any errors
-	if updateError := updateResourceConditions(reconciler, resource, &condition); updateError != nil {
+	if updateError := updateResourceConditions(reconciler, resource, condition); updateError != nil {
 		// adjust the message if we had both an update error and a phase error
 		if !IsOptimisticLockError(updateError) {
 			if phaseError != nil {
