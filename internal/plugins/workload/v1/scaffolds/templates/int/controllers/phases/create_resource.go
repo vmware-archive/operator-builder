@@ -33,6 +33,7 @@ const createResourceTemplate = `{{ .Boilerplate }}
 package phases
 
 import (
+	"fmt"
 	"reflect"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -65,7 +66,7 @@ func (phase *CreateResourcesPhase) Execute(
 	// get the resources in memory
 	desiredResources, err := r.GetResources()
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("unable to retrieve resources, %w", err)
 	}
 
 	// execute the resource phases against each resource

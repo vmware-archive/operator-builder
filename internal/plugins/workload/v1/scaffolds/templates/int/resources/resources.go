@@ -71,7 +71,7 @@ func Get(reconciler common.ComponentReconciler, resource client.Object) (metav1.
 			// found without having to worry about its type
 			return nil, nil
 		} else {
-			return nil, err
+			return nil, fmt.Errorf("unable to get resource %s, %w", resource.GetName(), err)
 		}
 	}
 
@@ -92,7 +92,7 @@ func Create(reconciler common.ComponentReconciler, resource client.Object) error
 		resource,
 		&client.CreateOptions{FieldManager: FieldManager},
 	); err != nil {
-		return fmt.Errorf("unable to create resource; %v", err)
+		return fmt.Errorf("unable to create resource; %w", err)
 	}
 
 	return nil
@@ -119,7 +119,7 @@ func Update(reconciler common.ComponentReconciler, newResource, oldResource clie
 			client.Merge,
 			&client.PatchOptions{FieldManager: FieldManager},
 		); err != nil {
-			return fmt.Errorf("unable to update resource; %v", err)
+			return fmt.Errorf("unable to update resource; %w", err)
 		}
 	}
 
@@ -149,7 +149,7 @@ func NeedsUpdate(reconciler common.ComponentReconciler, desired, actual client.O
 	// as equal anyway
 	equal, err := rsrcs.AreEqual(desired, actual)
 	if equal || err != nil {
-		return !equal, err
+		return !equal, fmt.Errorf("unable to determine if resources are equal, %w", err)
 	}
 
 	// always skip custom resource updates as they are sensitive to modification
@@ -182,7 +182,7 @@ func NamespaceForResourceIsReady(r common.ComponentReconciler, resource client.O
 		if errors.IsNotFound(err) {
 			return false, nil
 		} else {
-			return false, err
+			return false, fmt.Errorf("unable to get namespace, %w", err)
 		}
 	}
 

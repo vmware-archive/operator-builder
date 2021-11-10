@@ -31,6 +31,7 @@ const checkReadyTemplate = `{{ .Boilerplate }}
 package phases
 
 import (
+	"fmt"
 	"time"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -58,13 +59,13 @@ func (phase *CheckReadyPhase) Execute(
 	// check to see if known types are ready
 	knownReady, err := resourcesAreReady(r)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("unable to determine if resources are ready, %w", err)
 	}
 
 	// check to see if the custom methods return ready
 	customReady, err := r.CheckReady()
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("unable to determine if resources are ready, %w", err)
 	}
 
 	return (knownReady && customReady), nil
@@ -76,7 +77,7 @@ func resourcesAreReady(r common.ComponentReconciler) (bool, error) {
 	// get resources in memory
 	desiredResources, err := r.GetResources()
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("unable to retrieve resources, %w", err)
 	}
 
 	// get resources from cluster
@@ -85,7 +86,7 @@ func resourcesAreReady(r common.ComponentReconciler) (bool, error) {
 	for i, rsrc := range desiredResources {
 		clusterResource, err := resources.Get(r, rsrc.(client.Object))
 		if err != nil {
-			return false, err
+			return false, fmt.Errorf("unable to retrieve resource %s, %w", rsrc.GetName(), err)
 		}
 
 		clusterResources[i] = clusterResource

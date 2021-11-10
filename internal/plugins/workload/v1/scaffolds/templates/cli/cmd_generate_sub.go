@@ -134,7 +134,10 @@ func (g *generateCommand) newGenerate{{ .SubCmdVarName }}Command() {
 		"",
 		"Filepath to the workload collection manifest.",
 	)
-	generate{{ .SubCmdVarName }}Cmd.MarkFlagRequired("collection-manifest")
+	
+	if err := generate{{ .SubCmdVarName }}Cmd.MarkFlagRequired("collection-manifest"); err != nil {
+		panic(err)
+	}
 
 	g.AddCommand(generate{{ .SubCmdVarName }}Cmd.Command)
 
@@ -147,7 +150,10 @@ func (g *generateCommand) newGenerate{{ .SubCmdVarName }}Command() {
 		"",
 		"Filepath to the workload manifest.",
 	)
-	generate{{ .SubCmdVarName }}Cmd.MarkFlagRequired("workload-manifest")
+	
+	if err := generate{{ .SubCmdVarName }}Cmd.MarkFlagRequired("workload-manifest"); err != nil {
+		panic(err)
+	}
 
 	generate{{ .SubCmdVarName }}Cmd.Command.Flags().StringVarP(
 		&generate{{ .SubCmdVarName }}Cmd.collectionManifest,
@@ -156,7 +162,10 @@ func (g *generateCommand) newGenerate{{ .SubCmdVarName }}Command() {
 		"",
 		"Filepath to the workload collection manifest.",
 	)
-	generate{{ .SubCmdVarName }}Cmd.MarkFlagRequired("collection-manifest")
+	
+	if err := generate{{ .SubCmdVarName }}Cmd.MarkFlagRequired("collection-manifest"); err != nil {
+		panic(err)
+	}
 
 	g.AddCommand(generate{{ .SubCmdVarName }}Cmd.Command)
 
@@ -169,7 +178,10 @@ func (g *generateCommand) newGenerate{{ .SubCmdVarName }}Command() {
 		"",
 		"Filepath to the workload manifest to generate child resources for.",
 	)
-	generate{{ .SubCmdVarName }}Cmd.MarkFlagRequired("workload-manifest")
+	
+	if err := generateCmd.MarkFlagRequired("workload-manifest"); err != nil {
+		panic(err)
+	}
 
 	c.AddCommand(generate{{ .SubCmdVarName }}Cmd)
 	{{- end -}}

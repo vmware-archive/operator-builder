@@ -35,6 +35,7 @@ const controllerUtilsTemplate = `{{ .Boilerplate }}
 package utils
 
 import (
+	"fmt"
 	"reflect"
 
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -98,7 +99,7 @@ func GetDesiredObject(compared client.Object, r common.ComponentReconciler) (cli
 
 	allObjects, err := r.GetResources()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to get resources, %w", err)
 	}
 
 	for _, resource := range allObjects {
@@ -229,7 +230,7 @@ func Watch(
 			},
 			ResourcePredicates(r),
 		); err != nil {
-			return err
+			return fmt.Errorf("unable to watch resource, %w", err)
 		}
 
 		r.SetWatch(resource)

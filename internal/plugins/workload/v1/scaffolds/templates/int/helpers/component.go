@@ -39,11 +39,14 @@ const componentTemplate = `{{ .Boilerplate }}
 package helpers
 
 import (
+	"errors"
 	"fmt"
 
 	common "{{ .Repo }}/apis/common"
 	{{ .Resource.ImportAlias }} "{{ .Resource.Path }}"
 )
+
+var ErrOnlyOne{{ .Resource.Kind }}Allowed = errors.New("expected only 1 {{ .Resource.Kind }}")
 
 // {{ .Resource.Kind }}Unique returns only one {{ .Resource.Kind }} and returns an error if more than one are found.
 func {{ .Resource.Kind }}Unique(
@@ -58,7 +61,7 @@ func {{ .Resource.Kind }}Unique(
 	}
 
 	if len(components.Items) != 1 {
-		return nil, fmt.Errorf("expected only 1 {{ .Resource.Kind }}; found %v\n", len(components.Items))
+		return nil, fmt.Errorf("%w; found %v", ErrOnlyOne{{ .Resource.Kind }}Allowed, len(components.Items))
 	}
 
 	component := components.Items[0]
@@ -80,7 +83,7 @@ func {{ .Resource.Kind }}List(
 		"kind", "{{ .Resource.Kind }}List",
 	)
 
-		return nil, err
+		return nil, fmt.Errorf("unable to retrieve {{ .Resource.Kind }}List from cluster, %w", err)
 	}
 
 	return components, nil

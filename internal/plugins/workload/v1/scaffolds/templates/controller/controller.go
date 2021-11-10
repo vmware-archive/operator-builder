@@ -121,12 +121,12 @@ func (r *{{ .Resource.Kind }}Reconciler) Reconcile(ctx context.Context, req ctrl
 				"kind", "{{ .Resource.Kind }}",
 			)
 
-			return ctrl.Result{}, err
+			return ctrl.Result{}, fmt.Errorf("unable to fetch resource, %w", err)
 		}
 
 		log.V(0).Info("unable to fetch {{ .Resource.Kind }}")
 
-		return ctrl.Result{}, err
+		return ctrl.Result{}, fmt.Errorf("resource not found, %w", err)
 	}
 
 	{{ if .IsComponent }}
@@ -134,7 +134,7 @@ func (r *{{ .Resource.Kind }}Reconciler) Reconcile(ctx context.Context, req ctrl
 	var collectionList {{ .Collection.Spec.API.Group }}{{ .Collection.Spec.API.Version }}.{{ .Collection.Spec.API.Kind }}List
 
 	if err := r.List(r.Context, &collectionList); err != nil {
-		return ctrl.Result{}, err
+		return ctrl.Result{}, fmt.Errorf("unable to list collection {{ .Collection.Spec.API.Kind }}, %w", err)
 	}
 
 	if len(collectionList.Items) == 0 {
@@ -227,24 +227,24 @@ func (r *{{ .Resource.Kind }}Reconciler) CreateOrUpdate(resource client.Object) 
 			"namespace", resource.GetNamespace(),
 		)
 
-		return err
+		return fmt.Errorf("unable to set owner reference on %s, %w", resource.GetName(), err)
 	}
 
 	// get the resource from the cluster
 	clusterResource, err := resources.Get(r, resource)
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to retrieve resource %s, %w", resource.GetName(), err)
 	}
 
 	// create the resource if we have a nil object, or update the resource if we have one
 	// that exists in the cluster already
 	if clusterResource == nil {
 		if err := resources.Create(r, resource); err != nil {
-			return err
+			return fmt.Errorf("unable to create resource %s, %w", resource.GetName(), err)
 		}
 	} else {
 		if err := resources.Update(r, resource, clusterResource.(client.Object)); err != nil {
-			return err
+			return fmt.Errorf("unable to update resource %s, %w", resource.GetName(), err)
 		}
 	}
 
@@ -331,7 +331,7 @@ func (r *{{ .Resource.Kind }}Reconciler) SetupWithManager(mgr ctrl.Manager) erro
 		For(&{{ .Resource.ImportAlias }}.{{ .Resource.Kind }}{}).
 		Build(r)
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to setup controller, %w", err)
 	}
 
 	r.Controller = baseController

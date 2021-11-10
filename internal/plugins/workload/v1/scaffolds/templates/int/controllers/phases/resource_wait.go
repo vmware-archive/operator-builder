@@ -31,6 +31,8 @@ const resourceWaitTemplate = `{{ .Boilerplate }}
 package phases
 
 import (
+	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -62,7 +64,7 @@ func (phase *WaitForResourcePhase) Execute(
 	
 	ready, err = r.Wait(meta)
 	if err != nil {
-		return ctrl.Result{}, false, err
+		return ctrl.Result{}, false, fmt.Errorf("unable to wait for resource %s, %w", meta.GetName(), err)
 	}
 
 	// return the result if the object is not ready
@@ -94,7 +96,12 @@ func commonWait(
 ) (bool, error) {
 	// Namespace
 	if resource.GetNamespace() != "" {
-		return resources.NamespaceForResourceIsReady(r, resource)
+		ready, err := resources.NamespaceForResourceIsReady(r, resource)
+		if err != nil {
+			return ready, fmt.Errorf("unable to determine if %s namespace is ready, %w", resource.GetNamespace(), err)
+		}
+
+		return ready, nil
 	}
 
 	return true, nil

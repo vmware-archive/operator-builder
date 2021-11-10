@@ -80,7 +80,7 @@ func dependencySatisfied(r common.ComponentReconciler, dependency common.Compone
 	dependencyList.SetGroupVersionKind(dependency.GetComponentGVK())
 
 	if err := r.List(r.GetContext(), dependencyList, &client.ListOptions{}); err != nil {
-		return false, err
+		return false, fmt.Errorf("unable to list dependencies, %w", err)
 	}
 
 	// expect only one item returned, otherwise dependencies are considered unsatisfied
