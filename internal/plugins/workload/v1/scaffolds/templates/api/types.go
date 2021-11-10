@@ -182,11 +182,7 @@ func (*{{ .Resource.Kind }}) GetDependencies() []common.Component {
 
 // GetComponentGVK returns a GVK object for the component.
 func (*{{ .Resource.Kind }}) GetComponentGVK() schema.GroupVersionKind {
-	return schema.GroupVersionKind{
-		Group:   GroupVersion.Group,
-		Version: GroupVersion.Version,
-		Kind:    "{{ .Resource.Kind }}",
-	}
+	return GroupVersion.WithKind("{{ .Resource.Kind }}")
 }
 
 func init() {
