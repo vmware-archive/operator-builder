@@ -38,8 +38,6 @@ import (
 	"fmt"
 	"reflect"
 
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -55,14 +53,6 @@ import (
 const (
 	FieldManager = "reconciler"
 )
-
-func IgnoreNotFound(err error) error {
-	if apierrs.IsNotFound(err) {
-		return nil
-	}
-
-	return err
-}
 
 // CreatePhases defines the phases for create and the order in which they run during the reconcile process.
 func CreatePhases() []controllerphases.Phase {
@@ -103,8 +93,8 @@ func GetDesiredObject(compared client.Object, r common.ComponentReconciler) (cli
 	}
 
 	for _, resource := range allObjects {
-		if resources.EqualGVK(compared, resource.(client.Object)) && resources.EqualNamespaceName(compared, resource.(client.Object)) {
-			return resource.(client.Object), nil
+		if resources.EqualGVK(compared, resource) && resources.EqualNamespaceName(compared, resource) {
+			return resource, nil
 		}
 	}
 
@@ -226,7 +216,7 @@ func Watch(
 			&source.Kind{Type: resource},
 			&handler.EnqueueRequestForOwner{
 				IsController: true,
-				OwnerType:    r.GetComponent().(runtime.Object),
+				OwnerType:    r.GetComponent(),
 			},
 			ResourcePredicates(r),
 		); err != nil {

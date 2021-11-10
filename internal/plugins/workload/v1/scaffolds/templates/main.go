@@ -81,14 +81,12 @@ const (
 		Name:   "%s",
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("%s"),
-		Scheme: mgr.GetScheme(),
 	},
 `
 	multiGroupReconcilerSetupCodeFragment = `&%scontrollers.%sReconciler{
 		Name:   "%s",
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("%s").WithName("%s"),
-		Scheme: mgr.GetScheme(),
 	},
 `
 	webhookSetupCodeFragment = `

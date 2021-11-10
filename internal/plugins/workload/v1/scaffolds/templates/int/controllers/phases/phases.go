@@ -63,7 +63,11 @@ func updatePhaseConditions(
 ) error {
 	r.GetComponent().SetPhaseCondition(condition)
 
-	return r.UpdateStatus()
+	if err := r.Status().Update(r.GetContext(), r.GetComponent()); err != nil {
+		return fmt.Errorf("unable to update Phase Condition for %s, %w", r.GetComponent().GetComponentGVK().Kind, err)
+	}
+
+	return nil
 }
 
 // updateResourceConditions updates the status.resourceConditions field of the parent custom resource.
@@ -75,7 +79,11 @@ func updateResourceConditions(
 	resource.ResourceCondition = *condition
 	r.GetComponent().SetResource(resource)
 
-	return r.UpdateStatus()
+	if err := r.Status().Update(r.GetContext(), r.GetComponent()); err != nil {
+		return fmt.Errorf("unable to update Resource Condition for %s, %w", r.GetComponent().GetComponentGVK().Kind, err)
+	}
+
+	return nil
 }
 
 // HandlePhaseExit will perform the steps required to exit a phase.

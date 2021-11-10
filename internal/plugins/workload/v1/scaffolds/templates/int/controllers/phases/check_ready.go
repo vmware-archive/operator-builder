@@ -34,7 +34,6 @@ import (
 	"fmt"
 	"time"
 
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrl "sigs.k8s.io/controller-runtime"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -84,7 +83,7 @@ func resourcesAreReady(r common.ComponentReconciler) (bool, error) {
 	clusterResources := make([]metav1.Object, len(desiredResources))
 	
 	for i, rsrc := range desiredResources {
-		clusterResource, err := resources.Get(r, rsrc.(client.Object))
+		clusterResource, err := resources.Get(r, rsrc)
 		if err != nil {
 			return false, fmt.Errorf("unable to retrieve resource %s, %w", rsrc.GetName(), err)
 		}

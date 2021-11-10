@@ -35,7 +35,6 @@ import (
 	"errors"
 	"fmt"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -56,12 +55,12 @@ const (
 // SkipResourceCreation skips the resource creation during the mutate phase.
 func SkipResourceCreation(
 	err error,
-) ([]metav1.Object, bool, error) {
-	return []metav1.Object{}, true, err
+) ([]client.Object, bool, error) {
+	return []client.Object{}, true, err
 }
 
 // GetProperObject gets a proper object type given an existing source metav1.object.
-func GetProperObject(destination metav1.Object, source metav1.Object) error {
+func GetProperObject(destination client.Object, source client.Object) error {
 	// convert the source object to an unstructured type
 	unstructuredObject, err := runtime.DefaultUnstructuredConverter.ToUnstructured(source)
 	if err != nil {
@@ -72,7 +71,7 @@ func GetProperObject(destination metav1.Object, source metav1.Object) error {
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(unstructuredObject, destination); err != nil {
 		return fmt.Errorf("unable to decode unstructed object into type for object %s, %w", source.GetName(), err)
 	}
-	
+
 	return nil
 }
 

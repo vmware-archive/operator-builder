@@ -38,8 +38,6 @@ import (
 	"errors"
 	"fmt"
 
-	"k8s.io/apimachinery/pkg/runtime"
-
 	"{{ .Repo }}/apis/common"
 )
 
@@ -52,12 +50,7 @@ func validateWorkload(
 ) error {
 	defaultWorkloadGVK := workload.GetComponentGVK()
 
-	component, ok := workload.(runtime.Object)
-	if !ok {
-		return fmt.Errorf("%w, unable to determine kind, group, and version", ErrInvalidResource)
-	}
-
-	if defaultWorkloadGVK != component.GetObjectKind().GroupVersionKind() {
+	if defaultWorkloadGVK != workload.GetObjectKind().GroupVersionKind() {
 		return fmt.Errorf(
 			"%w, expected resource of kind: '%s', with group '%s' and version '%s'; "+
 				"found resource of kind '%s', with group '%s' and version '%s'",
@@ -65,9 +58,9 @@ func validateWorkload(
 			defaultWorkloadGVK.Kind,
 			defaultWorkloadGVK.Group,
 			defaultWorkloadGVK.Version,
-			component.GetObjectKind().GroupVersionKind().Kind,
-			component.GetObjectKind().GroupVersionKind().Group,
-			component.GetObjectKind().GroupVersionKind().Version,
+			workload.GetObjectKind().GroupVersionKind().Kind,
+			workload.GetObjectKind().GroupVersionKind().Group,
+			workload.GetObjectKind().GroupVersionKind().Version,
 		)
 	}
 

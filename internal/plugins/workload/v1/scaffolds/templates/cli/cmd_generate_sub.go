@@ -69,9 +69,8 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
 	{{ .Resource.ImportAlias }} "{{ .Resource.Path }}"
@@ -236,7 +235,7 @@ func (g *generateCommand) generate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error validating yaml %s, %w", colFilename, err)
 	}
 
-	resourceObjects := make([]metav1.Object, len({{ .PackageName }}.CreateFuncs))
+	resourceObjects := make([]client.Object, len({{ .PackageName }}.CreateFuncs))
 
 	for i, f := range {{ .PackageName }}.CreateFuncs {
 		{{- if .IsCollection }}
@@ -270,7 +269,7 @@ func (g *generateCommand) generate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error validating yaml %s, %w", filename, err)
 	}
 
-	resourceObjects := make([]metav1.Object, len({{ .PackageName }}.CreateFuncs))
+	resourceObjects := make([]client.Object, len({{ .PackageName }}.CreateFuncs))
 
 	for i, f := range {{ .PackageName }}.CreateFuncs {
 		resource, err := f(&workload)
@@ -291,7 +290,7 @@ func (g *generateCommand) generate(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("failed to write output, %w", err)
 		}
 
-		if err := e.Encode(o.(runtime.Object), os.Stdout); err != nil {
+		if err := e.Encode(o, os.Stdout); err != nil {
 			return fmt.Errorf("failed to write output, %w", err)
 		}
 	}

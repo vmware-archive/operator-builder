@@ -33,7 +33,6 @@ package phases
 import (
 	"fmt"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -60,11 +59,9 @@ func (phase *WaitForResourcePhase) Execute(
 	}
 
 	// specific wait logic for a resource
-	meta := resource.(metav1.Object)
-	
-	ready, err = r.Wait(meta)
+	ready, err = r.Wait(resource)
 	if err != nil {
-		return ctrl.Result{}, false, fmt.Errorf("unable to wait for resource %s, %w", meta.GetName(), err)
+		return ctrl.Result{}, false, fmt.Errorf("unable to wait for resource %s, %w", resource.GetName(), err)
 	}
 
 	// return the result if the object is not ready

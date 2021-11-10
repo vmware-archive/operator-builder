@@ -56,8 +56,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -83,7 +82,6 @@ type {{ .Resource.Kind }}Reconciler struct {
 	client.Client
 	Name       string
 	Log        logr.Logger
-	Scheme     *runtime.Scheme
 	Context    context.Context
 	Controller controller.Controller
 	Watches    []client.Object
@@ -115,7 +113,7 @@ func (r *{{ .Resource.Kind }}Reconciler) Reconcile(ctx context.Context, req ctrl
 	// get and store the component
 	r.Component = &{{ .Resource.ImportAlias }}.{{ .Resource.Kind }}{}
 	if err := r.Get(r.Context, req.NamespacedName, r.Component); err != nil {
-		if err = utils.IgnoreNotFound(err); err != nil {
+		if !apierrs.IsNotFound(err) {
 			log.V(0).Error(
 				err, "unable to fetch resource",
 				"kind", "{{ .Resource.Kind }}",
@@ -186,9 +184,9 @@ func (r *{{ .Resource.Kind }}Reconciler) Reconcile(ctx context.Context, req ctrl
 }
 
 // GetResources resources runs the methods to properly construct the resources in memory.
-func (r *{{ .Resource.Kind }}Reconciler) GetResources() ([]metav1.Object, error) {
+func (r *{{ .Resource.Kind }}Reconciler) GetResources() ([]client.Object, error) {
 	{{- if .HasChildResources }}
-	resourceObjects := []metav1.Object{}
+	resourceObjects := []client.Object{}
 
 	// create resources in memory
 	for _, f := range {{ .PackageName }}.CreateFuncs {
@@ -200,7 +198,7 @@ func (r *{{ .Resource.Kind }}Reconciler) GetResources() ([]metav1.Object, error)
 		// run through the mutation functions to mutate the resources
 		mutatedResources, skip, err := r.Mutate(resource)
 		if err != nil {
-			return []metav1.Object{}, err
+			return []client.Object{}, err
 		}
 
 		if skip {
@@ -212,7 +210,7 @@ func (r *{{ .Resource.Kind }}Reconciler) GetResources() ([]metav1.Object, error)
 
 	return resourceObjects, nil
 {{- else -}}
-	return []metav1.Object{}, nil
+	return []client.Object{}, nil
 {{ end -}}
 }
 
@@ -220,7 +218,7 @@ func (r *{{ .Resource.Kind }}Reconciler) GetResources() ([]metav1.Object, error)
 // if it does already exist.
 func (r *{{ .Resource.Kind }}Reconciler) CreateOrUpdate(resource client.Object) error {
 	// set ownership on the underlying resource being created or updated
-	if err := ctrl.SetControllerReference(r.Component, resource, r.Scheme); err != nil {
+	if err := ctrl.SetControllerReference(r.Component, resource, r.Scheme()); err != nil {
 		r.GetLogger().V(0).Error(
 			err, "unable to set owner reference on resource",
 			"name", resource.GetName(),
@@ -243,7 +241,7 @@ func (r *{{ .Resource.Kind }}Reconciler) CreateOrUpdate(resource client.Object) 
 			return fmt.Errorf("unable to create resource %s, %w", resource.GetName(), err)
 		}
 	} else {
-		if err := resources.Update(r, resource, clusterResource.(client.Object)); err != nil {
+		if err := resources.Update(r, resource, clusterResource); err != nil {
 			return fmt.Errorf("unable to update resource %s, %w", resource.GetName(), err)
 		}
 	}
@@ -254,16 +252,6 @@ func (r *{{ .Resource.Kind }}Reconciler) CreateOrUpdate(resource client.Object) 
 // GetLogger returns the logger from the reconciler.
 func (r *{{ .Resource.Kind }}Reconciler) GetLogger() logr.Logger {
 	return r.Log
-}
-
-// GetClient returns the client from the reconciler.
-func (r *{{ .Resource.Kind }}Reconciler) GetClient() client.Client {
-	return r.Client
-}
-
-// GetScheme returns the scheme from the reconciler.
-func (r *{{ .Resource.Kind }}Reconciler) GetScheme() *runtime.Scheme {
-	return r.Scheme
 }
 
 // GetContext returns the context from the reconciler.
@@ -296,11 +284,6 @@ func (r *{{ .Resource.Kind }}Reconciler) SetWatch(watch client.Object) {
 	r.Watches = append(r.Watches, watch)
 }
 
-// UpdateStatus updates the status for a component.
-func (r *{{ .Resource.Kind }}Reconciler) UpdateStatus() error {
-	return r.Status().Update(r.Context, r.Component)
-}
-
 // CheckReady will return whether a component is ready.
 func (r *{{ .Resource.Kind }}Reconciler) CheckReady() (bool, error) {
 	return dependencies.{{ .Resource.Kind }}CheckReady(r)
@@ -308,14 +291,14 @@ func (r *{{ .Resource.Kind }}Reconciler) CheckReady() (bool, error) {
 
 // Mutate will run the mutate phase of a resource.
 func (r *{{ .Resource.Kind }}Reconciler) Mutate(
-	object metav1.Object,
-) ([]metav1.Object, bool, error) {
+	object client.Object,
+) ([]client.Object, bool, error) {
 	return mutate.{{ .Resource.Kind }}Mutate(r, object)
 }
 
 // Wait will run the wait phase of a resource.
 func (r *{{ .Resource.Kind }}Reconciler) Wait(
-	object metav1.Object,
+	object client.Object,
 ) (bool, error) {
 	return wait.{{ .Resource.Kind }}Wait(r, object)
 }
