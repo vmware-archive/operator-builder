@@ -142,6 +142,7 @@ func (component *{{ .Resource.Kind }}) SetPhaseCondition(condition common.PhaseC
 		if condition.LastModified == "" {
 			condition.LastModified = time.Now().UTC().String()
 		}
+
 		component.Status.Conditions[found] = condition
 	} else {
 		component.Status.Conditions = append(component.Status.Conditions, condition)
@@ -155,11 +156,11 @@ func (component {{ .Resource.Kind }}) GetResources() []common.Resource {
 
 // SetResources sets the phase conditions for a component.
 func (component *{{ .Resource.Kind }}) SetResource(resource common.Resource) {
-
 	if found := resource.GetResourceIndex(component); found >= 0 {
 		if resource.ResourceCondition.LastModified == "" {
 			resource.ResourceCondition.LastModified = time.Now().UTC().String()
 		}
+
 		component.Status.Resources[found] = resource
 	} else {
 		component.Status.Resources = append(component.Status.Resources, resource)

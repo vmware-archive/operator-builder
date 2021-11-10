@@ -81,6 +81,7 @@ func resourcesAreReady(r common.ComponentReconciler) (bool, error) {
 
 	// get resources from cluster
 	clusterResources := make([]metav1.Object, len(desiredResources))
+	
 	for i, rsrc := range desiredResources {
 		clusterResource, err := resources.Get(r, rsrc.(client.Object))
 		if err != nil {

@@ -85,8 +85,8 @@ func HandlePhaseExit(
 	phaseIsReady bool,
 	phaseError error,
 ) (ctrl.Result, error) {
-
 	var condition common.PhaseCondition
+
 	var result ctrl.Result
 
 	switch {
@@ -97,6 +97,7 @@ func HandlePhaseExit(
 		} else {
 			condition = GetFailCondition(phase, phaseError)
 		}
+		
 		result = DefaultReconcileResult()
 	case !phaseIsReady:
 		condition = GetPendingCondition(phase)
@@ -130,7 +131,6 @@ func handleResourcePhaseExit(
 	phaseIsReady bool,
 	phaseError error,
 ) (bool, error) {
-
 	switch {
 	case phaseError != nil:
 		if IsOptimisticLockError(phaseError) {

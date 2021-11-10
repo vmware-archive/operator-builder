@@ -201,9 +201,9 @@ func (g *generateCommand) generate(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("error validating yaml %s, %w", wkFilename, err)
 	}
-	{{- end }}
 
-	{{ if .IsComponent }}
+	{{ end -}}
+	{{- if .IsComponent }}
 	// workload collection
 	colFilename, _ := filepath.Abs(g.collectionManifest)
 
@@ -227,7 +227,7 @@ func (g *generateCommand) generate(cmd *cobra.Command, args []string) error {
 	resourceObjects := make([]metav1.Object, len({{ .PackageName }}.CreateFuncs))
 
 	for i, f := range {{ .PackageName }}.CreateFuncs {
-		{{ if .IsCollection }}
+		{{- if .IsCollection }}
 		resource, err := f(&collection)
 		{{- else }}
 		resource, err := f(&workload, &collection)
