@@ -59,7 +59,9 @@ func (phase *WaitForResourcePhase) Execute(
 	}
 
 	// specific wait logic for a resource
-	ready, err = r.Wait(resource)
+	meta := resource.(metav1.Object)
+	
+	ready, err = r.Wait(&meta)
 	if err != nil {
 		return ctrl.Result{}, false, fmt.Errorf("unable to wait for resource %s, %w", resource.GetName(), err)
 	}

@@ -190,9 +190,9 @@ func (r *{{ .Resource.Kind }}Reconciler) Reconcile(ctx context.Context, req ctrl
 }
 
 // GetResources resources runs the methods to properly construct the resources in memory.
-func (r *{{ .Resource.Kind }}Reconciler) GetResources() ([]client.Object, error) {
+func (r *{{ .Resource.Kind }}Reconciler) GetResources() ([]metav1.Object, error) {
 	{{- if .HasChildResources }}
-	resourceObjects := []client.Object{}
+	resourceObjects := []metav1.Object{}
 
 	// create resources in memory
 	for _, f := range {{ .PackageName }}.CreateFuncs {
