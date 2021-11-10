@@ -49,6 +49,11 @@ var ErrInvalidResource = errors.New("supplied resource is incorrect")
 func ValidateWorkload(workload common.Component) error {
 	defaultWorkloadGVK := workload.GetComponentGVK()
 
+	component, ok := workload.(runtime.Object)
+	if !ok {
+		return fmt.Errorf("%w, unable to determine kind, group, and version", ErrInvalidResource)
+	}
+
 	if defaultWorkloadGVK != workload.GetObjectKind().GroupVersionKind() {
 		return fmt.Errorf(
 			"%w, expected resource of kind: '%s', with group '%s' and version '%s'; "+

@@ -127,7 +127,7 @@ func (r *{{ .Resource.Kind }}Reconciler) Reconcile(ctx context.Context, req ctrl
 				"kind", "{{ .Resource.Kind }}",
 			)
 
-			return ctrl.Result{}, err
+			return ctrl.Result{}, fmt.Errorf("unable to fetch resource, %w", err)
 		}
 
 		return ctrl.Result{}, nil
@@ -231,7 +231,7 @@ func (r *{{ .Resource.Kind }}Reconciler) CreateOrUpdate(resource client.Object) 
 			"namespace", resource.GetNamespace(),
 		)
 
-		return err
+		return fmt.Errorf("unable to set owner reference on %s, %w", resource.GetName(), err)
 	}
 
 	// get the resource from the cluster
@@ -247,7 +247,7 @@ func (r *{{ .Resource.Kind }}Reconciler) CreateOrUpdate(resource client.Object) 
 			return fmt.Errorf("unable to create resource %s, %w", resource.GetName(), err)
 		}
 	} else {
-		if err := resources.Update(r, resource, clusterResource); err != nil {
+		if err := resources.Update(r, resource, clusterResource.(client.Object)); err != nil {
 			return fmt.Errorf("unable to update resource %s, %w", resource.GetName(), err)
 		}
 	}

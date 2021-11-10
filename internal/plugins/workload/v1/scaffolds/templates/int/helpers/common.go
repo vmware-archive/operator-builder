@@ -71,7 +71,7 @@ func GetProperObject(destination, source client.Object) error {
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(unstructuredObject, destination); err != nil {
 		return fmt.Errorf("unable to decode unstructed object into type for object %s, %w", source.GetName(), err)
 	}
-
+	
 	return nil
 }
 

@@ -33,6 +33,7 @@ const createResourceTemplate = `{{ .Boilerplate }}
 package phases
 
 import (
+	"fmt"
 	"reflect"
 
 	ctrl "sigs.k8s.io/controller-runtime"
