@@ -45,7 +45,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"{{ .Repo }}/apis/common"
-	controllerphases "{{ .Repo }}/internal/controllers/phases"
 
 	"github.com/nukleros/operator-builder-tools/pkg/resources"
 )
@@ -53,35 +52,6 @@ import (
 const (
 	FieldManager = "reconciler"
 )
-
-// CreatePhases defines the phases for create and the order in which they run during the reconcile process.
-func CreatePhases() []controllerphases.Phase {
-	return []controllerphases.Phase{
-		&controllerphases.DependencyPhase{},
-		&controllerphases.PreFlightPhase{},
-		&controllerphases.CreateResourcesPhase{},
-		&controllerphases.CheckReadyPhase{},
-		&controllerphases.CompletePhase{},
-	}
-}
-
-// UpdatePhases defines the phases for update and the order in which they run during the reconcile process.
-func UpdatePhases() []controllerphases.Phase {
-	// at this time create/update are identical; return the create phases
-	return CreatePhases()
-}
-
-// Phases returns which phases to run given the component.
-func Phases(component common.Component) []controllerphases.Phase {
-	var phases []controllerphases.Phase
-	if !component.GetReadyStatus() {
-		phases = CreatePhases()
-	} else {
-		phases = UpdatePhases()
-	}
-
-	return phases
-}
 
 // GetDesiredObject returns the desired object from a list stored in memory.
 func GetDesiredObject(compared client.Object, r common.ComponentReconciler) (client.Object, error) {

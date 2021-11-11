@@ -31,23 +31,18 @@ const dependenciesTemplate = `{{ .Boilerplate }}
 package phases
 
 import (
+	"context"
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"{{ .Repo }}/apis/common"
 )
 
-// DependencyPhase.DefaultRequeue executes checking for a parent components readiness status.
-func (phase *DependencyPhase) DefaultRequeue() ctrl.Result {
-	return Requeue()
-}
-
-// DependencyPhase.Execute executes a dependency check prior to attempting to create resources.
-func (phase *DependencyPhase) Execute(r common.ComponentReconciler) (proceedToNextPhase bool, err error) {
+// DependencyPhase executes a dependency check prior to attempting to create resources.
+func DependencyPhase(ctx context.Context, r common.ComponentReconciler) (bool, error) {
 	if !r.GetComponent().GetDependencyStatus() {
 		satisfied, err := dependenciesSatisfied(r)
 		if err != nil {

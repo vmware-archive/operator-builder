@@ -31,20 +31,13 @@ const completeTemplate = `{{ .Boilerplate }}
 package phases
 
 import (
-	ctrl "sigs.k8s.io/controller-runtime"
+	"context"
 
 	"{{ .Repo }}/apis/common"
 )
 
-// CompletePhase.DefaultRequeue executes checking for a parent components readiness status.
-func (phase *CompletePhase) DefaultRequeue() ctrl.Result {
-	return Requeue()
-}
-
-// CompletePhase.Execute executes the completion of a reconciliation loop.
-func (phase *CompletePhase) Execute(
-	r common.ComponentReconciler,
-) (proceedToNextPhase bool, err error) {
+// CompletePhase executes the completion of a reconciliation loop.
+func CompletePhase(ctx context.Context, r common.ComponentReconciler) (bool, error) {
 	r.GetComponent().SetReadyStatus(true)
 	r.GetLogger().V(0).Info("successfully reconciled", "kind", r.GetComponent().GetComponentGVK().Kind)
 

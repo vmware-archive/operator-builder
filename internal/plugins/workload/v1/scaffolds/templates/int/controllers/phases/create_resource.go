@@ -33,19 +33,13 @@ const createResourceTemplate = `{{ .Boilerplate }}
 package phases
 
 import (
+	"context"
 	"fmt"
 	"reflect"
-
-	ctrl "sigs.k8s.io/controller-runtime"
 
 	"{{ .Repo }}/apis/common"
 	"{{ .Repo }}/internal/resources"
 )
-
-// CreateResourcesPhase.DefaultRequeue executes checking for a parent components readiness status.
-func (phase *CreateResourcesPhase) DefaultRequeue() ctrl.Result {
-	return Requeue()
-}
 
 // createResourcePhases defines the phases for resource creation and the order in which they run during the reconcile process.
 func createResourcePhases() []ResourcePhase {
@@ -58,10 +52,8 @@ func createResourcePhases() []ResourcePhase {
 	}
 }
 
-// CreateResourcesPhase.Execute executes executes sub-phases which are required to create the resources.
-func (phase *CreateResourcesPhase) Execute(
-	r common.ComponentReconciler,
-) (proceedToNextPhase bool, err error) {
+// CreateResourcesPhase executes executes sub-phases which are required to create the resources.
+func CreateResourcesPhase(ctx context.Context, r common.ComponentReconciler) (bool, error) {
 	// get the resources in memory
 	desiredResources, err := r.GetResources()
 	if err != nil {

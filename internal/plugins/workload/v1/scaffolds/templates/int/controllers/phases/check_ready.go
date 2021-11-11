@@ -31,10 +31,9 @@ const checkReadyTemplate = `{{ .Boilerplate }}
 package phases
 
 import (
+	"context"
 	"fmt"
-	"time"
 
-	ctrl "sigs.k8s.io/controller-runtime"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"{{ .Repo }}/apis/common"
@@ -43,18 +42,8 @@ import (
 	rsrcs "github.com/nukleros/operator-builder-tools/pkg/resources"
 )
 
-// CheckReadyPhase.DefaultRequeue executes checking for a parent components readiness status.
-func (phase *CheckReadyPhase) DefaultRequeue() ctrl.Result {
-	return ctrl.Result{
-		Requeue:      true,
-		RequeueAfter: 5 * time.Second,
-	}
-}
-
-// CheckReadyPhase.Execute executes checking for a parent components readiness status.
-func (phase *CheckReadyPhase) Execute(
-	r common.ComponentReconciler,
-) (proceedToNextPhase bool, err error) {
+// CheckReadyPhase executes checking for a parent components readiness status.
+func CheckReadyPhase(ctx context.Context, r common.ComponentReconciler) (bool, error) {
 	// check to see if known types are ready
 	knownReady, err := resourcesAreReady(r)
 	if err != nil {

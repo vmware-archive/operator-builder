@@ -52,7 +52,6 @@ package {{ .Resource.Group }}
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -88,7 +87,8 @@ type {{ .Resource.Kind }}Reconciler struct {
 	Component  *{{ .Resource.ImportAlias }}.{{ .Resource.Kind }}
 	{{- if .IsComponent }}
 	Collection *{{ .Collection.Spec.API.Group }}{{ .Collection.Spec.API.Version }}.{{ .Collection.Spec.API.Kind }}
-	{{ end }}
+	{{- end }}
+	Phases     *phases.Registry
 }
 
 func New{{ .Resource.Kind }}Reconciler(mgr ctrl.Manager) *{{ .Resource.Kind }}Reconciler {
@@ -97,6 +97,7 @@ func New{{ .Resource.Kind }}Reconciler(mgr ctrl.Manager) *{{ .Resource.Kind }}Re
 		Client:    mgr.GetClient(),
 		Log:       ctrl.Log.WithName("controllers").WithName("{{ .Resource.Group }}").WithName("{{ .Resource.Kind }}"),
 		Component: &{{ .Resource.ImportAlias }}.{{ .Resource.Kind }}{},
+		Phases:    &phases.Registry{},
 	}
 }
 
@@ -117,15 +118,16 @@ func New{{ .Resource.Kind }}Reconciler(mgr ctrl.Manager) *{{ .Resource.Kind }}Re
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.7.2/pkg/reconcile
 func (r *{{ .Resource.Kind }}Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	r.Context = ctx
-	log := r.Log.WithValues("{{ .Resource.Kind | lower }}", req.NamespacedName)
+	log := r.Log.WithValues(
+		"kind", r.Component.Kind,
+		"name", req.Name,
+		"namespace", req.Namespace,
+	)
 
 	// get and store the component
 	if err := r.Get(r.Context, req.NamespacedName, r.Component); err != nil {
 		if !apierrs.IsNotFound(err) {
-			log.V(0).Error(
-				err, "unable to fetch resource",
-				"kind", "{{ .Resource.Kind }}",
-			)
+			log.Error(err, "unable to fetch resource")
 
 			return ctrl.Result{}, fmt.Errorf("unable to fetch resource, %w", err)
 		}
@@ -141,52 +143,34 @@ func (r *{{ .Resource.Kind }}Reconciler) Reconcile(ctx context.Context, req ctrl
 		return ctrl.Result{}, fmt.Errorf("unable to list collection {{ .Collection.Spec.API.Kind }}, %w", err)
 	}
 
-	if len(collectionList.Items) == 0 {
-		log.V(0).Info("no collections available; initiating controller requeue")
+	switch len(collectionList.Items) {
+	case 0:
+		if r.GetComponent().GetDeletionTimestamp().IsZero() {
+			log.Info("no collections available; initiating controller requeue")
 
-		return ctrl.Result{Requeue: true}, nil
-	} else if len(collectionList.Items) > 1 {
-		log.V(0).Info("multiple collections found; expected 1; cannot proceed")
+			return ctrl.Result{Requeue: true}, nil
+		}
+	case 1:
+		r.Collection = &collectionList.Items[0]
+	default:
+		log.Info("multiple collections found; expected 1; cannot proceed")
 
 		return ctrl.Result{}, nil
 	}
 
-	r.Collection = &collectionList.Items[0]
-	{{ end }}
+	{{- end }}
 
 	// execute the phases
-	for _, phase := range utils.Phases(r.Component) {
-		log.V(7).Info(
-			"enter phase",
-			"phase", reflect.TypeOf(phase).String(),
-		)
+	switch {
+	case !r.GetComponent().GetDeletionTimestamp().IsZero():
+		log.Info("deleting component")
 
-		proceed, err := phase.Execute(r)
-		result, err := phases.HandlePhaseExit(r, phase, proceed, err)
-
-		if err != nil || !proceed {
-			log.V(2).Info(
-				"not ready; requeuing",
-				"phase", reflect.TypeOf(phase),
-			)
-
-			// return only if we have an error or are told not to proceed
-			if err != nil {
-				return result, fmt.Errorf("unable to complete %T phase for %s, %w", phase, r.Component.GetName(), err)
-			}
-
-			if !proceed {
-				return result, nil
-			}
-		}
-
-		log.V(5).Info(
-			"completed phase",
-			"phase", reflect.TypeOf(phase).String(),
-		)
+		return r.Phases.HandleDelete(r)
+	case !r.GetComponent().GetReadyStatus():
+		return r.Phases.Execute(r, phases.CreateEvent)
+	default:
+		return r.Phases.Execute(r, phases.UpdateEvent)
 	}
-
-	return phases.DefaultReconcileResult(), nil
 }
 
 // GetResources resources runs the methods to properly construct the resources in memory.
@@ -313,6 +297,8 @@ func (r *{{ .Resource.Kind }}Reconciler) SetupWithManager(mgr ctrl.Manager) erro
 	options := controller.Options{
 		RateLimiter: utils.NewDefaultRateLimiter(5*time.Microsecond, 5*time.Minute),
 	}
+
+	r.InitializePhases()
 
 	baseController, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
