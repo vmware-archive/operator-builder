@@ -77,17 +77,9 @@ const (
 `
 	addschemeCodeFragment = `utilruntime.Must(%s.AddToScheme(scheme))
 `
-	reconcilerSetupCodeFragment = `&controllers.%sReconciler{
-		Name:   "%s",
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("%s"),
-	},
+	reconcilerSetupCodeFragment = `controllers.New%sReconciler(mgr),
 `
-	multiGroupReconcilerSetupCodeFragment = `&%scontrollers.%sReconciler{
-		Name:   "%s",
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("%s").WithName("%s"),
-	},
+	multiGroupReconcilerSetupCodeFragment = `%scontrollers.New%sReconciler(mgr),
 `
 	webhookSetupCodeFragment = `
 if err = (&%s.%s{}).SetupWebhookWithManager(mgr); err != nil {
