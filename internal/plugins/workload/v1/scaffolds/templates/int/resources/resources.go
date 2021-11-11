@@ -36,6 +36,7 @@ const resourcesTemplate = `{{ .Boilerplate }}
 package resources
 
 import (
+	"context"
 	"fmt"
 
 	v1 "k8s.io/api/core/v1"
@@ -54,14 +55,14 @@ const (
 )
 
 // Get gets a resource.
-func Get(reconciler common.ComponentReconciler, resource client.Object) (client.Object, error) {
+func Get(ctx context.Context, reconciler common.ComponentReconciler, resource client.Object) (client.Object, error) {
 	// create a stub object to store the current resource in the cluster so that we do not affect
 	// the desired state of the resource object in memory
 	resourceStore := &unstructured.Unstructured{}
 	resourceStore.SetGroupVersionKind(resource.GetObjectKind().GroupVersionKind())
 
 	if err := reconciler.Get(
-		reconciler.GetContext(),
+		ctx,
 		client.ObjectKeyFromObject(resource),
 		resourceStore,
 	); err != nil {
@@ -78,7 +79,7 @@ func Get(reconciler common.ComponentReconciler, resource client.Object) (client.
 }
 
 // Create creates a resource.
-func Create(reconciler common.ComponentReconciler, resource client.Object) error {
+func Create(ctx context.Context, reconciler common.ComponentReconciler, resource client.Object) error {
 	reconciler.GetLogger().V(0).Info(
 		"creating resource",
 		"kind", resource.GetObjectKind().GroupVersionKind().Kind,
@@ -87,7 +88,7 @@ func Create(reconciler common.ComponentReconciler, resource client.Object) error
 	)
 
 	if err := reconciler.Create(
-		reconciler.GetContext(),
+		ctx,
 		resource,
 		&client.CreateOptions{FieldManager: FieldManager},
 	); err != nil {
@@ -98,7 +99,7 @@ func Create(reconciler common.ComponentReconciler, resource client.Object) error
 }
 
 // Update updates a resource.
-func Update(reconciler common.ComponentReconciler, newResource, oldResource client.Object) error {
+func Update(ctx context.Context, reconciler common.ComponentReconciler, newResource, oldResource client.Object) error {
 	needsUpdate, err := NeedsUpdate(reconciler, newResource, oldResource)
 	if err != nil {
 		return err
@@ -113,7 +114,7 @@ func Update(reconciler common.ComponentReconciler, newResource, oldResource clie
 		)
 
 		if err := reconciler.Patch(
-			reconciler.GetContext(),
+			ctx,
 			newResource,
 			client.Merge,
 			&client.PatchOptions{FieldManager: FieldManager},
@@ -174,14 +175,14 @@ func NeedsUpdate(reconciler common.ComponentReconciler, desired, actual client.O
 
 // NamespaceForResourceIsReady will check to see if the Namespace of a metadata.namespace
 // field of a resource is ready.
-func NamespaceForResourceIsReady(r common.ComponentReconciler, resource client.Object) (bool, error) {
+func NamespaceForResourceIsReady(ctx context.Context, r common.ComponentReconciler, resource client.Object) (bool, error) {
 	namespace := &v1.Namespace{}
 	namespacedName := types.NamespacedName{
 		Name:      resource.GetNamespace(),
 		Namespace: "",
 	}
 
-	if err := r.Get(r.GetContext(), namespacedName, namespace); err != nil {
+	if err := r.Get(ctx, namespacedName, namespace); err != nil {
 		if errors.IsNotFound(err) {
 			return false, nil
 		}

@@ -45,13 +45,13 @@ import (
 // CheckReadyPhase executes checking for a parent components readiness status.
 func CheckReadyPhase(ctx context.Context, r common.ComponentReconciler) (bool, error) {
 	// check to see if known types are ready
-	knownReady, err := resourcesAreReady(r)
+	knownReady, err := resourcesAreReady(ctx, r)
 	if err != nil {
 		return false, fmt.Errorf("unable to determine if resources are ready, %w", err)
 	}
 
 	// check to see if the custom methods return ready
-	customReady, err := r.CheckReady()
+	customReady, err := r.CheckReady(ctx)
 	if err != nil {
 		return false, fmt.Errorf("unable to determine if resources are ready, %w", err)
 	}
@@ -61,7 +61,7 @@ func CheckReadyPhase(ctx context.Context, r common.ComponentReconciler) (bool, e
 
 // resourcesAreReady gets the resources in memory, pulls the current state from the
 // clusters and determines if they are in a ready condition.
-func resourcesAreReady(r common.ComponentReconciler) (bool, error) {
+func resourcesAreReady(ctx context.Context, r common.ComponentReconciler) (bool, error) {
 	// get resources in memory
 	desiredResources, err := r.GetResources()
 	if err != nil {
@@ -72,7 +72,7 @@ func resourcesAreReady(r common.ComponentReconciler) (bool, error) {
 	clusterResources := make([]metav1.Object, len(desiredResources))
 	
 	for i, rsrc := range desiredResources {
-		clusterResource, err := resources.Get(r, rsrc)
+		clusterResource, err := resources.Get(ctx, r, rsrc)
 		if err != nil {
 			return false, fmt.Errorf("unable to retrieve resource %s, %w", rsrc.GetName(), err)
 		}

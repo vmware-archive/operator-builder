@@ -39,6 +39,8 @@ const componentTemplate = `{{ .Boilerplate }}
 package wait
 
 import (
+	"context"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"{{ .Repo }}/apis/common"
@@ -46,6 +48,7 @@ import (
 
 // {{ .Resource.Kind }}Wait performs the logic to wait for resources that belong to the parent.
 func {{ .Resource.Kind }}Wait(
+	ctx context.Context,
 	reconciler common.ComponentReconciler,
 	object client.Object,
 ) (ready bool, err error) {

@@ -59,6 +59,7 @@ func (*Phase) DefaultRequeue() ctrl.Result {
 
 // HandlePhaseExit will perform the steps required to exit a phase.
 func (p *Phase) HandlePhaseExit(
+	ctx context.Context,
 	reconciler common.ComponentReconciler,
 	phaseIsReady bool,
 	phaseError error,
@@ -86,7 +87,7 @@ func (p *Phase) HandlePhaseExit(
 	}
 
 	// update the status conditions and return any errors
-	if updateError := updatePhaseConditions(reconciler, &condition); updateError != nil {
+	if updateError := updatePhaseConditions(ctx, reconciler, &condition); updateError != nil {
 		// adjust the message if we had both an update error and a phase error
 		if !IsOptimisticLockError(updateError) {
 			if phaseError != nil {
@@ -128,10 +129,10 @@ func (p *Phase) GetFailCondition(err error) common.PhaseCondition {
 }
 
 // updatePhaseConditions updates the status.conditions field of the parent custom resource.
-func updatePhaseConditions(r common.ComponentReconciler, condition *common.PhaseCondition) error {
+func updatePhaseConditions(ctx context.Context, r common.ComponentReconciler, condition *common.PhaseCondition) error {
 	r.GetComponent().SetPhaseCondition(condition)
 
-	if err := r.Status().Update(r.GetContext(), r.GetComponent()); err != nil {
+	if err := r.Status().Update(ctx, r.GetComponent()); err != nil {
 		return fmt.Errorf("unable to update Phase Condition for %s, %w", r.GetComponent().GetComponentGVK().Kind, err)
 	}
 

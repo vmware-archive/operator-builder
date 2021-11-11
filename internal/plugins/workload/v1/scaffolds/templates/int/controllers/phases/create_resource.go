@@ -71,11 +71,11 @@ func CreateResourcesPhase(ctx context.Context, r common.ComponentReconciler) (bo
 				"phase", reflect.TypeOf(resourcePhase).String(),
 			)
 
-			_, proceed, err := resourcePhase.Execute(r, resource, resourceCondition)
+			_, proceed, err := resourcePhase.Execute(ctx, r, resource, resourceCondition)
 
 			// set a message, return the error and result on error or when unable to proceed
 			if err != nil || !proceed {
-				return handleResourcePhaseExit(r, resourceObject, resourceCondition, resourcePhase, proceed, err)
+				return handleResourcePhaseExit(ctx, r, resourceObject, resourceCondition, resourcePhase, proceed, err)
 			}
 
 			// set attributes on the resource condition before updating the status

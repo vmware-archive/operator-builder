@@ -61,7 +61,6 @@ type ComponentReconciler interface {
 	client.Client
 	// attribute exporters and setters
 	GetComponent() Component
-	GetContext() context.Context
 	GetController() controller.Controller
 	GetLogger() logr.Logger
 	GetResources() ([]client.Object, error)
@@ -69,11 +68,11 @@ type ComponentReconciler interface {
 	SetWatch(client.Object)
 
 	// component and child resource methods
-	CreateOrUpdate(client.Object) error
+	CreateOrUpdate(context.Context, client.Object) error
 
 	// custom methods which are managed by consumers
-	CheckReady() (bool, error)
+	CheckReady(context.Context) (bool, error)
 	Mutate(client.Object) ([]client.Object, bool, error)
-	Wait(client.Object) (bool, error)
+	Wait(context.Context, client.Object) (bool, error)
 }
 `

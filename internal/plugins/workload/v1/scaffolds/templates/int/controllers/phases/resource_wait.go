@@ -31,6 +31,7 @@ const resourceWaitTemplate = `{{ .Boilerplate }}
 package phases
 
 import (
+	"context"
 	"fmt"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -42,13 +43,14 @@ import (
 
 // WaitForResourcePhase.Execute executes waiting for a resource to be ready before continuing.
 func (phase *WaitForResourcePhase) Execute(
+	ctx context.Context,
 	r common.ComponentReconciler,
 	resource client.Object,
 	resourceCondition *common.ResourceCondition,
 ) (ctrl.Result, bool, error) {
 	// TODO: loop through functions instead of repeating logic
 	// common wait logic for a resource
-	ready, err := commonWait(r, resource)
+	ready, err := commonWait(ctx, r, resource)
 	if err != nil {
 		return ctrl.Result{}, false, err
 	}
@@ -59,7 +61,7 @@ func (phase *WaitForResourcePhase) Execute(
 	}
 
 	// specific wait logic for a resource
-	ready, err = r.Wait(resource)
+	ready, err = r.Wait(ctx, resource)
 	if err != nil {
 		return ctrl.Result{}, false, fmt.Errorf("unable to wait for resource %s, %w", resource.GetName(), err)
 	}
@@ -88,12 +90,13 @@ func (phase *WaitForResourcePhase) Execute(
 
 // commonWait applies all common waiting functions for known resources.
 func commonWait(
+	ctx context.Context,
 	r common.ComponentReconciler,
 	resource client.Object,
 ) (bool, error) {
 	// Namespace
 	if resource.GetNamespace() != "" {
-		ready, err := resources.NamespaceForResourceIsReady(r, resource)
+		ready, err := resources.NamespaceForResourceIsReady(ctx, r, resource)
 		if err != nil {
 			return ready, fmt.Errorf("unable to determine if %s namespace is ready, %w", resource.GetNamespace(), err)
 		}

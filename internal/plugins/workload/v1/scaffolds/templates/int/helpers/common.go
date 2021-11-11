@@ -32,6 +32,7 @@ const commonTemplate = `{{ .Boilerplate }}
 package helpers
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -76,9 +77,9 @@ func GetProperObject(destination, source client.Object) error {
 }
 
 // getValueFromCollection gets a specific value from the {{ .Resource.Kind }} resource.
-func getValueFromCollection(reconciler common.ComponentReconciler, path ...string) (string, error) {
+func getValueFromCollection(ctx context.Context, reconciler common.ComponentReconciler, path ...string) (string, error) {
 	// retrieve a list of platform configs
-	collectionConfigs, err := GetCollectionConfigs(reconciler)
+	collectionConfigs, err := GetCollectionConfigs(ctx, reconciler)
 	if err != nil {
 		return "", err
 	}
@@ -101,6 +102,7 @@ func getValueFromCollection(reconciler common.ComponentReconciler, path ...strin
 
 // GetCollectionConfigs returns all of the collection resources from the cluster.
 func GetCollectionConfigs(
+	ctx context.Context,
 	r common.ComponentReconciler,
 ) (unstructured.UnstructuredList, error) {
 	collectionConfigs := unstructured.UnstructuredList{}
@@ -113,7 +115,7 @@ func GetCollectionConfigs(
 	// get a list of configurations from the cluster
 	collectionConfigs.SetGroupVersionKind(collectionConfigGVK)
 
-	if err := r.List(r.GetContext(), &collectionConfigs, &client.ListOptions{}); err != nil {
+	if err := r.List(ctx, &collectionConfigs, &client.ListOptions{}); err != nil {
 		return collectionConfigs, fmt.Errorf("unable to list configuration for cluster, %w", err)
 	}
 
@@ -121,7 +123,7 @@ func GetCollectionConfigs(
 }
 
 // GetCollectionName returns the name of the platform from the {{ .Resource.Kind }} resource.
-func GetCollectionName(r common.ComponentReconciler) (string, error) {
-	return getValueFromCollection(r, "metadata", "name")
+func GetCollectionName(ctx context.Context, r common.ComponentReconciler) (string, error) {
+	return getValueFromCollection(ctx, r, "metadata", "name")
 }
 `

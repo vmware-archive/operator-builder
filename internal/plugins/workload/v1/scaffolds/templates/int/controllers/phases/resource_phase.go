@@ -31,6 +31,7 @@ const resourcePhaseTemplate = `{{ .Boilerplate }}
 package phases
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"strings"
@@ -43,7 +44,7 @@ import (
 
 // ResourcePhase defines the specific phase of reconcilication associated with creating resources.
 type ResourcePhase interface {
-	Execute(common.ComponentReconciler, client.Object, *common.ResourceCondition) (ctrl.Result, bool, error)
+	Execute(context.Context, common.ComponentReconciler, client.Object, *common.ResourceCondition) (ctrl.Result, bool, error)
 }
 
 // Below are the phase types which satisfy the ResourcePhase interface.
@@ -54,6 +55,7 @@ type (
 
 // updateResourceConditions updates the status.resourceConditions field of the parent custom resource.
 func updateResourceConditions(
+	ctx context.Context,
 	r common.ComponentReconciler,
 	resource *common.Resource,
 	condition *common.ResourceCondition,
@@ -61,7 +63,7 @@ func updateResourceConditions(
 	resource.ResourceCondition = *condition
 	r.GetComponent().SetResource(resource)
 
-	if err := r.Status().Update(r.GetContext(), r.GetComponent()); err != nil {
+	if err := r.Status().Update(ctx, r.GetComponent()); err != nil {
 		return fmt.Errorf("unable to update Resource Condition for %s, %w", r.GetComponent().GetComponentGVK().Kind, err)
 	}
 
@@ -71,6 +73,7 @@ func updateResourceConditions(
 
 // handleResourcePhaseExit will perform the steps required to exit a phase.
 func handleResourcePhaseExit(
+	ctx context.Context,
 	reconciler common.ComponentReconciler,
 	resource *common.Resource,
 	condition *common.ResourceCondition,
@@ -90,7 +93,7 @@ func handleResourcePhaseExit(
 	}
 
 	// update the status conditions and return any errors
-	if updateError := updateResourceConditions(reconciler, resource, condition); updateError != nil {
+	if updateError := updateResourceConditions(ctx, reconciler, resource, condition); updateError != nil {
 		// adjust the message if we had both an update error and a phase error
 		if !IsOptimisticLockError(updateError) {
 			if phaseError != nil {

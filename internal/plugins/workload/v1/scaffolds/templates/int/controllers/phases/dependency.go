@@ -44,7 +44,7 @@ import (
 // DependencyPhase executes a dependency check prior to attempting to create resources.
 func DependencyPhase(ctx context.Context, r common.ComponentReconciler) (bool, error) {
 	if !r.GetComponent().GetDependencyStatus() {
-		satisfied, err := dependenciesSatisfied(r)
+		satisfied, err := dependenciesSatisfied(ctx, r)
 		if err != nil {
 			return false, fmt.Errorf("unable to list dependencies, %w", err)
 		}
@@ -56,9 +56,9 @@ func DependencyPhase(ctx context.Context, r common.ComponentReconciler) (bool, e
 }
 
 // dependenciesSatisfied will return whether or not all dependencies are satisfied for a component.
-func dependenciesSatisfied(r common.ComponentReconciler) (bool, error) {
+func dependenciesSatisfied(ctx context.Context, r common.ComponentReconciler) (bool, error) {
 	for _, dep := range r.GetComponent().GetDependencies() {
-		satisfied, err := dependencySatisfied(r, dep)
+		satisfied, err := dependencySatisfied(ctx, r, dep)
 		if err != nil || !satisfied {
 			return false, err
 		}
@@ -68,13 +68,13 @@ func dependenciesSatisfied(r common.ComponentReconciler) (bool, error) {
 }
 
 // dependencySatisfied will return whether or not an individual dependency is satisfied.
-func dependencySatisfied(r common.ComponentReconciler, dependency common.Component) (bool, error) {
+func dependencySatisfied(ctx context.Context, r common.ComponentReconciler, dependency common.Component) (bool, error) {
 	// get the dependencies by kind that already exist in cluster
 	dependencyList := &unstructured.UnstructuredList{}
 
 	dependencyList.SetGroupVersionKind(dependency.GetComponentGVK())
 
-	if err := r.List(r.GetContext(), dependencyList, &client.ListOptions{}); err != nil {
+	if err := r.List(ctx, dependencyList, &client.ListOptions{}); err != nil {
 		return false, fmt.Errorf("unable to list dependencies, %w", err)
 	}
 

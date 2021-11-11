@@ -39,6 +39,7 @@ const componentTemplate = `{{ .Boilerplate }}
 package helpers
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -50,12 +51,13 @@ var ErrOnlyOne{{ .Resource.Kind }}Allowed = errors.New("expected only 1 {{ .Reso
 
 // {{ .Resource.Kind }}Unique returns only one {{ .Resource.Kind }} and returns an error if more than one are found.
 func {{ .Resource.Kind }}Unique(
+	ctx context.Context,
 	reconciler common.ComponentReconciler,
 ) (
 	*{{ .Resource.ImportAlias }}.{{ .Resource.Kind }},
 	error,
 ) {
-	components, err := {{ .Resource.Kind }}List(reconciler)
+	components, err := {{ .Resource.Kind }}List(ctx, reconciler)
 	if err != nil {
 		return nil, err
 	}
@@ -71,13 +73,14 @@ func {{ .Resource.Kind }}Unique(
 
 // {{ .Resource.Kind }}List gets a {{ .Resource.Kind }}List from the cluster.
 func {{ .Resource.Kind }}List(
+	ctx context.Context,
 	reconciler common.ComponentReconciler,
 ) (
 	*{{ .Resource.ImportAlias }}.{{ .Resource.Kind }}List,
 	error,
 ) {
 	components := &{{ .Resource.ImportAlias }}.{{ .Resource.Kind }}List{}
-	if err := reconciler.List(reconciler.GetContext(), components); err != nil {
+	if err := reconciler.List(ctx, components); err != nil {
 		reconciler.GetLogger().V(0).Error(
 		err, "unable to retrieve from cluster",
 		"kind", "{{ .Resource.Kind }}List",

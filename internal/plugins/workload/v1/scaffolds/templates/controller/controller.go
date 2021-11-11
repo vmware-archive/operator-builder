@@ -81,7 +81,6 @@ type {{ .Resource.Kind }}Reconciler struct {
 	client.Client
 	Name       string
 	Log        logr.Logger
-	Context    context.Context
 	Controller controller.Controller
 	Watches    []client.Object
 	Component  *{{ .Resource.ImportAlias }}.{{ .Resource.Kind }}
@@ -117,7 +116,6 @@ func New{{ .Resource.Kind }}Reconciler(mgr ctrl.Manager) *{{ .Resource.Kind }}Re
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.7.2/pkg/reconcile
 func (r *{{ .Resource.Kind }}Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	r.Context = ctx
 	log := r.Log.WithValues(
 		"kind", r.Component.Kind,
 		"name", req.Name,
@@ -125,7 +123,7 @@ func (r *{{ .Resource.Kind }}Reconciler) Reconcile(ctx context.Context, req ctrl
 	)
 
 	// get and store the component
-	if err := r.Get(r.Context, req.NamespacedName, r.Component); err != nil {
+	if err := r.Get(ctx, req.NamespacedName, r.Component); err != nil {
 		if !apierrs.IsNotFound(err) {
 			log.Error(err, "unable to fetch resource")
 
@@ -139,7 +137,7 @@ func (r *{{ .Resource.Kind }}Reconciler) Reconcile(ctx context.Context, req ctrl
 	// get and store the collection
 	var collectionList {{ .Collection.Spec.API.Group }}{{ .Collection.Spec.API.Version }}.{{ .Collection.Spec.API.Kind }}List
 
-	if err := r.List(r.Context, &collectionList); err != nil {
+	if err := r.List(ctx, &collectionList); err != nil {
 		return ctrl.Result{}, fmt.Errorf("unable to list collection {{ .Collection.Spec.API.Kind }}, %w", err)
 	}
 
@@ -165,11 +163,11 @@ func (r *{{ .Resource.Kind }}Reconciler) Reconcile(ctx context.Context, req ctrl
 	case !r.GetComponent().GetDeletionTimestamp().IsZero():
 		log.Info("deleting component")
 
-		return r.Phases.HandleDelete(r)
+		return r.Phases.HandleDelete(ctx, r)
 	case !r.GetComponent().GetReadyStatus():
-		return r.Phases.Execute(r, phases.CreateEvent)
+		return r.Phases.Execute(ctx, r, phases.CreateEvent)
 	default:
-		return r.Phases.Execute(r, phases.UpdateEvent)
+		return r.Phases.Execute(ctx, r, phases.UpdateEvent)
 	}
 }
 
@@ -206,7 +204,7 @@ func (r *{{ .Resource.Kind }}Reconciler) GetResources() ([]client.Object, error)
 
 // CreateOrUpdate creates a resource if it does not already exist or updates a resource
 // if it does already exist.
-func (r *{{ .Resource.Kind }}Reconciler) CreateOrUpdate(resource client.Object) error {
+func (r *{{ .Resource.Kind }}Reconciler) CreateOrUpdate(ctx context.Context, resource client.Object) error {
 	// set ownership on the underlying resource being created or updated
 	if err := ctrl.SetControllerReference(r.Component, resource, r.Scheme()); err != nil {
 		r.GetLogger().V(0).Error(
@@ -219,7 +217,7 @@ func (r *{{ .Resource.Kind }}Reconciler) CreateOrUpdate(resource client.Object) 
 	}
 
 	// get the resource from the cluster
-	clusterResource, err := resources.Get(r, resource)
+	clusterResource, err := resources.Get(ctx, r, resource)
 	if err != nil {
 		return fmt.Errorf("unable to retrieve resource %s, %w", resource.GetName(), err)
 	}
@@ -227,11 +225,11 @@ func (r *{{ .Resource.Kind }}Reconciler) CreateOrUpdate(resource client.Object) 
 	// create the resource if we have a nil object, or update the resource if we have one
 	// that exists in the cluster already
 	if clusterResource == nil {
-		if err := resources.Create(r, resource); err != nil {
+		if err := resources.Create(ctx, r, resource); err != nil {
 			return fmt.Errorf("unable to create resource %s, %w", resource.GetName(), err)
 		}
 	} else {
-		if err := resources.Update(r, resource, clusterResource); err != nil {
+		if err := resources.Update(ctx, r, resource, clusterResource); err != nil {
 			return fmt.Errorf("unable to update resource %s, %w", resource.GetName(), err)
 		}
 	}
@@ -242,11 +240,6 @@ func (r *{{ .Resource.Kind }}Reconciler) CreateOrUpdate(resource client.Object) 
 // GetLogger returns the logger from the reconciler.
 func (r *{{ .Resource.Kind }}Reconciler) GetLogger() logr.Logger {
 	return r.Log
-}
-
-// GetContext returns the context from the reconciler.
-func (r *{{ .Resource.Kind }}Reconciler) GetContext() context.Context {
-	return r.Context
 }
 
 // GetName returns the name of the reconciler.
@@ -275,8 +268,8 @@ func (r *{{ .Resource.Kind }}Reconciler) SetWatch(watch client.Object) {
 }
 
 // CheckReady will return whether a component is ready.
-func (r *{{ .Resource.Kind }}Reconciler) CheckReady() (bool, error) {
-	return dependencies.{{ .Resource.Kind }}CheckReady(r)
+func (r *{{ .Resource.Kind }}Reconciler) CheckReady(ctx context.Context) (bool, error) {
+	return dependencies.{{ .Resource.Kind }}CheckReady(ctx, r)
 }
 
 // Mutate will run the mutate phase of a resource.
@@ -288,9 +281,10 @@ func (r *{{ .Resource.Kind }}Reconciler) Mutate(
 
 // Wait will run the wait phase of a resource.
 func (r *{{ .Resource.Kind }}Reconciler) Wait(
+	ctx context.Context,
 	object client.Object,
 ) (bool, error) {
-	return wait.{{ .Resource.Kind }}Wait(r, object)
+	return wait.{{ .Resource.Kind }}Wait(ctx, r, object)
 }
 
 func (r *{{ .Resource.Kind }}Reconciler) SetupWithManager(mgr ctrl.Manager) error {

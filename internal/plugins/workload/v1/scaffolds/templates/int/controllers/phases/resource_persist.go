@@ -31,6 +31,7 @@ const resourcePersistTemplate = `{{ .Boilerplate }}
 package phases
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -43,12 +44,14 @@ import (
 
 // PersistResourcePhase.Execute executes persisting resources to the Kubernetes database.
 func (phase *PersistResourcePhase) Execute(
+	ctx context.Context,
 	r common.ComponentReconciler,
 	resource client.Object,
 	resourceCondition *common.ResourceCondition,
 ) (ctrl.Result, bool, error) {
 	// persist the resource
 	if err := persistResource(
+		ctx,
 		r,
 		resource,
 		resourceCondition,
@@ -62,13 +65,14 @@ func (phase *PersistResourcePhase) Execute(
 
 // persistResource persists a single resource to the Kubernetes database.
 func persistResource(
+	ctx context.Context,
 	r common.ComponentReconciler,
 	resource client.Object,
 	condition *common.ResourceCondition,
 	phase *PersistResourcePhase,
 ) error {
 	// persist resource
-	if err := r.CreateOrUpdate(resource); err != nil {
+	if err := r.CreateOrUpdate(ctx, resource); err != nil {
 		if IsOptimisticLockError(err) {
 			return nil
 		}
@@ -90,6 +94,6 @@ func persistResource(
 	condition.Created = true
 
 	// update the condition to notify that we have created a child resource
-	return updateResourceConditions(r, resources.ToCommonResource(resource), condition)
+	return updateResourceConditions(ctx, r, resources.ToCommonResource(resource), condition)
 }
 `

@@ -31,6 +31,7 @@ const registryTemplate = `{{ .Boilerplate }}
 package phases
 
 import (
+	"context"
 	"fmt"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -70,18 +71,16 @@ func (registry *Registry) Register(name string, definition Handler, event Event)
 	}
 }
 
-func (registry *Registry) Execute(r common.ComponentReconciler, event Event) (reconcile.Result, error) {
+func (registry *Registry) Execute(ctx context.Context, r common.ComponentReconciler, event Event) (reconcile.Result, error) {
 	phases := registry.getPhases(event)
 	for _, phase := range phases {
-		ctx := r.GetContext()
-
 		r.GetLogger().V(7).Info(
 			"enter phase",
 			"phase", phase.Name,
 		)
 
 		proceed, err := phase.definition(ctx, r)
-		result, err := phase.HandlePhaseExit(r, proceed, err)
+		result, err := phase.HandlePhaseExit(ctx, r, proceed, err)
 
 		if err != nil || !proceed {
 			r.GetLogger().V(2).Info(
@@ -121,7 +120,7 @@ func (registry *Registry) getPhases(event Event) []*Phase {
 	return nil
 }
 
-func (registry *Registry) HandleDelete(r common.ComponentReconciler) (ctrl.Result, error) {
+func (registry *Registry) HandleDelete(ctx context.Context, r common.ComponentReconciler) (ctrl.Result, error) {
 	myFinalizerName := fmt.Sprintf("%s/Finalizer", r.GetComponent().GetComponentGVK().Group)
 
 	if r.GetComponent().GetDeletionTimestamp().IsZero() {
@@ -131,7 +130,7 @@ func (registry *Registry) HandleDelete(r common.ComponentReconciler) (ctrl.Resul
 	// The object is being deleted
 	if containsString(r.GetComponent().GetFinalizers(), myFinalizerName) {
 		// our finalizer is present, so lets handle any external dependency
-		result, err := registry.Execute(r, DeleteEvent)
+		result, err := registry.Execute(ctx, r, DeleteEvent)
 		if err != nil || !result.IsZero() {
 			return result, err
 		}
@@ -139,7 +138,7 @@ func (registry *Registry) HandleDelete(r common.ComponentReconciler) (ctrl.Resul
 		// remove our finalizer from the list and update it.
 		controllerutil.RemoveFinalizer(r.GetComponent(), myFinalizerName)
 
-		if err := r.Update(r.GetContext(), r.GetComponent()); err != nil {
+		if err := r.Update(ctx, r.GetComponent()); err != nil {
 			return ctrl.Result{}, fmt.Errorf("unable to remove finalizer from %s, %w", r.GetComponent().GetComponentGVK().Kind, err)
 		}
 	}

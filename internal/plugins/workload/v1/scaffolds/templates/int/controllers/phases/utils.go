@@ -31,6 +31,7 @@ const commonTemplate = `{{ .Boilerplate }}
 package phases
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -57,7 +58,7 @@ func DefaultReconcileResult() ctrl.Result {
 	return ctrl.Result{}
 }
 
-func RegisterDeleteHooks(r common.ComponentReconciler) error {
+func RegisterDeleteHooks(ctx context.Context, r common.ComponentReconciler) error {
 	myFinalizerName := fmt.Sprintf("%s/Finalizer", r.GetComponent().GetComponentGVK().Group)
 
 	if r.GetComponent().GetDeletionTimestamp().IsZero() {
@@ -67,7 +68,7 @@ func RegisterDeleteHooks(r common.ComponentReconciler) error {
 		if !containsString(r.GetComponent().GetFinalizers(), myFinalizerName) {
 			controllerutil.AddFinalizer(r.GetComponent(), myFinalizerName)
 
-			if err := r.Update(r.GetContext(), r.GetComponent()); err != nil {
+			if err := r.Update(ctx, r.GetComponent()); err != nil {
 				return fmt.Errorf("unable to register delete hook on %s, %w", r.GetComponent().GetComponentGVK().Kind, err)
 			}
 		}
