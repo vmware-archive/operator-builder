@@ -298,6 +298,12 @@ func (c *WorkloadCollection) GetSubcommands() *[]CliCommand {
 }
 
 func (c *WorkloadCollection) LoadManifests(workloadPath string) error {
+	resources, err := expandResources(workloadPath, c.Spec.Resources)
+	if err != nil {
+		return err
+	}
+
+	c.Spec.Resources = resources
 	for _, r := range c.Spec.Resources {
 		if err := r.loadManifest(workloadPath); err != nil {
 			return err

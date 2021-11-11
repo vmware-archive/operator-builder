@@ -111,3 +111,35 @@ func determineSourceFileName(manifestFile string) SourceFile {
 
 	return sourceFile
 }
+
+func expandResources(path string, resources []*Resource) ([]*Resource, error) {
+	var expandedResources []*Resource
+
+	for _, r := range resources {
+
+		fileInfo, err := os.Stat(filepath.Join(path, r.FileName))
+		if err != nil {
+			return []*Resource{}, err
+		}
+
+		if fileInfo.IsDir() {
+			err := filepath.Walk(filepath.Join(path, r.FileName), func(p string, info os.FileInfo, err error) error {
+				if err != nil {
+					return err
+				}
+				if !info.IsDir() {
+					res := &Resource{FileName: filepath.Join(r.FileName, filepath.Base(p))}
+					expandedResources = append(expandedResources, res)
+				}
+				return nil
+			})
+			if err != nil {
+				return []*Resource{}, err
+			}
+		} else {
+			expandedResources = append(expandedResources, r)
+		}
+	}
+
+	return expandedResources, nil
+}
