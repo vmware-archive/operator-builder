@@ -91,6 +91,16 @@ type {{ .Resource.Kind }}Reconciler struct {
 	{{ end }}
 }
 
+
+func New{{ .Resource.Kind }}Reconciler(mgr ctrl.Manager) *{{ .Resource.Kind }}Reconciler {
+	return &{{ .Resource.Kind }}Reconciler{
+		Name:      "{{ .Resource.Kind }}",
+		Client:    mgr.GetClient(),
+		Log:       ctrl.Log.WithName("controllers").WithName("{{ .Resource.Group }}").WithName("{{ .Resource.Kind }}"),
+		Component: &{{ .Resource.ImportAlias }}.{{ .Resource.Kind }}{},
+	}
+}
+
 // +kubebuilder:rbac:groups={{ .Resource.Group }}.{{ .Resource.Domain }},resources={{ .Resource.Plural }},verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups={{ .Resource.Group }}.{{ .Resource.Domain }},resources={{ .Resource.Plural }}/status,verbs=get;update;patch
 {{ range .RBACRules -}}
@@ -111,7 +121,6 @@ func (r *{{ .Resource.Kind }}Reconciler) Reconcile(ctx context.Context, req ctrl
 	log := r.Log.WithValues("{{ .Resource.Kind | lower }}", req.NamespacedName)
 
 	// get and store the component
-	r.Component = &{{ .Resource.ImportAlias }}.{{ .Resource.Kind }}{}
 	if err := r.Get(r.Context, req.NamespacedName, r.Component); err != nil {
 		if !apierrs.IsNotFound(err) {
 			log.V(0).Error(
