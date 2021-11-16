@@ -27,7 +27,6 @@ func (f *Test) SetTemplateDefaults() error {
 	return nil
 }
 
-//nolint: lll
 const e2eTestTemplate = `//go:build e2e_test
 // +build e2e_test
 

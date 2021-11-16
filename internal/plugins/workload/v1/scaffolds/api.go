@@ -152,7 +152,7 @@ func (s *apiScaffolder) Scaffold() error {
 		}
 
 		if err := s.scaffoldE2ETests(scaffold, s.workload); err != nil {
-			fmt.Errorf("unable to scaffold standalone workload e2e tests, %w", err)
+			return fmt.Errorf("unable to scaffold standalone workload e2e tests, %w", err)
 		}
 	} else {
 		// collection API
@@ -218,7 +218,7 @@ func (s *apiScaffolder) Scaffold() error {
 		}
 
 		if err := s.scaffoldE2ETests(scaffold, s.workload); err != nil {
-			fmt.Errorf("unable to scaffold collection workload e2e tests, %w", err)
+			return fmt.Errorf("unable to scaffold collection workload e2e tests, %w", err)
 		}
 
 		for _, component := range s.workload.GetComponents() {
@@ -277,7 +277,7 @@ func (s *apiScaffolder) Scaffold() error {
 			}
 
 			if err := s.scaffoldE2ETests(componentScaffold, component); err != nil {
-				fmt.Errorf("unable to scaffold component workload e2e tests, %w", err)
+				return fmt.Errorf("unable to scaffold component workload e2e tests, %w", err)
 			}
 
 			// component child resource definition files
@@ -461,9 +461,16 @@ func (s *apiScaffolder) scaffoldE2ETests(
 	}
 
 	if !s.workload.IsStandalone() {
-		e2eWorkloadBuilder.Collection = s.workload.(*workloadv1.WorkloadCollection)
+		collection, ok := s.workload.(*workloadv1.WorkloadCollection)
+		if !ok {
+			//nolint: goerr113
+			return fmt.Errorf("unable to convert workload to collection")
+		}
+
+		e2eWorkloadBuilder.Collection = collection
 	}
 
+	//nolint: wrapcheck
 	return scaffold.Execute(
 		&e2e.Test{},
 		&e2e.WorkloadTest{},

@@ -141,6 +141,8 @@ const (
 	importCodeFragment = `%s "%s"
 		"%s/%s"
 	`
+
+	//nolint: lll
 	e2eWorkloadFragment = `
 
 	//
@@ -271,9 +273,7 @@ func getTesterName(r *resource.Resource) string {
 }
 
 func getTesterCollectionName(collection *workloadv1.WorkloadCollection) string {
-	return strings.Join([]string{
-		strings.ToLower(collection.Spec.API.Group),
-		strings.ToLower(collection.GetAPIVersion()),
-		collection.Spec.API.Kind,
-	}, "")
+	return strings.ToLower(collection.Spec.API.Group) +
+		strings.ToLower(collection.GetAPIVersion()) +
+		collection.Spec.API.Kind
 }
