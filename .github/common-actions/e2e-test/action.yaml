@@ -54,12 +54,9 @@ runs:
         fi
 
         # run the e2e tests
-        make test-e2e
-      env:
-        IMG: localhost:5000/${{ inputs.codebase-artifact }}:latest
-        USE_CONTROLLER: "true"
-        DEPLOY: "true"
-        TEARDOWN: "true"
+        USE_CONTROLLER="true" DEPLOY="true" TEARDOWN="true" \
+        IMG="localhost:5000/${{ inputs.codebase-artifact }}:latest" \
+        make test-e2e && kubectl get deploy -A && kubectl get crds
 
     # TODO: this is a stub until this action is fixed.  currently, the make
     # targets are inconsistently missing.
