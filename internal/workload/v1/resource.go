@@ -116,8 +116,9 @@ func expandResources(path string, resources []*Resource) ([]*Resource, error) {
 	for _, r := range resources {
 		files, err := filepath.Glob(filepath.Join(path, r.FileName))
 		if err != nil {
-			return []*Resource{}, err
+			return []*Resource{}, fmt.Errorf("failed to process glob pattern matchingi, %w", err)
 		}
+
 		for _, f := range files {
 			res := &Resource{FileName: f}
 			expandedResources = append(expandedResources, res)
