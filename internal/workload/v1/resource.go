@@ -114,30 +114,13 @@ func expandResources(path string, resources []*Resource) ([]*Resource, error) {
 	var expandedResources []*Resource
 
 	for _, r := range resources {
-		fileInfo, err := os.Stat(filepath.Join(path, r.FileName))
+		files, err := filepath.Glob(filepath.Join(path, r.FileName))
 		if err != nil {
 			return []*Resource{}, err
 		}
-
-		if fileInfo.IsDir() {
-			err := filepath.Walk(filepath.Join(path, r.FileName), func(p string, info os.FileInfo, err error) error {
-				if err != nil {
-					return err
-				}
-				if !info.IsDir() {
-					filename := filepath.Base(p)
-					if string(filename[len(filename)-5]) == ".yaml" || string(filename[len(filename)-4]) == ".yml" {
-						res := &Resource{FileName: filepath.Join(r.FileName, filename)}
-						expandedResources = append(expandedResources, res)
-					}
-				}
-				return nil
-			})
-			if err != nil {
-				return []*Resource{}, err
-			}
-		} else {
-			expandedResources = append(expandedResources, r)
+		for _, f := range files {
+			res := &Resource{FileName: f}
+			expandedResources = append(expandedResources, res)
 		}
 	}
 
