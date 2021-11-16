@@ -240,7 +240,7 @@ func (s *StandaloneWorkload) LoadManifests(workloadPath string) error {
 
 	s.Spec.Resources = resources
 	for _, r := range s.Spec.Resources {
-		if err := r.loadManifest(workloadPath); err != nil {
+		if err := r.loadManifest(); err != nil {
 			return err
 		}
 	}
