@@ -54,7 +54,7 @@ runs:
         fi
 
         # run the e2e tests
-        USE_CONTROLLER="true" DEPLOY="true" TEARDOWN="true" \
+        DEPLOY_IN_CLUSTER="true" DEPLOY="true" TEARDOWN="true" \
         IMG="localhost:5000/${{ inputs.codebase-artifact }}:latest" \
         make test-e2e && kubectl get deploy -A && kubectl get crds
 
