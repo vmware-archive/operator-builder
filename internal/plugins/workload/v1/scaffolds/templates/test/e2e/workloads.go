@@ -188,7 +188,7 @@ const (
 			sampleManifestFile: "{{ .TesterSamplePath }}",
 			getChildrenFunc:    {{ .TesterName }}ChildrenFuncs,
 			{{ if .IsComponent -}}
-			collectionTester:   {{ .TesterCollectionName }}Test,     
+			collectionTester:   {{ .TesterCollectionName }}Test(),     
 			{{ end }}
 		}
 	} 

@@ -37,15 +37,45 @@ runs:
       shell: bash
       run: kind create cluster --name operator-builder-test
 
+    - name: Install Custom Resources
+      shell: bash
+      working-directory: /tmp/operator-builder-test
+      run: |
+        make controller-gen && make kustomize
+        chmod +x bin/controller-gen && chmod +x bin/kustomize
+        make install
+
+    - name: Build Container
+      shell: bash
+      working-directory: /tmp/operator-builder-test
+      run: IMG=localhost:5000/${{ inputs.codebase-artifact }}:latest make docker-build
+
+    - name: Push Container
+      shell: bash
+      working-directory: /tmp/operator-builder-test
+      run: IMG=localhost:5000/${{ inputs.codebase-artifact }}:latest make docker-push
+
+    - name: Sideload Docker Image for KIND
+      shell: bash
+      working-directory: /tmp/operator-builder-test
+      run: kind load docker-image --name operator-builder-test localhost:5000/${{ inputs.codebase-artifact }}:latest
+
+    # TODO: this would be much easier with yot and is extremely ugly with default kustomize files
+    - name: Set Image Pull Policy to IfNotPresent
+      shell: bash
+      working-directory: /tmp/operator-builder-test
+      run: |
+        sed -i '/image\: controller\:latest/a\'$'\n''        imagePullPolicy\: IfNotPresent' config/manager/manager.yaml
+
+    - name: Deploy Operator
+      shell: bash
+      working-directory: /tmp/operator-builder-test
+      run: IMG=localhost:5000/${{ inputs.codebase-artifact }}:latest make deploy
+
     - name: Run E2E Tests
       shell: bash
       working-directory: /tmp/operator-builder-test
       run: |
-        # ensure the kustomize/controller-gen binaries are downloaded
-        # and executable
-        make controller-gen && make kustomize
-        chmod +x bin/controller-gen && chmod +x bin/kustomize
-
         # TODO: this is temporary to ensure we test the reconciliation loop
         # for our test workloads.  the end goal would be to genericize this
         # to ensure we can test any workload.
@@ -54,9 +84,7 @@ runs:
         fi
 
         # run the e2e tests
-        DEPLOY_IN_CLUSTER="true" DEPLOY="true" TEARDOWN="true" \
-        IMG="localhost:5000/${{ inputs.codebase-artifact }}:latest" \
-        make test-e2e && kubectl get deploy -A && kubectl get crds
+        DEPLOY_IN_CLUSTER="true" make test-e2e
 
     # TODO: this is a stub until this action is fixed.  currently, the make
     # targets are inconsistently missing.
@@ -64,3 +92,8 @@ runs:
     #   shell: bash
     #   working-directory: /tmp/operator-builder-test
     #   run: make docs
+
+    - name: Undeploy Operator
+      shell: bash
+      working-directory: /tmp/operator-builder-test
+      run: make undeploy

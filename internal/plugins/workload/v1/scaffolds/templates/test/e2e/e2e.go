@@ -418,6 +418,19 @@ func namespaceExists(tester *E2ETest) (bool, error) {
 	return true, nil
 }
 
+func getPlural(kind string) string {
+	pluralMap := map[string]string{
+		"resourcequota": "resourcequotas",
+	}
+	plural := kbresource.RegularPlural(kind)
+
+	if pluralMap[plural] != "" {
+		return pluralMap[plural]
+	}
+
+	return plural
+}
+
 func getUpdatableChild(tester *E2ETest, name, namespace, kind string) client.Object {
 	for _, child := range tester.children {
 		if child.GetObjectKind().GroupVersionKind().Kind == kind {
@@ -446,7 +459,7 @@ func getResourceGVR(resource client.Object) schema.GroupVersionResource {
 	return schema.GroupVersionResource{
 		Group:    resource.GetObjectKind().GroupVersionKind().Group,
 		Version:  resource.GetObjectKind().GroupVersionKind().Version,
-		Resource: kbresource.RegularPlural(strings.ToLower(resource.GetObjectKind().GroupVersionKind().Kind)),
+		Resource: getPlural(strings.ToLower(resource.GetObjectKind().GroupVersionKind().Kind)),
 	}
 }
 
@@ -690,12 +703,12 @@ func testCreateCustomResource(tester *E2ETest) error {
 
 	// ensure the status ready field gets set
 	if err = waitForCustomResource(tester); err != nil {
-		return fmt.Errorf("failed waiting for custom resource ready status: %v", tester.unstructured)
+		return fmt.Errorf("failed waiting for custom resource ready status: %v; %w", tester.unstructured, err)
 	}
 
 	// double-check that the child resources are ready
 	if err = waitForChildResources(tester); err != nil {
-		return fmt.Errorf("child resources are not in a ready state: %v", tester.unstructured)
+		return fmt.Errorf("child resources are not in a ready state: %v; %w", tester.unstructured, err)
 	}
 
 	return nil
@@ -746,7 +759,7 @@ func testUpdateChildResource(tester *E2ETest, childToUpdate, desiredStateChild c
 	if childToUpdate != nil {
 		// update the child resource
 		if err := updateResource(tester, childToUpdate); err != nil {
-			return fmt.Errorf("failed updating child resource;: %+v; %w", childToUpdate, err)
+			return fmt.Errorf("failed updating child resource: %+v; %w", childToUpdate, err)
 		}
 
 		// wait for the child resource to be equal
