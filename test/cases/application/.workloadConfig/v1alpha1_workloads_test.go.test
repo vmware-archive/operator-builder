@@ -1,21 +1,8 @@
 //go:build e2e_test
 // +build e2e_test
 
-/*
-Copyright 2021.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
+// Copyright 2021 VMware, Inc.
+// SPDX-License-Identifier: MIT
 
 package e2e_test
 
@@ -24,9 +11,9 @@ import (
 
 	"github.com/nukleros/operator-builder-tools/pkg/resources"
 	"github.com/stretchr/testify/require"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	appsv1 "k8s.io/api/apps/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	appsv1alpha1 "github.com/acme/acme-cnp-mgr/apis/apps/v1alpha1"
@@ -38,7 +25,8 @@ import (
 // appsv1alpha1WebStore tests
 //
 func appsv1alpha1WebStoreChildrenFuncs(tester *E2ETest) error {
-	tester.children = make([]metav1.Object, len(webstore.CreateFuncs))
+	// TODO: need to run r.GetResources(request) on the reconciler to get the mutated resources
+	tester.children = make([]client.Object, len(webstore.CreateFuncs))
 
 	if len(tester.children) == 0 {
 		return nil
@@ -55,34 +43,34 @@ func appsv1alpha1WebStoreChildrenFuncs(tester *E2ETest) error {
 			return fmt.Errorf("unable to create object in memory; %s", err)
 		}
 
-		tester.children[i] = resource
+		tester.children[i] = resource.(client.Object)
 	}
 
 	return nil
 }
 
-var appsv1alpha1WebStoreTest = &E2ETest{
-	namespace:          "test-apps-v1alpha1-webstore",
-	unstructured:       &unstructured.Unstructured{},
-	workload:           &appsv1alpha1.WebStore{},
-	sampleManifestFile: "../../config/samples/apps_v1alpha1_webstore.yaml",
-	getChildrenFunc:    appsv1alpha1WebStoreChildrenFuncs,
+func appsv1alpha1WebStoreTest() *E2ETest {
+	return &E2ETest{
+		namespace:          "test-apps-v1alpha1-webstore",
+		unstructured:       &unstructured.Unstructured{},
+		workload:           &appsv1alpha1.WebStore{},
+		sampleManifestFile: "../../config/samples/apps_v1alpha1_webstore.yaml",
+		getChildrenFunc:    appsv1alpha1WebStoreChildrenFuncs,
+	}
 }
 
-func (s *E2EComponentTestSuite) Test_appsv1alpha1WebStore() {
+func (testSuite *E2EComponentTestSuite) Test_appsv1alpha1WebStore() {
 	// setup
-	s.suite.tests = append(s.suite.tests, appsv1alpha1WebStoreTest)
-	appsv1alpha1WebStoreTest.suite = &s.suite
-	require.NoErrorf(s.T(), setupTest(appsv1alpha1WebStoreTest), "failed to setup test")
+	tester := appsv1alpha1WebStoreTest()
+	testSuite.suiteConfig.tests = append(testSuite.suiteConfig.tests, tester)
+	tester.suiteConfig = &testSuite.suiteConfig
+	require.NoErrorf(testSuite.T(), tester.setup(), "failed to setup test")
 
 	// create the custom resource
-	require.NoErrorf(s.T(), createCustomResource(appsv1alpha1WebStoreTest), "failed to create custom resource")
-
-	// double-check that the child resources are ready
-	require.NoErrorf(s.T(), waitForChildResources(appsv1alpha1WebStoreTest), "failed to wait for custom resource child resources")
+	require.NoErrorf(testSuite.T(), testCreateCustomResource(tester), "failed to create custom resource")
 
 	// test the deletion of a child object
-	require.NoErrorf(s.T(), testDeleteChildResource(appsv1alpha1WebStoreTest), "failed to reconcile deletion of a child resource")
+	require.NoErrorf(testSuite.T(), testDeleteChildResource(tester), "failed to reconcile deletion of a child resource")
 
 	// test the update of a child object
 	// TODO: these are hard-coded for now until we can determine which fields on the underlying child resource
@@ -90,16 +78,16 @@ func (s *E2EComponentTestSuite) Test_appsv1alpha1WebStore() {
 
 	// get the object from the list of children and set its namespace
 	childToUpdate := getUpdatableChild(
-		appsv1alpha1WebStoreTest,
+		tester,
 		"webstore-deploy",
 		"",
 		"Deployment",
 	)
-	childToUpdate.SetNamespace(appsv1alpha1WebStoreTest.namespace)
+	childToUpdate.SetNamespace(tester.namespace)
 
 	// get the current state of the object from the cluster
-	childFromCluster, err := getResource(appsv1alpha1WebStoreTest, childToUpdate)
-	require.NoErrorf(s.T(), err, "failed to get updatable child from cluster")
+	childFromCluster, err := getResource(tester, childToUpdate)
+	require.NoErrorf(testSuite.T(), err, "failed to get updatable child from cluster")
 	deploymentToUpdate := &appsv1.Deployment{}
 	resources.ToProper(deploymentToUpdate, childFromCluster)
 
@@ -109,8 +97,8 @@ func (s *E2EComponentTestSuite) Test_appsv1alpha1WebStore() {
 
 	// run the test and ensure it passes
 	require.NoErrorf(
-		s.T(),
-		testUpdateChildResource(appsv1alpha1WebStoreTest, deploymentToUpdate, childToUpdate),
+		testSuite.T(),
+		testUpdateChildResource(tester, deploymentToUpdate, childToUpdate),
 		"failed to reconcile update of a child resource",
 	)
 
@@ -119,17 +107,17 @@ func (s *E2EComponentTestSuite) Test_appsv1alpha1WebStore() {
 	// see https://github.com/vmware-tanzu-labs/operator-builder/issues/67
 
 	// get the current state of the object from the cluster
-	parentFromCluster, err := getResource(appsv1alpha1WebStoreTest, appsv1alpha1WebStoreTest.workload)
-	require.NoErrorf(s.T(), err, "failed to get parent from cluster")
+	parentFromCluster, err := getResource(tester, tester.workload)
+	require.NoErrorf(testSuite.T(), err, "failed to get parent from cluster")
 
 	// make a change to the parent workload
-	resources.ToProper(appsv1alpha1WebStoreTest.workload, parentFromCluster)
-	appsv1alpha1WebStoreTest.workload.(*appsv1alpha1.WebStore).Spec.Webstore.Really.Long.Nested.Path.Replicas = int(replicas)
+	resources.ToProper(tester.workload, parentFromCluster)
+	tester.workload.(*appsv1alpha1.WebStore).Spec.Webstore.Really.Long.Nested.Path.Replicas = int(replicas)
 
 	// run the test and ensure it passes
 	require.NoErrorf(
-		s.T(),
-		testUpdateParentResource(appsv1alpha1WebStoreTest, deploymentToUpdate),
+		testSuite.T(),
+		testUpdateParentResource(tester, deploymentToUpdate),
 		"failed to reconcile update of a parent resource",
 	)
 }

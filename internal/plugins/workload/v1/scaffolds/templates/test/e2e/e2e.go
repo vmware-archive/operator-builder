@@ -48,60 +48,61 @@ import (
 	"gopkg.in/yaml.v2"
 
 	v1 "k8s.io/api/core/v1"
-	k8s_yaml "sigs.k8s.io/yaml"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8syaml "sigs.k8s.io/yaml"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	k8s_yaml_serializer "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
+	serializer "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/nukleros/operator-builder-tools/pkg/resources"
 	kbresource "sigs.k8s.io/kubebuilder/v3/pkg/model/resource"
 )
 
-// E2ETestSuite represents the entire suite of tests.
-type E2ETestSuite struct {
+// E2ETestSuiteConfig represents the entire suite of tests.
+type E2ETestSuiteConfig struct {
 	dynamicClient    dynamic.Interface
 	client           kubernetes.Clientset
 	controllerConfig controllerConfig
 	tests            []*E2ETest
 }
 
+type controllerConfig struct {
+	Namespace string ` + "`" + `yaml:"namespace"` + "`" + `
+	Prefix    string ` + "`" + `yaml:"namePrefix"` + "`" + `
+}
+
 // E2EComponentTestSuite represents an indvidual component test.
 type E2EComponentTestSuite struct {
 	suite.Suite
 
-	suite E2ETestSuite
+	suiteConfig E2ETestSuiteConfig
 }
 
 // E2ECollectionTestSuite represents an individual collection test.
 type E2ECollectionTestSuite struct {
 	suite.Suite
 
-	suite E2ETestSuite
+	suiteConfig E2ETestSuiteConfig
 }
 
 // E2ETest represents an individual test.
 type E2ETest struct {
-	suite              *E2ETestSuite
+	suiteConfig        *E2ETestSuiteConfig
 	namespace          string
 	sampleManifestFile string
 	unstructured       *unstructured.Unstructured
-	workload           metav1.Object
+	workload           client.Object
 	collectionTester   *E2ETest
-	children           []metav1.Object
+	children           []client.Object
 	getChildrenFunc    getChildren
-}
-
-type controllerConfig struct {
-	Namespace string ` + "`" + `yaml:"namespace"` + "`" + `
-	Prefix    string ` + "`" + `yaml:"namePrefix"` + "`" + `
 }
 
 type getChildren func(*E2ETest) error
@@ -110,7 +111,7 @@ type readyChecker func() (bool, error)
 const (
 	controllerName          = "controller-manager"
 	controllerKustomization = "../../config/default/kustomization.yaml"
-	waitTimeout             = 900 * time.Second
+	waitTimeout             = 90 * time.Second
 	waitInterval            = 3 * time.Second
 )
 
@@ -132,12 +133,12 @@ var deletableWhitelist = []string{
 //
 func TestMain(t *testing.T) {
 	// setup the test suite
-	e2eTestSuite := new(E2ETestSuite)
+	e2eTestSuite := new(E2ETestSuiteConfig)
 	require.NoErrorf(t, setupSuite(e2eTestSuite), "error setting up test suite")
 
 	// setup the tests
-	collectionSuite := &E2ECollectionTestSuite{suite: *e2eTestSuite}
-	componentSuite := &E2EComponentTestSuite{suite: *e2eTestSuite}
+	collectionSuite := &E2ECollectionTestSuite{suiteConfig: *e2eTestSuite}
+	componentSuite := &E2EComponentTestSuite{suiteConfig: *e2eTestSuite}
 
 	// execute the tests
 	t.Run("TestE2ESuite", func(t *testing.T) {
@@ -161,9 +162,16 @@ func TestMain(t *testing.T) {
 //
 
 // setupSuite is the common logic for both collection and component tests to run.
-func setupSuite(s *E2ETestSuite) error {
+func setupSuite(s *E2ETestSuiteConfig) error {
 	// create rest config from kubeconfig
-	config, err := clientcmd.BuildConfigFromFlags("", os.Getenv("HOME")+"/.kube/config")
+	var err error
+	var config *rest.Config
+	if os.Getenv("KUBECONFIG") != "" {
+		config, err = clientcmd.BuildConfigFromFlags("", os.Getenv("KUBECONFIG"))
+	} else {
+		config, err = clientcmd.BuildConfigFromFlags("", os.Getenv("HOME")+"/.kube/config")
+	}
+
 	if err != nil {
 		return fmt.Errorf("unable to create rest config from kubeconfig; %w", err)
 	}
@@ -189,7 +197,6 @@ func setupSuite(s *E2ETestSuite) error {
 
 	// run deploy
 	return deploy(s)
-	//return nil
 }
 
 // SetupTest is called once at the beginning of each test.  Component tests run in parallel,
@@ -198,10 +205,10 @@ func (s *E2EComponentTestSuite) SetupTest() {
 	s.T().Parallel()
 }
 
-// setupTest is called upon entering a test.  This is separate from the above
+// setup is called upon entering a test.  This is separate from the above
 // method as it populates specific metadata about an individual test that is
 // not otherwise available during the SetupTest method.
-func setupTest(tester *E2ETest) error {
+func (tester *E2ETest) setup() error {
 	// get the sample manifest from yaml
 	yamlFile, err := readYamlManifest(tester.sampleManifestFile, tester.unstructured)
 	if err != nil {
@@ -209,11 +216,11 @@ func setupTest(tester *E2ETest) error {
 	}
 
 	// get the proper object from the manifest object
-	if err := k8s_yaml.Unmarshal(yamlFile, tester.workload); err != nil {
+	if err := k8syaml.Unmarshal(yamlFile, tester.workload); err != nil {
 		return fmt.Errorf("unable to unmarshal yaml to api object; %w", err)
 	}
 
-	// get and store the child objects
+	// get and store the non-mutated child objects
 	if err := tester.getChildrenFunc(tester); err != nil {
 		return fmt.Errorf("unable to unmarshal yaml to api object; %w", err)
 	}
@@ -239,11 +246,11 @@ func setupTest(tester *E2ETest) error {
 //   - crd install
 //   - controller deployment
 //
-// USE_CONTROLLER="true" ensures that the controller is running before proceeding.
+// DEPLOY_IN_CLUSTER="true" ensures that the controller is running before proceeding.
 // if this option is not used, a separate process such as the 'make run' target
 // should be handling the controller functions for the test.
 //
-func deploy(s *E2ETestSuite) error {
+func deploy(s *E2ETestSuiteConfig) error {
 	// install crds
 	if os.Getenv("DEPLOY") == "true" {
 		installCommand := exec.Command("make", "-C", "../..", "install")
@@ -253,7 +260,7 @@ func deploy(s *E2ETestSuite) error {
 		}
 	}
 
-	if os.Getenv("USE_CONTROLLER") == "true" {
+	if os.Getenv("DEPLOY_IN_CLUSTER") == "true" {
 		if os.Getenv("DEPLOY") == "true" {
 			// build image
 			buildCommand := exec.Command("make", "-C", "../..", "docker-build")
@@ -299,7 +306,7 @@ func finalTeardown() error {
 	if os.Getenv("TEARDOWN") == "true" {
 		var undeployCommand *exec.Cmd
 
-		if os.Getenv("USE_CONTROLLER") == "true" {
+		if os.Getenv("DEPLOY_IN_CLUSTER") == "true" {
 			undeployCommand = exec.Command("make", "-C", "../..", "undeploy")
 		} else {
 			undeployCommand = exec.Command("make", "-C", "../..", "uninstall")
@@ -315,7 +322,7 @@ func finalTeardown() error {
 }
 
 // teardownSuite is called once at the very end of all tests.
-func teardownSuite(s *E2ETestSuite) error {
+func teardownSuite(s *E2ETestSuiteConfig) error {
 	for _, e2eTest := range s.tests {
 		// delete the custom resources for the tests
 		if err := deleteCustomResource(e2eTest); err != nil {
@@ -335,15 +342,15 @@ func teardownSuite(s *E2ETestSuite) error {
 
 // TearDownSuite runs the logic to teardown a collection test suite.
 func (s *E2ECollectionTestSuite) teardown() {
-	if len(s.suite.tests) > 0 {
-		require.NoErrorf(s.T(), teardownSuite(&s.suite), "unable to teardown collection test suite")
+	if len(s.suiteConfig.tests) > 0 {
+		require.NoErrorf(s.T(), teardownSuite(&s.suiteConfig), "unable to teardown collection test suite")
 	}
 }
 
 // TearDownSuite runs the logic to teardown a component test suite.
 func (s *E2EComponentTestSuite) teardown() {
-	if len(s.suite.tests) > 0 {
-		require.NoErrorf(s.T(), teardownSuite(&s.suite), "unable to teardown component test suite")
+	if len(s.suiteConfig.tests) > 0 {
+		require.NoErrorf(s.T(), teardownSuite(&s.suiteConfig), "unable to teardown component test suite")
 	}
 }
 
@@ -358,7 +365,7 @@ func readYamlManifest(path string, destination *unstructured.Unstructured) ([]by
 	}
 
 	// decode yaml into unstructured.Unstructured
-	dec := k8s_yaml_serializer.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
+	dec := serializer.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
 	_, _, err = dec.Decode(yamlFile, nil, destination)
 	if err != nil {
 		return nil, fmt.Errorf("error decoding sample manifest %s; %w\n\nwith data: %s", path, err, yamlFile)
@@ -395,7 +402,7 @@ func newNamespaceStub(namespaceName string) *v1.Namespace {
 }
 
 func namespaceExists(tester *E2ETest) (bool, error) {
-	_, err := tester.suite.client.CoreV1().Namespaces().Get(
+	_, err := tester.suiteConfig.client.CoreV1().Namespaces().Get(
 		context.TODO(),
 		tester.namespace,
 		metav1.GetOptions{},
@@ -411,9 +418,9 @@ func namespaceExists(tester *E2ETest) (bool, error) {
 	return true, nil
 }
 
-func getUpdatableChild(tester *E2ETest, name, namespace, kind string) metav1.Object {
+func getUpdatableChild(tester *E2ETest, name, namespace, kind string) client.Object {
 	for _, child := range tester.children {
-		if child.(runtime.Object).GetObjectKind().GroupVersionKind().Kind == kind {
+		if child.GetObjectKind().GroupVersionKind().Kind == kind {
 			if child.GetName() == name && child.GetNamespace() == namespace {
 				return child
 			}
@@ -423,10 +430,10 @@ func getUpdatableChild(tester *E2ETest, name, namespace, kind string) metav1.Obj
 	return nil
 }
 
-func getDeletableChild(tester *E2ETest) metav1.Object {
+func getDeletableChild(tester *E2ETest) client.Object {
 	for _, whitelistKind := range deletableWhitelist {
 		for _, child := range tester.children {
-			if child.(runtime.Object).GetObjectKind().GroupVersionKind().Kind == whitelistKind {
+			if child.GetObjectKind().GroupVersionKind().Kind == whitelistKind {
 				return child
 			}
 		}
@@ -435,7 +442,7 @@ func getDeletableChild(tester *E2ETest) metav1.Object {
 	return nil
 }
 
-func getResourceGVR(resource runtime.Object) schema.GroupVersionResource {
+func getResourceGVR(resource client.Object) schema.GroupVersionResource {
 	return schema.GroupVersionResource{
 		Group:    resource.GetObjectKind().GroupVersionKind().Group,
 		Version:  resource.GetObjectKind().GroupVersionKind().Version,
@@ -443,13 +450,13 @@ func getResourceGVR(resource runtime.Object) schema.GroupVersionResource {
 	}
 }
 
-func getClientForResource(tester *E2ETest, resource metav1.Object) dynamic.ResourceInterface {
+func getClientForResource(tester *E2ETest, resource client.Object) dynamic.ResourceInterface {
 	if tester.namespace != "" {
-		return tester.suite.dynamicClient.Resource(getResourceGVR(resource.(runtime.Object))).
+		return tester.suiteConfig.dynamicClient.Resource(getResourceGVR(resource)).
 			Namespace(tester.namespace)
 	}
 
-	return tester.suite.dynamicClient.Resource(getResourceGVR(resource.(runtime.Object))).
+	return tester.suiteConfig.dynamicClient.Resource(getResourceGVR(resource)).
 		Namespace(resource.GetNamespace())
 }
 
@@ -469,7 +476,7 @@ func createNamespaceForTest(tester *E2ETest) error {
 		return err
 	}
 
-	_, err = tester.suite.client.
+	_, err = tester.suiteConfig.client.
 		CoreV1().Namespaces().
 		Create(
 			context.TODO(),
@@ -480,7 +487,7 @@ func createNamespaceForTest(tester *E2ETest) error {
 	return err
 }
 
-func getResource(tester *E2ETest, resource metav1.Object) (metav1.Object, error) {
+func getResource(tester *E2ETest, resource client.Object) (client.Object, error) {
 	clusterObject, err := getClientForResource(tester, resource).
 		Get(context.TODO(), resource.GetName(), metav1.GetOptions{})
 	if err != nil {
@@ -490,7 +497,7 @@ func getResource(tester *E2ETest, resource metav1.Object) (metav1.Object, error)
 	return clusterObject, nil
 }
 
-func updateResource(tester *E2ETest, resource metav1.Object) error {
+func updateResource(tester *E2ETest, resource client.Object) error {
 	unstructuredResource, err := resources.ToUnstructured(resource)
 	if err != nil {
 		return err
@@ -502,7 +509,7 @@ func updateResource(tester *E2ETest, resource metav1.Object) error {
 	return err
 }
 
-func deleteResource(tester *E2ETest, resource metav1.Object) error {
+func deleteResource(tester *E2ETest, resource client.Object) error {
 	return getClientForResource(tester, resource).
 		Delete(context.TODO(), resource.GetName(), metav1.DeleteOptions{})
 }
@@ -527,7 +534,7 @@ func deleteCustomResource(tester *E2ETest) error {
 }
 
 func deleteNamespaceForTest(tester *E2ETest) error {
-	err := tester.suite.client.
+	err := tester.suiteConfig.client.
 		CoreV1().Namespaces().
 		Delete(context.TODO(), tester.namespace, metav1.DeleteOptions{})
 	if err != nil {
@@ -570,7 +577,7 @@ func waitForMissingResources(tester *E2ETest) error {
 	return waitFor(childResourcesAreMissing)
 }
 
-func waitForEqualResources(tester *E2ETest, resource metav1.Object) error {
+func waitForEqualResources(tester *E2ETest, resource client.Object) error {
 	// wait for the resources to be equal
 	childResourceIsEqual := func() (bool, error) {
 		childResourceClusterObject, err := getClientForResource(tester, resource).
@@ -622,14 +629,12 @@ func waitForCustomResource(tester *E2ETest) error {
 
 		createStatus := customResource.Object["status"].(map[string]interface{})["created"]
 		if createStatus != nil {
-			_, ok := createStatus.(bool)
+			created, ok := createStatus.(bool)
 			if !ok {
 				return false, fmt.Errorf("unable to determine custom resource status")
 			}
 
-			if createStatus.(bool) {
-				return true, nil
-			}
+			return created, nil
 		}
 
 		return false, nil
@@ -638,7 +643,7 @@ func waitForCustomResource(tester *E2ETest) error {
 	return waitFor(customResourceIsReady)
 }
 
-func waitForController(s *E2ETestSuite) error {
+func waitForController(s *E2ETestSuiteConfig) error {
 	deploymentIsReady := func() (bool, error) {
 		deployment, err := s.client.
 			AppsV1().Deployments(s.controllerConfig.Namespace).
@@ -673,7 +678,29 @@ func waitFor(isReady readyChecker) error {
 	}
 }
 
+//
 // tests
+//
+func testCreateCustomResource(tester *E2ETest) error {
+	_, err := getClientForResource(tester, tester.unstructured).
+		Create(context.TODO(), tester.unstructured, metav1.CreateOptions{})
+	if err != nil {
+		return fmt.Errorf("error creating custom resource: %+v; %w", tester.unstructured, err)
+	}
+
+	// ensure the status ready field gets set
+	if err = waitForCustomResource(tester); err != nil {
+		return fmt.Errorf("failed waiting for custom resource ready status: %v", tester.unstructured)
+	}
+
+	// double-check that the child resources are ready
+	if err = waitForChildResources(tester); err != nil {
+		return fmt.Errorf("child resources are not in a ready state: %v", tester.unstructured)
+	}
+
+	return nil
+}
+
 func testDeleteChildResource(tester *E2ETest) error {
 	childToDelete := getDeletableChild(tester)
 	if childToDelete != nil {
@@ -695,7 +722,7 @@ func testDeleteChildResource(tester *E2ETest) error {
 	return nil
 }
 
-func testUpdateParentResource(tester *E2ETest, desiredStateChild metav1.Object) error {
+func testUpdateParentResource(tester *E2ETest, desiredStateChild client.Object) error {
 	if desiredStateChild != nil {
 		// update the parent resource
 		if err := updateResource(tester, tester.workload); err != nil {
@@ -715,7 +742,7 @@ func testUpdateParentResource(tester *E2ETest, desiredStateChild metav1.Object) 
 	return nil
 }
 
-func testUpdateChildResource(tester *E2ETest, childToUpdate, desiredStateChild metav1.Object) error {
+func testUpdateChildResource(tester *E2ETest, childToUpdate, desiredStateChild client.Object) error {
 	if childToUpdate != nil {
 		// update the child resource
 		if err := updateResource(tester, childToUpdate); err != nil {

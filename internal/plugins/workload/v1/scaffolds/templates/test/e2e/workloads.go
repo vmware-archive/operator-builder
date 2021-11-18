@@ -149,7 +149,8 @@ const (
 	// {{ .TesterName }} tests
 	//
 	func {{ .TesterName }}ChildrenFuncs(tester *E2ETest) error {
-		tester.children = make([]metav1.Object, len({{ .PackageName }}.CreateFuncs))
+		// TODO: need to run r.GetResources(request) on the reconciler to get the mutated resources
+		tester.children = make([]client.Object, len({{ .PackageName }}.CreateFuncs))
 
 		if len(tester.children) == 0 {
 			return nil
@@ -173,41 +174,41 @@ const (
 				return fmt.Errorf("unable to create object in memory; %s", err)
 			}
 
-			tester.children[i] = resource
+			tester.children[i] = resource.(client.Object)
 		}
 
 		return nil
 	}
 
-	var {{ .TesterName }}Test = &E2ETest{
-		namespace:          "{{ .TesterNamespace }}",
-		unstructured:       &unstructured.Unstructured{},
-		workload:           &{{ .Resource.ImportAlias }}.{{ .Resource.Kind }}{},
-		sampleManifestFile: "{{ .TesterSamplePath }}",
-		getChildrenFunc:    {{ .TesterName }}ChildrenFuncs,
-		{{ if .IsComponent -}}
-		collectionTester:   {{ .TesterCollectionName }}Test,     
-		{{ end }}
-	}
+	func {{ .TesterName }}Test() *E2ETest {
+		return &E2ETest{
+			namespace:          "{{ .TesterNamespace }}",
+			unstructured:       &unstructured.Unstructured{},
+			workload:           &{{ .Resource.ImportAlias }}.{{ .Resource.Kind }}{},
+			sampleManifestFile: "{{ .TesterSamplePath }}",
+			getChildrenFunc:    {{ .TesterName }}ChildrenFuncs,
+			{{ if .IsComponent -}}
+			collectionTester:   {{ .TesterCollectionName }}Test,     
+			{{ end }}
+		}
+	} 
 
 	{{ if .IsCollection -}}
-	func (s *E2ECollectionTestSuite) Test_{{ .TesterName }}() {
+	func (testSuite *E2ECollectionTestSuite) Test_{{ .TesterName }}() {
 	{{ else }}
-	func (s *E2EComponentTestSuite) Test_{{ .TesterName }}() {
+	func (testSuite *E2EComponentTestSuite) Test_{{ .TesterName }}() {
 	{{ end -}}
 		// setup
-		s.suite.tests = append(s.suite.tests, {{ .TesterName }}Test)
-		{{ .TesterName }}Test.suite = &s.suite
-		require.NoErrorf(s.T(), setupTest({{ .TesterName }}Test), "failed to setup test")
+		tester := {{ .TesterName }}Test()
+		testSuite.suiteConfig.tests = append(testSuite.suiteConfig.tests, tester)
+		tester.suiteConfig = &testSuite.suiteConfig
+		require.NoErrorf(testSuite.T(), tester.setup(), "failed to setup test")
 
 		// create the custom resource
-		require.NoErrorf(s.T(), createCustomResource({{ .TesterName }}Test), "failed to create custom resource")
-
-		// double-check that the child resources are ready
-		require.NoErrorf(s.T(), waitForChildResources({{ .TesterName }}Test), "failed to wait for custom resource child resources")
+		require.NoErrorf(testSuite.T(), testCreateCustomResource(tester), "failed to create custom resource")
 
 		// test the deletion of a child object
-		require.NoErrorf(s.T(), testDeleteChildResource({{ .TesterName }}Test), "failed to reconcile deletion of a child resource")
+		require.NoErrorf(testSuite.T(), testDeleteChildResource(tester), "failed to reconcile deletion of a child resource")
 
 		// test the update of a child object
 		// TODO: need immutable fields so that we can predict which managed fields we can modify to test reconciliation
