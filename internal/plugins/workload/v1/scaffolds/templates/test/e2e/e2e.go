@@ -220,6 +220,19 @@ func (tester *E2ETest) setup() error {
 		return fmt.Errorf("unable to unmarshal yaml to api object; %w", err)
 	}
 
+	// get the proper collection object from the manifest object
+	if tester.collectionTester != nil {
+		collection := &unstructured.Unstructured{}
+		collectionYaml, err := readYamlManifest(tester.collectionTester.sampleManifestFile, collection)
+		if err != nil {
+			return fmt.Errorf("unable to fetch sample collection manifest; %w", err)
+		}
+
+		if err := k8syaml.Unmarshal(collectionYaml, tester.collectionTester.workload); err != nil {
+			return fmt.Errorf("unable to unmarshal collection yaml to api object; %w", err)
+		}
+	}
+
 	// get and store the non-mutated child objects
 	if err := tester.getChildrenFunc(tester); err != nil {
 		return fmt.Errorf("unable to unmarshal yaml to api object; %w", err)
