@@ -84,11 +84,11 @@ func (i *initCommand) newInit{{ .SubCmdVarName }}Command() {
 		{{ if .IsComponent -}}
 		Use:   "{{ .SubCmdName }}",
 		Short: "{{ .SubCmdDescr }}",
-		Long: "{{ .SubCmdDescr }}",
+		Long:  "{{ .SubCmdDescr }}",
 		{{- else -}}
 		Use:   "{{ .InitCommandName }}",
 		Short: "{{ .InitCommandDescr }}",
-		Long: "{{ .InitCommandDescr }}",
+		Long:  "{{ .InitCommandDescr }}",
 		{{- end }}
 		RunE: func(cmd *cobra.Command, args []string) error {
 			outputStream := os.Stdout

@@ -64,7 +64,7 @@ func (c *{{ .RootCmdVarName }}Command) newInitCommand() {
 	initCmd.Command = &cobra.Command{
 		Use:   "{{ .InitCommandName }}",
 		Short: "{{ .InitCommandDescr }}",
-		Long: "{{ .InitCommandDescr }}",
+		Long:  "{{ .InitCommandDescr }}",
 	}
 
 	initCmd.addCommands()

@@ -23,6 +23,7 @@ type CmdRoot struct {
 	// RootCmd is the root command for the companion CLI
 	RootCmd        string
 	RootCmdVarName string
+
 	// RootCmdDescription is the command description given by the CLI help info
 	RootCmdDescription string
 }
@@ -44,7 +45,7 @@ type CmdRootUpdater struct { //nolint:maligned
 	RootCmd string
 
 	// Flags to indicate which parts need to be included when updating the file
-	InitCommand, GenerateCommand bool
+	InitCommand, GenerateCommand, VersionCommand bool
 }
 
 // GetPath implements file.Builder interface.
@@ -72,6 +73,8 @@ const (
 `
 	generateCommandCodeFragement = `c.newGenerateCommand()
 `
+	versionCommandCodeFragment = `c.newVersionCommand()
+`
 )
 
 // GetCodeFragments implements file.Inserter interface.
@@ -91,6 +94,10 @@ func (f *CmdRootUpdater) GetCodeFragments() machinery.CodeFragmentsMap {
 
 	if f.GenerateCommand {
 		subCommands = append(subCommands, generateCommandCodeFragement)
+	}
+
+	if f.VersionCommand {
+		subCommands = append(subCommands, versionCommandCodeFragment)
 	}
 
 	// Only store code fragments in the map if the slices are non-empty
