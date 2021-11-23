@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 
 	"sigs.k8s.io/kubebuilder/v3/pkg/machinery"
-
-	workloadv1 "github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1"
 )
 
 const (
@@ -25,55 +23,66 @@ type CmdInit struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
 
-	RootCmd        string
-	RootCmdVarName string
+	RootCmdName string
 
 	InitCommandName  string
 	InitCommandDescr string
-
-	SubCommands *[]workloadv1.CliCommand
 }
 
 func (f *CmdInit) SetTemplateDefaults() error {
-	f.Path = filepath.Join("cmd", f.RootCmd, "commands", "init.go")
+	f.Path = filepath.Join("cmd", f.RootCmdName, "commands", "init", "init.go")
+	f.TemplateBody = cliCmdInitTemplate
 
 	f.InitCommandName = initCommandName
 	f.InitCommandDescr = initCommandDescr
-
-	f.TemplateBody = cliCmdInitTemplate
 
 	return nil
 }
 
 const cliCmdInitTemplate = `{{ .Boilerplate }}
 
-package commands
+package init
 
 import (
 	"github.com/spf13/cobra"
 )
 
-type initCommand struct {
+type InitFunc func(*InitSubCommand) error
+
+type InitSubCommand struct {
 	*cobra.Command
+
+	APIVersion string
+
+	initFunc InitFunc
 }
 
-// newInitCommand creates a new instance of the init subcommand.
-func (c *{{ .RootCmdVarName }}Command) newInitCommand() {
-	initCmd := &initCommand{}
-
-	initCmd.Command = &cobra.Command{
-		Use:   "{{ .InitCommandName }}",
-		Short: "{{ .InitCommandDescr }}",
-		Long:  "{{ .InitCommandDescr }}",
+// NewInitCommand creates a new instance of the init subcommand.
+func NewInitCommand(initFunc InitFunc) *cobra.Command {
+	i := &InitSubCommand{
+		initFunc: initFunc,
 	}
 
-	initCmd.addCommands()
-	c.AddCommand(initCmd.Command)
+	initCmd := &cobra.Command{
+		Use:   "init",
+		Short: "Write a sample custom resource manifest for a workload to standard out",
+		Long:  "Write a sample custom resource manifest for a workload to standard out",
+		RunE:  i.initialize,
+	}
+
+	initCmd.Flags().StringVarP(
+		&i.APIVersion,
+		"api-version",
+		"",
+		"",
+		"API Version of the workload to generate workload manifest for.",
+	)
+
+	return initCmd
 }
 
-func (i *initCommand) addCommands() {
-	{{- range $cmd := .SubCommands }}
-	i.newInit{{ $cmd.VarName }}Command()
-	{{- end }}
+// initialize creates sample workload manifests for a workload's custom resource.
+func (i *InitSubCommand) initialize(cmd *cobra.Command, args []string) error {
+	return i.initFunc(i)
 }
 `

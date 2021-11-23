@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 
 	"sigs.k8s.io/kubebuilder/v3/pkg/machinery"
-
-	workloadv1 "github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1"
 )
 
 const (
@@ -25,55 +23,81 @@ type CmdVersion struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
 
-	RootCmd        string
-	RootCmdVarName string
+	RootCmdName string
 
 	VersionCommandName  string
 	VersionCommandDescr string
-
-	SubCommands *[]workloadv1.CliCommand
 }
 
 func (f *CmdVersion) SetTemplateDefaults() error {
-	f.Path = filepath.Join("cmd", f.RootCmd, "commands", "version.go")
+	f.Path = filepath.Join("cmd", f.RootCmdName, "commands", "version", "version.go")
+	f.TemplateBody = cliCmdVersionTemplate
 
 	f.VersionCommandName = versionCommandName
 	f.VersionCommandDescr = versionCommandDescr
-
-	f.TemplateBody = cliCmdVersionTemplate
 
 	return nil
 }
 
 const cliCmdVersionTemplate = `{{ .Boilerplate }}
 
-package commands
+package version
 
 import (
+	"encoding/json"
+	"fmt"
+	"os"
+
 	"github.com/spf13/cobra"
 )
 
-type versionCommand struct {
-	*cobra.Command
+var CliVersion = "dev"
+
+type VersionInfo struct {
+	CLIVersion  string   ` + "`" + `json:"cliVersion"` + "`" + `
+	APIVersions []string ` + "`" + `json:"apiVersions"` + "`" + `
 }
 
-// newVersionCommand creates a new instance of the version subcommand.
-func (c *{{ .RootCmdVarName }}Command) newVersionCommand() {
-	versionCmd := &versionCommand{}
+type VersionFunc func(*VersionSubCommand) error
 
-	versionCmd.Command = &cobra.Command{
-		Use:   "{{ .VersionCommandName }}",
-		Short: "{{ .VersionCommandDescr }}",
-		Long:  "{{ .VersionCommandDescr }}",
+type VersionSubCommand struct {
+	*cobra.Command
+
+	versionFunc VersionFunc
+}
+
+// NewVersionCommand creates a new instance of the version subcommand.
+func NewVersionCommand(versionFunc VersionFunc) *cobra.Command {
+	v := &VersionSubCommand{
+		versionFunc: versionFunc,
 	}
 
-	versionCmd.addCommands()
-	c.AddCommand(versionCmd.Command)
+	return &cobra.Command{
+		Use:   "version",
+		Short: "Display the version information",
+		Long:  "Display the version information",
+		RunE:  v.version,
+	}
 }
 
-func (v *versionCommand) addCommands() {
-	{{- range $cmd := .SubCommands }}
-	v.newVersion{{ $cmd.VarName }}Command()
-	{{- end }}
+// version run the function to display version information about a workload.
+func (v *VersionSubCommand) version(cmd *cobra.Command, args []string) error {
+	return v.versionFunc(v)
+}
+
+// Display will parse and print the information stored on the VersionInfo object.
+func (v *VersionInfo) Display() error {
+	output, err := json.Marshal(v)
+	if err != nil {
+		return fmt.Errorf("failed to determine versionInfo, %s", err)
+	}
+
+	outputStream := os.Stdout
+
+	if _, err := outputStream.WriteString(fmt.Sprintln(string(output))); err != nil {
+		return fmt.Errorf("failed to write to stdout, %s", err)
+	}
+
+	return nil
 }
 `

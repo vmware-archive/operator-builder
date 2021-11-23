@@ -9,30 +9,29 @@ import (
 	"sigs.k8s.io/kubebuilder/v3/pkg/machinery"
 )
 
-var _ machinery.Template = &CmdCommon{}
+var _ machinery.Template = &CmdUtils{}
 
-// CmdCommon scaffolds the companion CLI's common code for the
-// workload.  This where the actual generate logic lives.
-type CmdCommon struct {
+// CmdUtils scaffolds the companion CLI's common utility code for the
+// workload.  This where the generic logic for a companion CLI lives.
+type CmdUtils struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
 	machinery.RepositoryMixin
-	machinery.ResourceMixin
 
-	RootCmd string
+	RootCmdName string
 }
 
-func (f *CmdCommon) SetTemplateDefaults() error {
-	f.Path = filepath.Join("cmd", f.RootCmd, "commands", "commands.go")
+func (f *CmdUtils) SetTemplateDefaults() error {
+	f.Path = filepath.Join("cmd", f.RootCmdName, "commands", "utils", "utils.go")
 
-	f.TemplateBody = cliCmdCommonTemplate
+	f.TemplateBody = cliCmdUtilsTemplate
 
 	return nil
 }
 
-const cliCmdCommonTemplate = `{{ .Boilerplate }}
+const cliCmdUtilsTemplate = `{{ .Boilerplate }}
 
-package commands
+package utils
 
 import (
 	"errors"
@@ -43,11 +42,9 @@ import (
 
 var ErrInvalidResource = errors.New("supplied resource is incorrect")
 
-// validateWorkload validates the unmarshaled version of the workload resource
+// ValidateWorkload validates the unmarshaled version of the workload resource
 // manifest.
-func validateWorkload(
-	workload common.Component,
-) error {
+func ValidateWorkload(workload common.Component) error {
 	defaultWorkloadGVK := workload.GetComponentGVK()
 
 	if defaultWorkloadGVK != workload.GetObjectKind().GroupVersionKind() {

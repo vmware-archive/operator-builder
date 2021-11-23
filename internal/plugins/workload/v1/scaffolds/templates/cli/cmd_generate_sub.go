@@ -4,12 +4,10 @@
 package cli
 
 import (
-	"fmt"
-	"path/filepath"
-
 	"sigs.k8s.io/kubebuilder/v3/pkg/machinery"
 	"sigs.k8s.io/kubebuilder/v3/pkg/model/resource"
 
+	"github.com/vmware-tanzu-labs/operator-builder/internal/utils"
 	workloadv1 "github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1"
 )
 
@@ -23,15 +21,13 @@ type CmdGenerateSub struct {
 	machinery.RepositoryMixin
 	machinery.ResourceMixin
 
-	PackageName       string
-	RootCmd           string
-	RootCmdVarName    string
-	SubCmdName        string
-	SubCmdDescr       string
-	SubCmdVarName     string
-	SubCmdFileName    string
-	IsComponent       bool
-	IsCollection      bool
+	PackageName string
+
+	RootCmd workloadv1.CliCommand
+	SubCmd  workloadv1.CliCommand
+
+	IsComponent, IsCollection, IsStandalone bool
+
 	ComponentResource *resource.Resource
 	Collection        *workloadv1.WorkloadCollection
 
@@ -41,15 +37,15 @@ type CmdGenerateSub struct {
 
 func (f *CmdGenerateSub) SetTemplateDefaults() error {
 	if f.IsComponent {
-		f.Path = filepath.Join(
-			"cmd", f.RootCmd, "commands",
-			fmt.Sprintf("%s_generate.go", f.SubCmdFileName),
-		)
 		f.Resource = f.ComponentResource
-	} else {
-		f.Path = filepath.Join("cmd", f.RootCmd, "commands", "generate.go")
 	}
 
+	f.Path = f.SubCmd.GetSubCmdRelativeFileName(
+		f.RootCmd.Name,
+		"generate",
+		f.Resource.Group,
+		utils.ToFileName(f.Resource.Kind),
+	)
 	f.GenerateCommandName = generateCommandName
 	f.GenerateCommandDescr = generateCommandDescr
 
@@ -73,6 +69,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
+	cmdgenerate "{{ .Repo }}/cmd/{{ .RootCmd.Name }}/commands/generate"
+	cmdutils "{{ .Repo }}/cmd/{{ .RootCmd.Name }}/commands/utils"
+
 	{{ .Resource.ImportAlias }} "{{ .Resource.Path }}"
 	"{{ .Resource.Path }}/{{ .PackageName }}"
 	{{- if .IsComponent }}
@@ -80,121 +79,40 @@ import (
 	{{ end -}}
 )
 
-{{ if .IsCollection -}}
-type generate{{ .SubCmdVarName }}Command struct {
-	*cobra.Command
-	collectionManifest string
-}
-{{- else if .IsComponent -}}
-type generate{{ .SubCmdVarName }}Command struct {
-	*cobra.Command
-	workloadManifest string
-	collectionManifest string
-}
-{{- else }}
-type generateCommand struct {
-	*cobra.Command
-	workloadManifest string
-}
-{{- end }}
-
-{{ if not .IsComponent -}}
-// newGenerateCommand creates a new instance of the generate subcommand.
-func (c *{{ .RootCmdVarName }}Command) newGenerateCommand() {
-	g := &generateCommand{}
-{{- else }}
-// newGenerate{{ .SubCmdVarName }}Command creates a new instance of the generate{{ .SubCmdVarName }} subcommand.
-func (g *generateCommand) newGenerate{{ .SubCmdVarName }}Command() {
-{{- end }}
-	{{ if not .IsComponent -}}
-	generateCmd := &cobra.Command{
-		Use:   "{{ .GenerateCommandName }}",
-		Short: "{{ .GenerateCommandDescr }}",
-		Long:  "{{ .GenerateCommandDescr }}",
-		RunE: g.generate,
-	}
-	{{- else -}}
-	generate{{ .SubCmdVarName }}Cmd := &generate{{ .SubCmdVarName }}Command{}
-
-	generate{{ .SubCmdVarName }}Cmd.Command = &cobra.Command{
-		Use:   "{{ .SubCmdName }}",
-		Short: "{{ .SubCmdDescr }}",
-		Long:  "{{ .SubCmdDescr }}",
-		RunE: generate{{ .SubCmdVarName }}Cmd.generate{{ .SubCmdVarName }},
-	}
-	{{- end }}
-
-	{{ if .IsCollection -}}
-
-	generate{{ .SubCmdVarName }}Cmd.Command.Flags().StringVarP(
-		&generate{{ .SubCmdVarName }}Cmd.collectionManifest,
-		"collection-manifest",
-		"c",
-		"",
-		"Filepath to the workload collection manifest.",
-	)
-	
-	if err := generate{{ .SubCmdVarName }}Cmd.MarkFlagRequired("collection-manifest"); err != nil {
-		panic(err)
+// New{{ .Resource.Kind }}SubCommand creates a new command and adds it to its 
+// parent command.
+func New{{ .Resource.Kind }}SubCommand(parentCommand *cobra.Command) {
+	generateCmd := &cmdgenerate.GenerateSubCommand{
+		{{- if .IsStandalone }}
+		Name:                  "{{ .GenerateCommandName }}",
+		Description:           "{{ .GenerateCommandDescr }}",
+		UseCollectionManifest: false,
+		UseWorkloadManifest:   true,
+		GenerateFunc:          Generate{{ .Resource.Kind }},
+		{{ else if .IsComponent }}
+		Name:                  "{{ .SubCmd.Name }}",
+		Description:           "{{ .SubCmd.Description }}",
+		UseCollectionManifest: true,
+		UseWorkloadManifest:   true,
+		GenerateFunc:          Generate{{ .Resource.Kind }},
+		{{ else }}
+		Name:                  "{{ .SubCmd.Name }}",
+		Description:           "{{ .SubCmd.Description }}",
+		UseCollectionManifest: true,
+		UseWorkloadManifest:   false,
+		{{- end -}}
+		SubCommandOf:          parentCommand,
 	}
 
-	g.AddCommand(generate{{ .SubCmdVarName }}Cmd.Command)
-
-	{{- else if .IsComponent -}}
-
-	generate{{ .SubCmdVarName }}Cmd.Command.Flags().StringVarP(
-		&generate{{ .SubCmdVarName }}Cmd.workloadManifest,
-		"workload-manifest",
-		"w",
-		"",
-		"Filepath to the workload manifest.",
-	)
-	
-	if err := generate{{ .SubCmdVarName }}Cmd.MarkFlagRequired("workload-manifest"); err != nil {
-		panic(err)
-	}
-
-	generate{{ .SubCmdVarName }}Cmd.Command.Flags().StringVarP(
-		&generate{{ .SubCmdVarName }}Cmd.collectionManifest,
-		"collection-manifest",
-		"c",
-		"",
-		"Filepath to the workload collection manifest.",
-	)
-	
-	if err := generate{{ .SubCmdVarName }}Cmd.MarkFlagRequired("collection-manifest"); err != nil {
-		panic(err)
-	}
-
-	g.AddCommand(generate{{ .SubCmdVarName }}Cmd.Command)
-
-	{{- else -}}
-
-	generate{{ .SubCmdVarName }}Cmd.Flags().StringVarP(
-		&g.workloadManifest,
-		"workload-manifest",
-		"w",
-		"",
-		"Filepath to the workload manifest to generate child resources for.",
-	)
-	
-	if err := generateCmd.MarkFlagRequired("workload-manifest"); err != nil {
-		panic(err)
-	}
-
-	c.AddCommand(generate{{ .SubCmdVarName }}Cmd)
-	{{- end -}}
+	generateCmd.Setup()
 }
 
-// generate creates child resource manifests from a workload's custom resource.
-{{- if .IsComponent }}
-func (g *generate{{ .SubCmdVarName }}Command) generate{{ .SubCmdVarName }}(cmd *cobra.Command, args []string) error {
-{{- else }}
-func (g *generateCommand) generate(cmd *cobra.Command, args []string) error {
-{{- end }}
+// Generate{{ .Resource.Kind }} runs the logic to generate child resources for a
+// {{ .Resource.Kind }} workload.
+func Generate{{ .Resource.Kind }}(g *cmdgenerate.GenerateSubCommand) error {
 	{{- if and (.IsComponent) (not .IsCollection) }}
 	// component workload
-	wkFilename, _ := filepath.Abs(g.workloadManifest)
+	wkFilename, _ := filepath.Abs(g.WorkloadManifest)
 
 	wkYamlFile, err := os.ReadFile(wkFilename)
 	if err != nil {
@@ -208,7 +126,7 @@ func (g *generateCommand) generate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to unmarshal yaml %s into workload, %w", wkFilename, err)
 	}
 
-	err = validateWorkload(&workload)
+	err = cmdutils.ValidateWorkload(&workload)
 	if err != nil {
 		return fmt.Errorf("error validating yaml %s, %w", wkFilename, err)
 	}
@@ -216,7 +134,7 @@ func (g *generateCommand) generate(cmd *cobra.Command, args []string) error {
 	{{ end -}}
 	{{- if .IsComponent }}
 	// workload collection
-	colFilename, _ := filepath.Abs(g.collectionManifest)
+	colFilename, _ := filepath.Abs(g.CollectionManifest)
 
 	colYamlFile, err := os.ReadFile(colFilename)
 	if err != nil {
@@ -230,7 +148,7 @@ func (g *generateCommand) generate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to unmarshal yaml %s into workload, %w", colFilename, err)
 	}
 
-	err = validateWorkload(&collection)
+	err = cmdutils.ValidateWorkload(&collection)
 	if err != nil {
 		return fmt.Errorf("error validating yaml %s, %w", colFilename, err)
 	}
@@ -250,7 +168,7 @@ func (g *generateCommand) generate(cmd *cobra.Command, args []string) error {
 		resourceObjects[i] = resource
 	}
 	{{ else }}
-	filename, _ := filepath.Abs(g.workloadManifest)
+	filename, _ := filepath.Abs(g.WorkloadManifest)
 
 	yamlFile, err := os.ReadFile(filename)
 	if err != nil {
@@ -264,7 +182,7 @@ func (g *generateCommand) generate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to unmarshal yaml %s into workload, %w", filename, err)
 	}
 
-	err = validateWorkload(&workload)
+	err = cmdutils.ValidateWorkload(&workload)
 	if err != nil {
 		return fmt.Errorf("error validating yaml %s, %w", filename, err)
 	}

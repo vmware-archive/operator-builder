@@ -4,12 +4,10 @@
 package cli
 
 import (
-	"fmt"
-	"path/filepath"
-
 	"sigs.k8s.io/kubebuilder/v3/pkg/machinery"
 	"sigs.k8s.io/kubebuilder/v3/pkg/model/resource"
 
+	"github.com/vmware-tanzu-labs/operator-builder/internal/utils"
 	workloadv1 "github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1"
 )
 
@@ -21,13 +19,11 @@ type CmdInitSub struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
 	machinery.ResourceMixin
+	machinery.RepositoryMixin
 
-	RootCmd           string
-	RootCmdVarName    string
-	SubCmdName        string
-	SubCmdDescr       string
-	SubCmdVarName     string
-	SubCmdFileName    string
+	RootCmd workloadv1.CliCommand
+	SubCmd  workloadv1.CliCommand
+
 	SpecFields        *workloadv1.APIFields
 	IsComponent       bool
 	ComponentResource *resource.Resource
@@ -38,18 +34,18 @@ type CmdInitSub struct {
 
 func (f *CmdInitSub) SetTemplateDefaults() error {
 	if f.IsComponent {
-		f.Path = filepath.Join(
-			"cmd", f.RootCmd, "commands",
-			fmt.Sprintf("%s_init.go", f.SubCmdFileName),
-		)
 		f.Resource = f.ComponentResource
-	} else {
-		f.Path = filepath.Join("cmd", f.RootCmd, "commands", "init.go")
 	}
+
+	f.Path = f.SubCmd.GetSubCmdRelativeFileName(
+		f.RootCmd.Name,
+		"init",
+		f.Resource.Group,
+		utils.ToFileName(f.Resource.Kind),
+	)
 
 	f.InitCommandName = initCommandName
 	f.InitCommandDescr = initCommandDescr
-
 	f.TemplateBody = cliCmdInitSubTemplate
 
 	return nil
@@ -63,48 +59,23 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
+	cmdinit "{{ .Repo }}/cmd/{{ .RootCmd.Name }}/commands/init"
 )
 
-const defaultManifest{{ .SubCmdVarName }} = ` + "`" + `apiVersion: {{ .Resource.QualifiedGroup }}/{{ .Resource.Version }}
+const defaultManifest{{ .SubCmd.VarName }} = ` + "`" + `apiVersion: {{ .Resource.QualifiedGroup }}/{{ .Resource.Version }}
 kind: {{ .Resource.Kind }}
 metadata:
   name: {{ lower .Resource.Kind }}-sample
 {{ .SpecFields.GenerateSampleSpec -}}
 ` + "`" + `
 
-{{ if not .IsComponent -}}
-// newInitCommand creates a new instance of the init subcommand.
-func (c *{{ .RootCmdVarName }}Command) newInitCommand() {
-{{- else }}
-// newInit{{ .SubCmdVarName }}Command creates a new instance of the  init{{ .SubCmdVarName }} subcommand.
-func (i *initCommand) newInit{{ .SubCmdVarName }}Command() {
-{{- end }}
-	init{{ .SubCmdVarName }}Cmd := &cobra.Command{
-		{{ if .IsComponent -}}
-		Use:   "{{ .SubCmdName }}",
-		Short: "{{ .SubCmdDescr }}",
-		Long:  "{{ .SubCmdDescr }}",
-		{{- else -}}
-		Use:   "{{ .InitCommandName }}",
-		Short: "{{ .InitCommandDescr }}",
-		Long:  "{{ .InitCommandDescr }}",
-		{{- end }}
-		RunE: func(cmd *cobra.Command, args []string) error {
-			outputStream := os.Stdout
+func Init{{ .Resource.Kind }}(i *cmdinit.InitSubCommand) error {
+	outputStream := os.Stdout
 
-			if _, err := outputStream.WriteString(defaultManifest{{ .SubCmdVarName }}); err != nil {
-				return fmt.Errorf("failed to write to stdout, %w", err)
-			}
-
-			return nil
-		},
+	if _, err := outputStream.WriteString(defaultManifest); err != nil {
+		return fmt.Errorf("failed to write to stdout, %w", err)
 	}
 
-	{{ if .IsComponent -}}
-	i.AddCommand(init{{ .SubCmdVarName }}Cmd)
-	{{- else -}}
-	c.AddCommand(init{{ .SubCmdVarName }}Cmd)
-	{{- end -}}
+	return nil
 }
 `

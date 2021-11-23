@@ -23,6 +23,8 @@ type WorkloadInitializer interface {
 	GetRootCmdDescr() string
 
 	SetNames()
+
+	IsCollection() bool
 }
 
 // WorkloadAPIBuilder defines the interface that must be implemented by a

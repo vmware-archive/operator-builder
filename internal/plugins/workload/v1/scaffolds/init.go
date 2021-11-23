@@ -66,38 +66,40 @@ func (s *initScaffolder) Scaffold() error {
 		machinery.WithBoilerplate(string(boilerplate)),
 	)
 
+	rootCommand := workloadv1.CliCommand{
+		Name:        s.workload.GetRootCmdName(),
+		VarName:     utils.ToPascalCase(s.workload.GetRootCmdName()),
+		Description: s.workload.GetRootCmdDescr(),
+	}
+
 	if s.workload.HasRootCmdName() {
-		err = scaffold.Execute(
-			&cli.Main{
-				RootCmd:        s.workload.GetRootCmdName(),
-				RootCmdVarName: utils.ToPascalCase(s.workload.GetRootCmdName()),
-			},
+		if err := scaffold.Execute(
+			&cli.Main{RootCmd: rootCommand},
 			&cli.CmdRoot{
-				RootCmd:            s.workload.GetRootCmdName(),
-				RootCmdVarName:     utils.ToPascalCase(s.workload.GetRootCmdName()),
-				RootCmdDescription: s.workload.GetRootCmdDescr(),
+				RootCmd:      rootCommand,
+				IsCollection: s.workload.IsCollection(),
 			},
-		)
-		if err != nil {
+			&cli.CmdInit{RootCmdName: rootCommand.Name},
+			&cli.CmdGenerate{
+				RootCmdName:  rootCommand.Name,
+				IsCollection: s.workload.IsCollection(),
+			},
+			&cli.CmdVersion{RootCmdName: rootCommand.Name},
+		); err != nil {
 			return fmt.Errorf("unable to scaffold initial configuration for companionCli, %w", err)
 		}
 	}
 
-	err = scaffold.Execute(
+	if err := scaffold.Execute(
 		&templates.Main{},
 		&templates.GoMod{
 			ControllerRuntimeVersion: scaffolds.ControllerRuntimeVersion,
 			CobraVersion:             CobraVersion,
 		},
 		&templates.Dockerfile{},
-		&templates.Makefile{
-			RootCmd: s.workload.GetRootCmdName(),
-		},
-		&templates.Readme{
-			RootCmd: s.workload.GetRootCmdName(),
-		},
-	)
-	if err != nil {
+		&templates.Makefile{RootCmdName: rootCommand.Name},
+		&templates.Readme{RootCmdName: rootCommand.Name},
+	); err != nil {
 		return fmt.Errorf("unable to scaffold initial configuration, %w", err)
 	}
 

@@ -5,10 +5,12 @@ package cli
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"sigs.k8s.io/kubebuilder/v3/pkg/machinery"
 	"sigs.k8s.io/kubebuilder/v3/pkg/model/resource"
+
+	"github.com/vmware-tanzu-labs/operator-builder/internal/utils"
+	workloadv1 "github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1"
 )
 
 var (
@@ -21,22 +23,20 @@ type CmdVersionSub struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
 	machinery.ResourceMixin
+	machinery.RepositoryMixin
 
-	// RootCmd is the root command for the companion CLI
-	RootCmd        string
-	RootCmdVarName string
-
-	// SubCmdName is the sub command for the component
-	SubCmdName     string
-	SubCmdDescr    string
-	SubCmdVarName  string
-	SubCmdFileName string
+	RootCmd workloadv1.CliCommand
+	SubCmd  workloadv1.CliCommand
 
 	// VersionCommandName is the version sub command
 	VersionCommandName  string
 	VersionCommandDescr string
 
+	// Variable Names
+	APIVersionsVarName string
+
 	IsComponent       bool
+	IsStandalone      bool
 	ComponentResource *resource.Resource
 }
 
@@ -45,9 +45,21 @@ func (f *CmdVersionSub) SetTemplateDefaults() error {
 		f.Resource = f.ComponentResource
 	}
 
-	f.Path = getFilePath(f.IsComponent, f.RootCmd, f.SubCmdFileName)
+	f.Path = f.SubCmd.GetSubCmdRelativeFileName(
+		f.RootCmd.Name,
+		"version",
+		f.Resource.Group,
+		utils.ToFileName(f.Resource.Kind),
+	)
+
 	f.VersionCommandName = versionCommandName
 	f.VersionCommandDescr = versionCommandDescr
+
+	if f.IsStandalone {
+		f.APIVersionsVarName = "apiVersions"
+	} else {
+		f.APIVersionsVarName = fmt.Sprintf("apiVersions%s", f.SubCmd.VarName)
+	}
 
 	f.TemplateBody = fmt.Sprintf(
 		cmdVersionSubHeader,
@@ -64,15 +76,20 @@ type CmdVersionSubUpdater struct { //nolint:maligned
 	machinery.MultiGroupMixin
 	machinery.ResourceMixin
 
-	RootCmd        string
-	SubCmdFileName string
+	RootCmd workloadv1.CliCommand
+	SubCmd  workloadv1.CliCommand
 
 	IsComponent bool
 }
 
 // GetPath implements file.Builder interface.
 func (f *CmdVersionSubUpdater) GetPath() string {
-	return getFilePath(f.IsComponent, f.RootCmd, f.SubCmdFileName)
+	return f.SubCmd.GetSubCmdRelativeFileName(
+		f.RootCmd.Name,
+		"version",
+		f.Resource.Group,
+		utils.ToFileName(f.Resource.Kind),
+	)
 }
 
 // GetIfExistsAction implements file.Builder interface.
@@ -127,73 +144,24 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+
+	cmdversion "{{ .Repo }}/cmd/{{ .RootCmd.Name }}/commands/version"
 )
 
-var default{{ .SubCmdVarName }} = "dev"
-var apiVersions{{ .SubCmdVarName }} = []string{
+var {{ .APIVersionsVarName }} = []string{
 	%s
 }
 
 %s
 `
 	cmdVersionSubBody = `
-{{ if not .IsComponent -}}
-// newVersionCommand creates a new instance of the version subcommand.
-func (c *{{ .RootCmdVarName }}Command) newVersionCommand() {
-{{- else }}
-// newVersion{{ .SubCmdVarName }}Command creates a new instance of the version{{ .SubCmdVarName }} subcommand.
-func (v *versionCommand) newVersion{{ .SubCmdVarName }}Command() {
-{{- end }}
-	version{{ .SubCmdVarName }}Cmd := &cobra.Command{
-		{{ if .IsComponent -}}
-		Use:   "{{ .SubCmdName }}",
-		Short: "{{ .SubCmdDescr }}",
-		Long:  "{{ .SubCmdDescr }}",
-		{{- else -}}
-		Use:   "{{ .VersionCommandName }}",
-		Short: "{{ .VersionCommandDescr }}",
-		Long:  "{{ .VersionCommandDescr }}",
-		{{- end }}
-		RunE: func(cmd *cobra.Command, args []string) error {
-			versionInfo := struct {
-				CLIVersion  string   ` + "`" + `json:"cliVersion"` + "`" + `
-				APIVersions []string ` + "`" + `json:"apiVersions"` + "`" + `
-			}{
-				CLIVersion:  default{{ .SubCmdVarName }},
-				APIVersions: apiVersions{{ .SubCmdVarName }},
-			}
-
-			output, err := json.Marshal(versionInfo)
-			if err != nil {
-				return fmt.Errorf("failed to determine versionInfo, %s", err)
-			}
-
-			outputStream := os.Stdout
-
-			if _, err := outputStream.WriteString(fmt.Sprintln(string(output))); err != nil {
-				return fmt.Errorf("failed to write to stdout, %s", err)
-			}
-
-			return nil
-		},
+func Version{{ .Resource.Kind }}(v *cmdversion.VersionSubCommand) error {
+	versionInfo := cmdversion.VersionInfo{
+		CLIVersion:  cmdversion.CliVersion,
+		APIVersions: apiVersions,
 	}
 
-	{{ if .IsComponent -}}
-	v.AddCommand(version{{ .SubCmdVarName }}Cmd)
-	{{- else -}}
-	c.AddCommand(version{{ .SubCmdVarName }}Cmd)
-	{{- end -}}
+	return versionInfo.Display()
 }
 `
 )
-
-func getFilePath(isComponent bool, rootCmdName, subCmdFileName string) string {
-	if isComponent {
-		return filepath.Join(
-			"cmd", rootCmdName, "commands",
-			fmt.Sprintf("%s_version.go", subCmdFileName),
-		)
-	}
-
-	return filepath.Join("cmd", rootCmdName, "commands", "version.go")
-}
