@@ -216,7 +216,7 @@ func (c *{{ .RootCmd.VarName }}Command) newInitSubCommand() {
 	{{- if .IsCollection }}
 	parentCommand := cmdinit.GetParent(cmdinit.NewBaseInitSubCommand(c.Command))
 	{{ else }}
-	parentCommand := cmdinit.GetParent(c)
+	parentCommand := cmdinit.GetParent(c.Command)
 	{{ end -}}
 	_ = parentCommand
 
@@ -228,7 +228,7 @@ func (c *{{ .RootCmd.VarName }}Command) newGenerateSubCommand() {
 	{{- if .IsCollection }}
 	parentCommand := cmdgenerate.GetParent(cmdgenerate.NewBaseGenerateSubCommand(c.Command))
 	{{ else }}
-	parentCommand := cmdgenerate.GetParent(c)
+	parentCommand := cmdgenerate.GetParent(c.Command)
 	{{ end -}}
 	_ = parentCommand
 
@@ -240,7 +240,7 @@ func (c *{{ .RootCmd.VarName }}Command) newVersionSubCommand() {
 	{{- if .IsCollection }}
 	parentCommand := cmdversion.GetParent(cmdversion.NewBaseVersionSubCommand(c.Command))
 	{{ else }}
-	parentCommand := cmdversion.GetParent(c)
+	parentCommand := cmdversion.GetParent(c.Command)
 	{{ end -}}
 	_ = parentCommand
 
