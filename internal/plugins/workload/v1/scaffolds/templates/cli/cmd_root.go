@@ -33,8 +33,9 @@ func (f *CmdRoot) SetTemplateDefaults() error {
 
 	f.TemplateBody = fmt.Sprintf(CmdRootTemplate,
 		machinery.NewMarkerFor(f.Path, subcommandsImportsMarker),
+		machinery.NewMarkerFor(f.Path, subcommandsInitMarker),
 		machinery.NewMarkerFor(f.Path, subcommandsGenerateMarker),
-		machinery.NewMarkerFor(f.Path, subcommandsMarker),
+		machinery.NewMarkerFor(f.Path, subcommandsVersionMarker),
 	)
 
 	return nil
@@ -47,6 +48,8 @@ type CmdRootUpdater struct { //nolint:maligned
 	machinery.ResourceMixin
 
 	RootCmdName string
+
+	Builder workloadv1.WorkloadAPIBuilder
 
 	IsComponent, IsCollection, IsStandalone bool
 
@@ -65,36 +68,24 @@ func (*CmdRootUpdater) GetIfExistsAction() machinery.IfExistsAction {
 }
 
 const subcommandsImportsMarker = "operator-builder:subcommands:imports"
+const subcommandsInitMarker = "operator-builder:subcommands:init"
 const subcommandsGenerateMarker = "operator-builder:subcommands:generate"
-const subcommandsMarker = "operator-builder:subcommands"
+const subcommandsVersionMarker = "operator-builder:subcommands:version"
 
 // GetMarkers implements file.Inserter interface.
 func (f *CmdRootUpdater) GetMarkers() []machinery.Marker {
 	return []machinery.Marker{
 		machinery.NewMarkerFor(f.GetPath(), subcommandsImportsMarker),
+		machinery.NewMarkerFor(f.GetPath(), subcommandsInitMarker),
 		machinery.NewMarkerFor(f.GetPath(), subcommandsGenerateMarker),
-		machinery.NewMarkerFor(f.GetPath(), subcommandsMarker),
+		machinery.NewMarkerFor(f.GetPath(), subcommandsVersionMarker),
 	}
 }
 
-// Command Code Fragments.
+// Code Fragments.
 const (
-	initCommandCodeFragment = `// add the init subcommand
-	c.newInitSubCommand(init%s.Init%s)
-
+	subcommandCodeFragment = `%s%s.New%sSubCommand(parentCommand.Command)
 `
-	generateCommandCodeFragment = `// add the generate subcommands
-	generate%s.New%sSubCommand(parentCommand.Command)
-
-`
-	versionCommandCodeFragment = `// add the version subcommand
-	c.newVersionSubCommand(version%s.Version%s)
-	
-`
-)
-
-// Import Code Fragments.
-const (
 	importSubCommandCodeFragment = `%s%s "%s"
 `
 )
@@ -113,46 +104,49 @@ func (f *CmdRootUpdater) GetCodeFragments() machinery.CodeFragmentsMap {
 
 	// Generate subCommands and imports code fragments
 	imports := make([]string, 0)
-	subCommands := make([]string, 0)
 	generateCommands := make([]string, 0)
+	initCommands := make([]string, 0)
+	versionCommands := make([]string, 0)
 
 	if f.InitCommand {
 		imports = append(imports, fmt.Sprintf(importSubCommandCodeFragment,
 			"init",
-			f.Resource.Group,
-			fmt.Sprintf("%s/init/%s", commandPath, f.Resource.Group)),
+			f.Builder.GetAPIGroup(),
+			fmt.Sprintf("%s/init/%s", commandPath, f.Builder.GetAPIGroup())),
 		)
 
-		subCommands = append(subCommands, fmt.Sprintf(initCommandCodeFragment,
-			f.Resource.Group,
-			f.Resource.Kind),
+		initCommands = append(initCommands, fmt.Sprintf(subcommandCodeFragment,
+			"init",
+			f.Builder.GetAPIGroup(),
+			f.Builder.GetAPIKind()),
 		)
 	}
 
 	if f.GenerateCommand {
 		imports = append(imports, fmt.Sprintf(importSubCommandCodeFragment,
 			"generate",
-			f.Resource.Group,
-			fmt.Sprintf("%s/generate/%s", commandPath, f.Resource.Group)),
+			f.Builder.GetAPIGroup(),
+			fmt.Sprintf("%s/generate/%s", commandPath, f.Builder.GetAPIGroup())),
 		)
 
-		generateCommands = append(generateCommands, fmt.Sprintf(generateCommandCodeFragment,
-			f.Resource.Group,
-			f.Resource.Kind,
-		),
+		generateCommands = append(generateCommands, fmt.Sprintf(subcommandCodeFragment,
+			"generate",
+			f.Builder.GetAPIGroup(),
+			f.Builder.GetAPIKind()),
 		)
 	}
 
 	if f.VersionCommand {
 		imports = append(imports, fmt.Sprintf(importSubCommandCodeFragment,
 			"version",
-			f.Resource.Group,
-			fmt.Sprintf("%s/version/%s", commandPath, f.Resource.Group)),
+			f.Builder.GetAPIGroup(),
+			fmt.Sprintf("%s/version/%s", commandPath, f.Builder.GetAPIGroup())),
 		)
 
-		subCommands = append(subCommands, fmt.Sprintf(versionCommandCodeFragment,
-			f.Resource.Group,
-			f.Resource.Kind),
+		versionCommands = append(versionCommands, fmt.Sprintf(subcommandCodeFragment,
+			"version",
+			f.Builder.GetAPIGroup(),
+			f.Builder.GetAPIKind()),
 		)
 	}
 
@@ -161,12 +155,16 @@ func (f *CmdRootUpdater) GetCodeFragments() machinery.CodeFragmentsMap {
 		fragments[machinery.NewMarkerFor(f.GetPath(), subcommandsImportsMarker)] = imports
 	}
 
-	if len(subCommands) != 0 {
+	if len(initCommands) != 0 {
+		fragments[machinery.NewMarkerFor(f.GetPath(), subcommandsInitMarker)] = initCommands
+	}
+
+	if len(generateCommands) != 0 {
 		fragments[machinery.NewMarkerFor(f.GetPath(), subcommandsGenerateMarker)] = generateCommands
 	}
 
-	if len(subCommands) != 0 {
-		fragments[machinery.NewMarkerFor(f.GetPath(), subcommandsMarker)] = subCommands
+	if len(versionCommands) != 0 {
+		fragments[machinery.NewMarkerFor(f.GetPath(), subcommandsVersionMarker)] = versionCommands
 	}
 
 	return fragments
@@ -214,29 +212,46 @@ func (c *{{ .RootCmd.VarName }}Command) Run() {
 	cobra.CheckErr(c.Execute())
 }
 
-func (c *{{ .RootCmd.VarName }}Command) newInitSubCommand(initFunc cmdinit.InitFunc) {
-	c.AddCommand(cmdinit.NewInitCommand(initFunc))
-}
-
-func (c *{{ .RootCmd.VarName }}Command) newGenerateSubCommand() {
-	{{ if .IsCollection }}
-	parentCommand := cmdgenerate.NewBaseGenerateSubCommand(c)
+func (c *{{ .RootCmd.VarName }}Command) newInitSubCommand() {
+	{{- if .IsCollection }}
+	parentCommand := cmdinit.NewBaseInitSubCommand(c.Command)
 	{{ else }}
-	// FIXME
 	parentCommand := c
+	{{ end -}}
 	_ = parentCommand
-	{{ end }}
 
+	// add the init subcommands
 	%s
 }
 
-func (c *{{ .RootCmd.VarName }}Command) newVersionSubCommand(versionFunc cmdversion.VersionFunc) {
-	c.AddCommand(cmdversion.NewVersionCommand(versionFunc))
+func (c *{{ .RootCmd.VarName }}Command) newGenerateSubCommand() {
+	{{- if .IsCollection }}
+	parentCommand := cmdgenerate.NewBaseGenerateSubCommand(c.Command)
+	{{ else }}
+	parentCommand := c
+	{{ end -}}
+	_ = parentCommand
+
+	// add the generate subcommands
+	%s
+}
+
+func (c *{{ .RootCmd.VarName }}Command) newVersionSubCommand() {
+	{{- if .IsCollection }}
+	parentCommand := cmdversion.NewBaseVersionSubCommand(c.Command)
+	{{ else }}
+	parentCommand := c
+	{{ end -}}
+	_ = parentCommand
+
+	// add the version subcommands
+	%s
 }
 
 // addSubCommands adds any additional subCommands to the root command.
 func (c *{{ .RootCmd.VarName }}Command) addSubCommands() {
+	c.newInitSubCommand()
 	c.newGenerateSubCommand()
-	%s
+	c.newVersionSubCommand()
 }
 `

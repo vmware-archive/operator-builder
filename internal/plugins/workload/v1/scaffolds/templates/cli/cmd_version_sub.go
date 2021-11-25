@@ -58,7 +58,7 @@ func (f *CmdVersionSub) SetTemplateDefaults() error {
 	if f.IsStandalone {
 		f.APIVersionsVarName = "apiVersions"
 	} else {
-		f.APIVersionsVarName = fmt.Sprintf("apiVersions%s", f.SubCmd.VarName)
+		f.APIVersionsVarName = fmt.Sprintf("apiVersions%s", f.Resource.Kind)
 	}
 
 	f.TemplateBody = fmt.Sprintf(
@@ -136,15 +136,11 @@ func (f *CmdVersionSubUpdater) GetCodeFragments() machinery.CodeFragmentsMap {
 const (
 	cmdVersionSubHeader = `{{ .Boilerplate }}
 
-package commands
+package {{ .Resource.Group }}
 
 import (
-	"encoding/json"
-	"fmt"
-	"os"
-
 	"github.com/spf13/cobra"
-
+	
 	cmdversion "{{ .Repo }}/cmd/{{ .RootCmd.Name }}/commands/version"
 )
 
@@ -155,10 +151,28 @@ var {{ .APIVersionsVarName }} = []string{
 %s
 `
 	cmdVersionSubBody = `
+// New{{ .Resource.Kind }}SubCommand creates a new command and adds it to its 
+// parent command.
+func New{{ .Resource.Kind }}SubCommand(parentCommand *cobra.Command) {
+	versionCmd := &cmdversion.VersionSubCommand{
+		{{- if .IsStandalone }}
+		Name:         "{{ .VersionCommandName }}",
+		Description:  "{{ .VersionCommandDescr }}",
+		{{ else }}
+		Name:         "{{ .SubCmd.Name }}",
+		Description:  "{{ .SubCmd.Description }}",
+		{{- end -}}
+		VersionFunc:  Version{{ .Resource.Kind }},
+		SubCommandOf: parentCommand,
+	}
+
+	versionCmd.Setup()
+}
+
 func Version{{ .Resource.Kind }}(v *cmdversion.VersionSubCommand) error {
 	versionInfo := cmdversion.VersionInfo{
 		CLIVersion:  cmdversion.CliVersion,
-		APIVersions: apiVersions,
+		APIVersions: {{ .APIVersionsVarName }},
 	}
 
 	return versionInfo.Display()

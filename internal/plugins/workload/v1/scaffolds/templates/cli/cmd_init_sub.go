@@ -4,6 +4,8 @@
 package cli
 
 import (
+	"fmt"
+
 	"sigs.k8s.io/kubebuilder/v3/pkg/machinery"
 	"sigs.k8s.io/kubebuilder/v3/pkg/model/resource"
 
@@ -24,12 +26,13 @@ type CmdInitSub struct {
 	RootCmd workloadv1.CliCommand
 	SubCmd  workloadv1.CliCommand
 
-	SpecFields        *workloadv1.APIFields
-	IsComponent       bool
-	ComponentResource *resource.Resource
+	SpecFields                *workloadv1.APIFields
+	IsStandalone, IsComponent bool
+	ComponentResource         *resource.Resource
 
 	InitCommandName  string
 	InitCommandDescr string
+	ManifestVarName  string
 }
 
 func (f *CmdInitSub) SetTemplateDefaults() error {
@@ -46,6 +49,8 @@ func (f *CmdInitSub) SetTemplateDefaults() error {
 
 	f.InitCommandName = initCommandName
 	f.InitCommandDescr = initCommandDescr
+	f.ManifestVarName = fmt.Sprintf("%sManifest%s", f.Resource.Version, f.Resource.Kind)
+
 	f.TemplateBody = cliCmdInitSubTemplate
 
 	return nil
@@ -53,26 +58,46 @@ func (f *CmdInitSub) SetTemplateDefaults() error {
 
 const cliCmdInitSubTemplate = `{{ .Boilerplate }}
 
-package commands
+package {{ .Resource.Group }}
 
 import (
 	"fmt"
 	"os"
 
+	"github.com/spf13/cobra"
+
 	cmdinit "{{ .Repo }}/cmd/{{ .RootCmd.Name }}/commands/init"
 )
 
-const defaultManifest{{ .SubCmd.VarName }} = ` + "`" + `apiVersion: {{ .Resource.QualifiedGroup }}/{{ .Resource.Version }}
+const {{ .ManifestVarName }} = ` + "`" + `apiVersion: {{ .Resource.QualifiedGroup }}/{{ .Resource.Version }}
 kind: {{ .Resource.Kind }}
 metadata:
   name: {{ lower .Resource.Kind }}-sample
 {{ .SpecFields.GenerateSampleSpec -}}
 ` + "`" + `
 
+// New{{ .Resource.Kind }}SubCommand creates a new command and adds it to its 
+// parent command.
+func New{{ .Resource.Kind }}SubCommand(parentCommand *cobra.Command) {
+	initCmd := &cmdinit.InitSubCommand{
+		{{- if .IsStandalone }}
+		Name:        "{{ .InitCommandName }}",
+		Description: "{{ .InitCommandDescr }}",
+		{{ else }}
+		Name:        "{{ .SubCmd.Name }}",
+		Description: "{{ .SubCmd.Description }}",
+		{{- end -}}
+		InitFunc:     Init{{ .Resource.Kind }},
+		SubCommandOf: parentCommand,
+	}
+
+	initCmd.Setup()
+}
+
 func Init{{ .Resource.Kind }}(i *cmdinit.InitSubCommand) error {
 	outputStream := os.Stdout
 
-	if _, err := outputStream.WriteString(defaultManifest); err != nil {
+	if _, err := outputStream.WriteString({{ .ManifestVarName }}); err != nil {
 		return fmt.Errorf("failed to write to stdout, %w", err)
 	}
 

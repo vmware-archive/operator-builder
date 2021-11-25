@@ -57,7 +57,7 @@ func (f *CmdGenerateSub) SetTemplateDefaults() error {
 //nolint: lll
 const cliCmdGenerateSubTemplate = `{{ .Boilerplate }}
 
-package commands
+package {{ .Resource.Group }}
 
 import (
 	"fmt"
@@ -65,6 +65,7 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
+	
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"

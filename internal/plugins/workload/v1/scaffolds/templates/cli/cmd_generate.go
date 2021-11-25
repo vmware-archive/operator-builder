@@ -75,7 +75,7 @@ type GenerateSubCommand struct {
 // NewBaseGenerateSubCommand returns a subcommand that is meant to belong to a parent
 // subcommand but have subcommands itself.
 func NewBaseGenerateSubCommand(parentCommand *cobra.Command) *GenerateSubCommand {
-	generateCmd := &cmdgenerate.GenerateSubCommand{
+	generateCmd := &GenerateSubCommand{
 		Name:                  "{{ .GenerateCommandName }}",
 		Description:           "{{ .GenerateCommandDescr }}",
 		UseCollectionManifest: false,

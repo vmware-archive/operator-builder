@@ -25,6 +25,8 @@ type CmdVersion struct {
 
 	RootCmdName string
 
+	IsCollection bool
+
 	VersionCommandName  string
 	VersionCommandDescr string
 }
@@ -63,26 +65,47 @@ type VersionFunc func(*VersionSubCommand) error
 type VersionSubCommand struct {
 	*cobra.Command
 
-	versionFunc VersionFunc
+	// options
+	Name         string
+	Description  string
+	SubCommandOf *cobra.Command
+
+	VersionFunc VersionFunc
 }
 
-// NewVersionCommand creates a new instance of the version subcommand.
-func NewVersionCommand(versionFunc VersionFunc) *cobra.Command {
-	v := &VersionSubCommand{
-		versionFunc: versionFunc,
+{{ if .IsCollection }}
+// NewBaseVersionSubCommand returns a subcommand that is meant to belong to a parent
+// subcommand but have subcommands itself.
+func NewBaseVersionSubCommand(parentCommand *cobra.Command) *VersionSubCommand {
+	versionCmd := &VersionSubCommand{
+		Name:         "{{ .VersionCommandName }}",
+		Description:  "{{ .VersionCommandDescr }}",
+		SubCommandOf: parentCommand,
 	}
 
-	return &cobra.Command{
-		Use:   "version",
-		Short: "Display the version information",
-		Long:  "Display the version information",
-		RunE:  v.version,
+	versionCmd.Setup()
+
+	return versionCmd
+}
+{{ end }}
+
+// Setup sets up this command to be used as a command.
+func (v *VersionSubCommand) Setup() {
+	v.Command = &cobra.Command{
+		Use:   v.Name,
+		Short: v.Description,
+		Long:  v.Description,
+	}
+
+	// run the version function if the function signature is set
+	if v.VersionFunc != nil {
+		v.RunE = v.version
 	}
 }
 
 // version run the function to display version information about a workload.
 func (v *VersionSubCommand) version(cmd *cobra.Command, args []string) error {
-	return v.versionFunc(v)
+	return v.VersionFunc(v)
 }
 
 // Display will parse and print the information stored on the VersionInfo object.

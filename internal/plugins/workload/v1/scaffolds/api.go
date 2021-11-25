@@ -29,7 +29,6 @@ import (
 	resourcespkg "github.com/vmware-tanzu-labs/operator-builder/internal/plugins/workload/v1/scaffolds/templates/int/resources"
 	"github.com/vmware-tanzu-labs/operator-builder/internal/plugins/workload/v1/scaffolds/templates/int/wait"
 	"github.com/vmware-tanzu-labs/operator-builder/internal/plugins/workload/v1/scaffolds/templates/test/e2e"
-	v1 "github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1"
 	workloadv1 "github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1"
 )
 
@@ -327,9 +326,11 @@ func (s *apiScaffolder) Scaffold() error {
 		}
 	}
 
-	// scaffold the companion CLI last
-	if err = s.scaffoldCLI(scaffold); err != nil {
-		return fmt.Errorf("error scaffolding CLI; %w", err)
+	// scaffold the companion CLI last only if we have a root command name
+	if s.cliRootCommandName != "" {
+		if err = s.scaffoldCLI(scaffold); err != nil {
+			return fmt.Errorf("error scaffolding CLI; %w", err)
+		}
 	}
 
 	return nil
@@ -338,17 +339,14 @@ func (s *apiScaffolder) Scaffold() error {
 // scaffoldCLI runs the specific logic to scaffold the companion CLI
 //nolint:funlen,gocyclo //this will be refactored later
 func (s *apiScaffolder) scaffoldCLI(scaffold *machinery.Scaffold) error {
-	// do not scaffold the cli if the root command name is blank
-	if s.cliRootCommandName == "" {
-		return nil
-	}
-
 	// create a root command object in memory
-	rootCommand := v1.CliCommand{
+	rootCommand := workloadv1.CliCommand{
 		Name:    s.workload.GetRootcommandName(),
 		VarName: s.workload.GetRootcommandVarName(),
 	}
 
+	// obtain a list of workload commands to generate, to include the parent collection
+	// and its children
 	workloadCommands := make([]workloadv1.WorkloadAPIBuilder, len(s.workload.GetComponents())+1)
 	workloadCommands[0] = s.workload
 
@@ -365,24 +363,21 @@ func (s *apiScaffolder) scaffoldCLI(scaffold *machinery.Scaffold) error {
 
 	for _, workloadCommand := range workloadCommands {
 		// create subcommand object in memory
-		subCommand := v1.CliCommand{
+		subCommand := workloadv1.CliCommand{
 			Name:        workloadCommand.GetSubcommandName(),
 			VarName:     workloadCommand.GetSubcommandVarName(),
 			Description: workloadCommand.GetSubcommandDescr(),
-			SubCommands: workloadCommand.GetSubcommands(),
 			FileName:    workloadCommand.GetSubcommandFileName(),
 		}
-
-		// store the subcommands for this workload on the root command
-		rootCommand.SubCommands = workloadCommand.GetSubcommands()
 
 		// scaffold init subcommand
 		if err := scaffold.Execute(
 			&cli.CmdInitSub{
-				RootCmd:     rootCommand,
-				SubCmd:      subCommand,
-				SpecFields:  workloadCommand.GetAPISpecFields(),
-				IsComponent: workloadCommand.IsComponent() || workloadCommand.IsCollection(),
+				RootCmd:      rootCommand,
+				SubCmd:       subCommand,
+				SpecFields:   workloadCommand.GetAPISpecFields(),
+				IsComponent:  workloadCommand.IsComponent() || workloadCommand.IsCollection(),
+				IsStandalone: workloadCommand.IsStandalone(),
 				ComponentResource: workloadCommand.GetComponentResource(
 					s.config.GetDomain(),
 					s.config.GetRepository(),
@@ -440,18 +435,19 @@ func (s *apiScaffolder) scaffoldCLI(scaffold *machinery.Scaffold) error {
 		); err != nil {
 			return fmt.Errorf("unable to scaffold version subcommand, %w", err)
 		}
-	}
 
-	// scaffold the root command
-	if err := scaffold.Execute(
-		&cli.CmdRootUpdater{
-			RootCmdName:     rootCommand.Name,
-			InitCommand:     true,
-			GenerateCommand: true,
-			VersionCommand:  true,
-		},
-	); err != nil {
-		return fmt.Errorf("error updating root.go, %w", err)
+		// scaffold the root command
+		if err := scaffold.Execute(
+			&cli.CmdRootUpdater{
+				RootCmdName:     rootCommand.Name,
+				InitCommand:     true,
+				GenerateCommand: true,
+				VersionCommand:  true,
+				Builder:         workloadCommand,
+			},
+		); err != nil {
+			return fmt.Errorf("error updating root.go, %w", err)
+		}
 	}
 
 	return nil

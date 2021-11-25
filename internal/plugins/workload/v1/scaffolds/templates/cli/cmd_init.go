@@ -25,6 +25,8 @@ type CmdInit struct {
 
 	RootCmdName string
 
+	IsCollection bool
+
 	InitCommandName  string
 	InitCommandDescr string
 }
@@ -52,25 +54,48 @@ type InitFunc func(*InitSubCommand) error
 type InitSubCommand struct {
 	*cobra.Command
 
+	// flags
 	APIVersion string
 
-	initFunc InitFunc
+	// options
+	Name         string
+	Description  string
+	SubCommandOf *cobra.Command
+
+	InitFunc InitFunc
 }
 
-// NewInitCommand creates a new instance of the init subcommand.
-func NewInitCommand(initFunc InitFunc) *cobra.Command {
-	i := &InitSubCommand{
-		initFunc: initFunc,
+{{ if .IsCollection }}
+// NewBaseInitSubCommand returns a subcommand that is meant to belong to a parent
+// subcommand but have subcommands itself.
+func NewBaseInitSubCommand(parentCommand *cobra.Command) *InitSubCommand {
+	initCmd := &InitSubCommand{
+		Name:         "{{ .InitCommandName }}",
+		Description:  "{{ .InitCommandDescr }}",
+		SubCommandOf: parentCommand,
 	}
 
-	initCmd := &cobra.Command{
-		Use:   "init",
-		Short: "Write a sample custom resource manifest for a workload to standard out",
-		Long:  "Write a sample custom resource manifest for a workload to standard out",
-		RunE:  i.initialize,
+	initCmd.Setup()
+
+	return initCmd
+}
+{{ end }}
+
+// Setup sets up this command to be used as a command.
+func (i *InitSubCommand) Setup() {
+	i.Command = &cobra.Command{
+		Use:   i.Name,
+		Short: i.Description,
+		Long:  i.Description,
 	}
 
-	initCmd.Flags().StringVarP(
+	// run the initialize function if the function signature is set
+	if i.InitFunc != nil {
+		i.RunE = i.initialize
+	}
+
+	// always add the api-version flag
+	i.Flags().StringVarP(
 		&i.APIVersion,
 		"api-version",
 		"",
@@ -78,11 +103,14 @@ func NewInitCommand(initFunc InitFunc) *cobra.Command {
 		"API Version of the workload to generate workload manifest for.",
 	)
 
-	return initCmd
+	// add this as a subcommand of another command if set
+	if i.SubCommandOf != nil {
+		i.SubCommandOf.AddCommand(i.Command)
+	}
 }
 
 // initialize creates sample workload manifests for a workload's custom resource.
 func (i *InitSubCommand) initialize(cmd *cobra.Command, args []string) error {
-	return i.initFunc(i)
+	return i.InitFunc(i)
 }
 `

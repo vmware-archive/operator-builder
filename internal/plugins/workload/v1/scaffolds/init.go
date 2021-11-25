@@ -79,12 +79,18 @@ func (s *initScaffolder) Scaffold() error {
 				RootCmd:      rootCommand,
 				IsCollection: s.workload.IsCollection(),
 			},
-			&cli.CmdInit{RootCmdName: rootCommand.Name},
+			&cli.CmdInit{
+				RootCmdName:  rootCommand.Name,
+				IsCollection: s.workload.IsCollection(),
+			},
 			&cli.CmdGenerate{
 				RootCmdName:  rootCommand.Name,
 				IsCollection: s.workload.IsCollection(),
 			},
-			&cli.CmdVersion{RootCmdName: rootCommand.Name},
+			&cli.CmdVersion{
+				RootCmdName:  rootCommand.Name,
+				IsCollection: s.workload.IsCollection(),
+			},
 		); err != nil {
 			return fmt.Errorf("unable to scaffold initial configuration for companionCli, %w", err)
 		}
