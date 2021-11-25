@@ -47,8 +47,14 @@ func (f *CmdInitSub) SetTemplateDefaults() error {
 		utils.ToFileName(f.Resource.Kind),
 	)
 
-	f.InitCommandName = initCommandName
-	f.InitCommandDescr = initCommandDescr
+	if f.IsStandalone {
+		f.InitCommandName = initCommandName
+		f.InitCommandDescr = initCommandDescr
+	} else {
+		f.InitCommandName = f.SubCmd.Name
+		f.InitCommandDescr = f.SubCmd.Description
+	}
+
 	f.ManifestVarName = fmt.Sprintf("%sManifest%s", f.Resource.Version, f.Resource.Kind)
 
 	f.TemplateBody = cliCmdInitSubTemplate
@@ -80,13 +86,8 @@ metadata:
 // parent command.
 func New{{ .Resource.Kind }}SubCommand(parentCommand *cobra.Command) {
 	initCmd := &cmdinit.InitSubCommand{
-		{{- if .IsStandalone }}
-		Name:        "{{ .InitCommandName }}",
-		Description: "{{ .InitCommandDescr }}",
-		{{ else }}
-		Name:        "{{ .SubCmd.Name }}",
-		Description: "{{ .SubCmd.Description }}",
-		{{- end -}}
+		Name:         "{{ .InitCommandName }}",
+		Description:  "{{ .InitCommandDescr }}",
 		InitFunc:     Init{{ .Resource.Kind }},
 		SubCommandOf: parentCommand,
 	}
