@@ -31,8 +31,10 @@ type CmdGenerateSub struct {
 	ComponentResource *resource.Resource
 	Collection        *workloadv1.WorkloadCollection
 
-	GenerateCommandName  string
-	GenerateCommandDescr string
+	GenerateCommandName       string
+	GenerateCommandDescr      string
+	UseCollectionManifestFlag bool
+	UseWorkloadManifestFlag   bool
 }
 
 func (f *CmdGenerateSub) SetTemplateDefaults() error {
@@ -46,8 +48,27 @@ func (f *CmdGenerateSub) SetTemplateDefaults() error {
 		f.Resource.Group,
 		utils.ToFileName(f.Resource.Kind),
 	)
-	f.GenerateCommandName = generateCommandName
-	f.GenerateCommandDescr = generateCommandDescr
+
+	// if we have a standalone simply use the default command name and description
+	// for generate since the 'generate' command will be the last in the chain,
+	// otherwise we will use the requested subcommand name
+	if f.IsStandalone {
+		f.GenerateCommandName = generateCommandName
+		f.GenerateCommandDescr = generateCommandDescr
+	} else {
+		f.GenerateCommandName = f.SubCmd.Name
+		f.GenerateCommandDescr = f.SubCmd.Description
+	}
+
+	// use the collection flag for non-standalone use cases
+	if !f.IsStandalone {
+		f.UseCollectionManifestFlag = true
+	}
+
+	// use the workload manifest flag for non-collection use cases
+	if !f.IsCollection {
+		f.UseWorkloadManifestFlag = true
+	}
 
 	f.TemplateBody = cliCmdGenerateSubTemplate
 
@@ -84,25 +105,12 @@ import (
 // parent command.
 func New{{ .Resource.Kind }}SubCommand(parentCommand *cobra.Command) {
 	generateCmd := &cmdgenerate.GenerateSubCommand{
-		{{- if .IsStandalone }}
 		Name:                  "{{ .GenerateCommandName }}",
 		Description:           "{{ .GenerateCommandDescr }}",
-		UseCollectionManifest: false,
-		UseWorkloadManifest:   true,
-		GenerateFunc:          Generate{{ .Resource.Kind }},
-		{{ else if .IsComponent }}
-		Name:                  "{{ .SubCmd.Name }}",
-		Description:           "{{ .SubCmd.Description }}",
-		UseCollectionManifest: true,
-		UseWorkloadManifest:   true,
-		GenerateFunc:          Generate{{ .Resource.Kind }},
-		{{ else }}
-		Name:                  "{{ .SubCmd.Name }}",
-		Description:           "{{ .SubCmd.Description }}",
-		UseCollectionManifest: true,
-		UseWorkloadManifest:   false,
-		{{- end -}}
+		UseCollectionManifest: {{ .UseCollectionManifestFlag }},
+		UseWorkloadManifest:   {{ .UseWorkloadManifestFlag }},
 		SubCommandOf:          parentCommand,
+		GenerateFunc:          Generate{{ .Resource.Kind }},
 	}
 
 	generateCmd.Setup()
