@@ -113,6 +113,19 @@ func (v *VersionSubCommand) version(cmd *cobra.Command, args []string) error {
 	return v.VersionFunc(v)
 }
 
+// GetParent is a convenience function written when the CLI code is scaffolded 
+// to return the parent command and avoid scaffolding code with bad imports.
+func GetParent(c interface{}) *cobra.Command {
+	switch subcommand := c.(type) {
+	case *VersionSubCommand:
+		return subcommand.Command
+	case *cobra.Command:
+		return subcommand
+	}
+
+	panic(fmt.Sprintf("subcommand is not proper type: %T", c))
+}
+
 // Display will parse and print the information stored on the VersionInfo object.
 func (v *VersionInfo) Display() error {
 	output, err := json.Marshal(v)

@@ -46,6 +46,8 @@ const cliCmdInitTemplate = `{{ .Boilerplate }}
 package init
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 )
 
@@ -107,6 +109,19 @@ func (i *InitSubCommand) Setup() {
 	if i.SubCommandOf != nil {
 		i.SubCommandOf.AddCommand(i.Command)
 	}
+}
+
+// GetParent is a convenience function written when the CLI code is scaffolded 
+// to return the parent command and avoid scaffolding code with bad imports.
+func GetParent(c interface{}) *cobra.Command {
+	switch subcommand := c.(type) {
+	case *InitSubCommand:
+		return subcommand.Command
+	case *cobra.Command:
+		return subcommand
+	}
+
+	panic(fmt.Sprintf("subcommand is not proper type: %T", c))
 }
 
 // initialize creates sample workload manifests for a workload's custom resource.

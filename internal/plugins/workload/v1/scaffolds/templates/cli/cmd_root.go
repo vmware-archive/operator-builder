@@ -84,7 +84,7 @@ func (f *CmdRootUpdater) GetMarkers() []machinery.Marker {
 
 // Code Fragments.
 const (
-	subcommandCodeFragment = `%s%s.New%sSubCommand(parentCommand.Command)
+	subcommandCodeFragment = `%s%s.New%sSubCommand(parentCommand)
 `
 	importSubCommandCodeFragment = `%s%s "%s"
 `
@@ -214,9 +214,9 @@ func (c *{{ .RootCmd.VarName }}Command) Run() {
 
 func (c *{{ .RootCmd.VarName }}Command) newInitSubCommand() {
 	{{- if .IsCollection }}
-	parentCommand := cmdinit.NewBaseInitSubCommand(c.Command)
+	parentCommand := cmdinit.GetParent(cmdinit.NewBaseInitSubCommand(c.Command))
 	{{ else }}
-	parentCommand := c
+	parentCommand := cmdinit.GetParent(c)
 	{{ end -}}
 	_ = parentCommand
 
@@ -226,9 +226,9 @@ func (c *{{ .RootCmd.VarName }}Command) newInitSubCommand() {
 
 func (c *{{ .RootCmd.VarName }}Command) newGenerateSubCommand() {
 	{{- if .IsCollection }}
-	parentCommand := cmdgenerate.NewBaseGenerateSubCommand(c.Command)
+	parentCommand := cmdgenerate.GetParent(cmdgenerate.NewBaseGenerateSubCommand(c.Command))
 	{{ else }}
-	parentCommand := c
+	parentCommand := cmdgenerate.GetParent(c)
 	{{ end -}}
 	_ = parentCommand
 
@@ -238,9 +238,9 @@ func (c *{{ .RootCmd.VarName }}Command) newGenerateSubCommand() {
 
 func (c *{{ .RootCmd.VarName }}Command) newVersionSubCommand() {
 	{{- if .IsCollection }}
-	parentCommand := cmdversion.NewBaseVersionSubCommand(c.Command)
+	parentCommand := cmdversion.GetParent(cmdversion.NewBaseVersionSubCommand(c.Command))
 	{{ else }}
-	parentCommand := c
+	parentCommand := cmdversion.GetParent(c)
 	{{ end -}}
 	_ = parentCommand
 

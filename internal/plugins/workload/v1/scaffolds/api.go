@@ -418,9 +418,10 @@ func (s *apiScaffolder) scaffoldCLI(scaffold *machinery.Scaffold) error {
 		// scaffold version subcommand
 		if err := scaffold.Execute(
 			&cli.CmdVersionSub{
-				RootCmd:     rootCommand,
-				SubCmd:      subCommand,
-				IsComponent: workloadCommand.IsComponent() || workloadCommand.IsCollection(),
+				RootCmd:      rootCommand,
+				SubCmd:       subCommand,
+				IsStandalone: workloadCommand.IsStandalone(),
+				IsComponent:  workloadCommand.IsComponent() || workloadCommand.IsCollection(),
 				ComponentResource: workloadCommand.GetComponentResource(
 					s.config.GetDomain(),
 					s.config.GetRepository(),

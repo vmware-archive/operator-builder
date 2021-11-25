@@ -52,13 +52,14 @@ func (f *CmdVersionSub) SetTemplateDefaults() error {
 		utils.ToFileName(f.Resource.Kind),
 	)
 
-	f.VersionCommandName = versionCommandName
-	f.VersionCommandDescr = versionCommandDescr
-
 	if f.IsStandalone {
 		f.APIVersionsVarName = "apiVersions"
+		f.VersionCommandName = versionCommandName
+		f.VersionCommandDescr = versionCommandDescr
 	} else {
 		f.APIVersionsVarName = fmt.Sprintf("apiVersions%s", f.Resource.Kind)
+		f.VersionCommandName = f.SubCmd.Name
+		f.VersionCommandDescr = f.SubCmd.Description
 	}
 
 	f.TemplateBody = fmt.Sprintf(
@@ -155,13 +156,8 @@ var {{ .APIVersionsVarName }} = []string{
 // parent command.
 func New{{ .Resource.Kind }}SubCommand(parentCommand *cobra.Command) {
 	versionCmd := &cmdversion.VersionSubCommand{
-		{{- if .IsStandalone }}
 		Name:         "{{ .VersionCommandName }}",
 		Description:  "{{ .VersionCommandDescr }}",
-		{{ else }}
-		Name:         "{{ .SubCmd.Name }}",
-		Description:  "{{ .SubCmd.Description }}",
-		{{- end -}}
 		VersionFunc:  Version{{ .Resource.Kind }},
 		SubCommandOf: parentCommand,
 	}
