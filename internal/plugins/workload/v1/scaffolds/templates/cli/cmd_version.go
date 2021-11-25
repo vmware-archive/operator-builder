@@ -101,6 +101,11 @@ func (v *VersionSubCommand) Setup() {
 	if v.VersionFunc != nil {
 		v.RunE = v.version
 	}
+
+	// add this as a subcommand of another command if set
+	if v.SubCommandOf != nil {
+		v.SubCommandOf.AddCommand(v.Command)
+	}
 }
 
 // version run the function to display version information about a workload.
