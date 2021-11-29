@@ -73,7 +73,8 @@ func (f *CmdVersionSub) SetTemplateDefaults() error {
 	return nil
 }
 
-// CmdVersionSubUpdater updates root.go to run sub commands.
+// CmdVersionSubUpdater updates a specific components version subcommand with
+// appropriate version information.
 type CmdVersionSubUpdater struct { //nolint:maligned
 	machinery.RepositoryMixin
 	machinery.MultiGroupMixin

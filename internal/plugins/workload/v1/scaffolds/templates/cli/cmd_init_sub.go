@@ -5,6 +5,7 @@ package cli
 
 import (
 	"fmt"
+	"strings"
 
 	"sigs.k8s.io/kubebuilder/v3/pkg/machinery"
 	"sigs.k8s.io/kubebuilder/v3/pkg/model/resource"
@@ -14,6 +15,7 @@ import (
 )
 
 var _ machinery.Template = &CmdInitSub{}
+var _ machinery.Inserter = &CmdInitSubUpdater{}
 
 // CmdInitSub scaffolds the companion CLI's init subcommand for the
 // workload.  This where the actual init logic lives.
@@ -26,13 +28,13 @@ type CmdInitSub struct {
 	RootCmd workloadv1.CliCommand
 	SubCmd  workloadv1.CliCommand
 
-	SpecFields                *workloadv1.APIFields
-	IsStandalone, IsComponent bool
-	ComponentResource         *resource.Resource
+	ComponentResource *resource.Resource
+	SpecFields        *workloadv1.APIFields
+	IsStandalone      bool
+	IsComponent       bool
 
 	InitCommandName  string
 	InitCommandDescr string
-	ManifestVarName  string
 }
 
 func (f *CmdInitSub) SetTemplateDefaults() error {
@@ -55,14 +57,113 @@ func (f *CmdInitSub) SetTemplateDefaults() error {
 		f.InitCommandDescr = f.SubCmd.Description
 	}
 
-	f.ManifestVarName = fmt.Sprintf("%sManifest%s", f.Resource.Version, f.Resource.Kind)
-
-	f.TemplateBody = cliCmdInitSubTemplate
+	f.TemplateBody = fmt.Sprintf(
+		cmdInitSubHeader,
+		machinery.NewMarkerFor(f.Path, samplesMarker),
+		machinery.NewMarkerFor(f.Path, switchesMarker),
+		cmdInitSubBody,
+	)
 
 	return nil
 }
 
-const cliCmdInitSubTemplate = `{{ .Boilerplate }}
+// CmdInitSubUpdater updates a specific components version subcommand with
+// appropriate initialization information.
+type CmdInitSubUpdater struct { //nolint:maligned
+	machinery.RepositoryMixin
+	machinery.MultiGroupMixin
+	machinery.ResourceMixin
+
+	RootCmd workloadv1.CliCommand
+	SubCmd  workloadv1.CliCommand
+
+	SpecFields *workloadv1.APIFields
+}
+
+// GetPath implements file.Builder interface.
+func (f *CmdInitSubUpdater) GetPath() string {
+	return f.SubCmd.GetSubCmdRelativeFileName(
+		f.RootCmd.Name,
+		"init",
+		f.Resource.Group,
+		utils.ToFileName(f.Resource.Kind),
+	)
+}
+
+// GetIfExistsAction implements file.Builder interface.
+func (*CmdInitSubUpdater) GetIfExistsAction() machinery.IfExistsAction {
+	return machinery.OverwriteFile
+}
+
+const samplesMarker = "operator-builder:samples"
+const switchesMarker = "operator-builder:switches"
+
+// GetMarkers implements file.Inserter interface.
+func (f *CmdInitSubUpdater) GetMarkers() []machinery.Marker {
+	return []machinery.Marker{
+		machinery.NewMarkerFor(f.GetPath(), samplesMarker),
+		machinery.NewMarkerFor(f.GetPath(), switchesMarker),
+	}
+}
+
+// Code Fragments.
+const (
+	samplesFragment = `const %s = ` + "`" + `apiVersion: %s/%s
+kind: %s
+metadata:
+  name: %s-sample
+	%s
+` + "`" + `
+`
+	switchesFragment = `case "%s":
+	return %s, nil
+`
+)
+
+// GetCodeFragments implements file.Inserter interface.
+func (f *CmdInitSubUpdater) GetCodeFragments() machinery.CodeFragmentsMap {
+	fragments := make(machinery.CodeFragmentsMap, 1)
+
+	// If resource is not being provided we are creating the file, not updating it
+	if f.Resource == nil {
+		return fragments
+	}
+
+	// Generate subCommands code fragments
+	samples := make([]string, 0)
+	switches := make([]string, 0)
+
+	// add the samples
+	manifestVarName := fmt.Sprintf("%s%s", f.Resource.Version, f.Resource.Kind)
+	samples = append(samples, fmt.Sprintf(samplesFragment,
+		manifestVarName,
+		f.Resource.QualifiedGroup(),
+		f.Resource.Version,
+		f.Resource.Kind,
+		strings.ToLower(f.Resource.Kind),
+		f.SpecFields.GenerateSampleSpec()),
+	)
+
+	// add the switches
+	switches = append(switches, fmt.Sprintf(switchesFragment,
+		f.Resource.Version,
+		manifestVarName),
+	)
+
+	// Only store code fragments in the map if the slices are non-empty
+	if len(samples) != 0 {
+		fragments[machinery.NewMarkerFor(f.GetPath(), samplesMarker)] = samples
+	}
+
+	if len(switches) != 0 {
+		fragments[machinery.NewMarkerFor(f.GetPath(), switchesMarker)] = switches
+	}
+
+	return fragments
+}
+
+const (
+	cmdInitSubHeader = `{{ .Boilerplate }}
 
 package {{ .Resource.Group }}
 
@@ -75,13 +176,21 @@ import (
 	cmdinit "{{ .Repo }}/cmd/{{ .RootCmd.Name }}/commands/init"
 )
 
-const {{ .ManifestVarName }} = ` + "`" + `apiVersion: {{ .Resource.QualifiedGroup }}/{{ .Resource.Version }}
-kind: {{ .Resource.Kind }}
-metadata:
-  name: {{ lower .Resource.Kind }}-sample
-{{ .SpecFields.GenerateSampleSpec -}}
-` + "`" + `
+%s
 
+// get{{ .Resource.Kind }}Manifest returns the sample {{ .Resource.Kind }} manifest
+// based upon API Version input.
+func get{{ .Resource.Kind }}Manifest(i *cmdinit.InitSubCommand) (string, error) {
+	switch i.APIVersion {
+	%s
+	default:
+		return "", fmt.Errorf("unsupported API Version")
+	}
+}
+
+%s
+`
+	cmdInitSubBody = `
 // New{{ .Resource.Kind }}SubCommand creates a new command and adds it to its 
 // parent command.
 func New{{ .Resource.Kind }}SubCommand(parentCommand *cobra.Command) {
@@ -96,12 +205,18 @@ func New{{ .Resource.Kind }}SubCommand(parentCommand *cobra.Command) {
 }
 
 func Init{{ .Resource.Kind }}(i *cmdinit.InitSubCommand) error {
+	manifest, err := get{{ .Resource.Kind }}Manifest(i)
+	if err != nil {
+		return fmt.Errorf("unable to get manifest for {{ .Resource.Kind }}; %w", err)
+	}
+
 	outputStream := os.Stdout
 
-	if _, err := outputStream.WriteString({{ .ManifestVarName }}); err != nil {
+	if _, err := outputStream.WriteString(manifest); err != nil {
 		return fmt.Errorf("failed to write to stdout, %w", err)
 	}
 
 	return nil
 }
 `
+)
