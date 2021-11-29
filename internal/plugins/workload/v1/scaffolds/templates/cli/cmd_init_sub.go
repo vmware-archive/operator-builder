@@ -112,7 +112,7 @@ const (
 kind: %s
 metadata:
   name: %s-sample
-	%s
+%s
 ` + "`" + `
 `
 	switchesFragment = `case "%s":
