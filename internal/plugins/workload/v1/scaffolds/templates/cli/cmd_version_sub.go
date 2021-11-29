@@ -52,12 +52,14 @@ func (f *CmdVersionSub) SetTemplateDefaults() error {
 		utils.ToFileName(f.Resource.Kind),
 	)
 
+	// prepend the kind with 'apiVersions' to guarantee uniqueness within
+	// this group and use it as the variable within the scaffolded code.
+	f.APIVersionsVarName = fmt.Sprintf("apiVersions%s", f.Resource.Kind)
+
 	if f.IsStandalone {
-		f.APIVersionsVarName = "apiVersions"
 		f.VersionCommandName = versionCommandName
 		f.VersionCommandDescr = versionCommandDescr
 	} else {
-		f.APIVersionsVarName = fmt.Sprintf("apiVersions%s", f.Resource.Kind)
 		f.VersionCommandName = f.SubCmd.Name
 		f.VersionCommandDescr = f.SubCmd.Description
 	}
