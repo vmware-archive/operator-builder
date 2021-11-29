@@ -33,7 +33,8 @@ type CmdVersionSub struct {
 	VersionCommandDescr string
 
 	// Variable Names
-	APIVersionsVarName string
+	APIVersionsVarName       string
+	APIVersionsLatestVarName string
 
 	IsComponent       bool
 	IsStandalone      bool
@@ -54,7 +55,8 @@ func (f *CmdVersionSub) SetTemplateDefaults() error {
 
 	// prepend the kind with 'apiVersions' to guarantee uniqueness within
 	// this group and use it as the variable within the scaffolded code.
-	f.APIVersionsVarName = fmt.Sprintf("apiVersions%s", f.Resource.Kind)
+	f.APIVersionsVarName = fmt.Sprintf("APIVersions%s", f.Resource.Kind)
+	f.APIVersionsLatestVarName = fmt.Sprintf("APIVersionLatest%s", f.Resource.Kind)
 
 	if f.IsStandalone {
 		f.VersionCommandName = versionCommandName
@@ -148,6 +150,7 @@ import (
 	cmdversion "{{ .Repo }}/cmd/{{ .RootCmd.Name }}/commands/version"
 )
 
+var {{ .APIVersionsLatestVarName }} = "{{ .Resource.Version }}"
 var {{ .APIVersionsVarName }} = []string{
 	%s
 }
@@ -170,7 +173,7 @@ func New{{ .Resource.Kind }}SubCommand(parentCommand *cobra.Command) {
 
 func Version{{ .Resource.Kind }}(v *cmdversion.VersionSubCommand) error {
 	versionInfo := cmdversion.VersionInfo{
-		CLIVersion:  cmdversion.CliVersion,
+		CLIVersion:  cmdversion.CLIVersion,
 		APIVersions: {{ .APIVersionsVarName }},
 	}
 

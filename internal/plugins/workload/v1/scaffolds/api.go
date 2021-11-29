@@ -384,10 +384,26 @@ func (s *apiScaffolder) scaffoldCLI(scaffold *machinery.Scaffold) error {
 					workloadCommand.IsClusterScoped(),
 				),
 			},
+			&cli.CmdInitSubLatest{
+				RootCmd:     rootCommand,
+				SubCmd:      subCommand,
+				IsComponent: workloadCommand.IsComponent() || workloadCommand.IsCollection(),
+				ComponentResource: workloadCommand.GetComponentResource(
+					s.config.GetDomain(),
+					s.config.GetRepository(),
+					workloadCommand.IsClusterScoped(),
+				),
+			},
 			&cli.CmdInitSubUpdater{
-				RootCmd:    rootCommand,
-				SubCmd:     subCommand,
-				SpecFields: workloadCommand.GetAPISpecFields(),
+				RootCmd:     rootCommand,
+				SubCmd:      subCommand,
+				SpecFields:  workloadCommand.GetAPISpecFields(),
+				IsComponent: workloadCommand.IsComponent() || workloadCommand.IsCollection(),
+				ComponentResource: workloadCommand.GetComponentResource(
+					s.config.GetDomain(),
+					s.config.GetRepository(),
+					workloadCommand.IsClusterScoped(),
+				),
 			},
 		); err != nil {
 			return fmt.Errorf("unable to scaffold init subcommand, %w", err)

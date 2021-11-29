@@ -53,7 +53,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var CliVersion = "dev"
+var CLIVersion = "dev"
 
 type VersionInfo struct {
 	CLIVersion  string   ` + "`" + `json:"cliVersion"` + "`" + `
