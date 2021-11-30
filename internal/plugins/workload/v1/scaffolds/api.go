@@ -418,11 +418,29 @@ func (s *apiScaffolder) scaffoldCLI(scaffold *machinery.Scaffold) error {
 			IsCollection: workloadCommand.IsCollection(),
 			IsStandalone: workloadCommand.IsStandalone(),
 		}
+		generateSubUpdaterCommand := &cli.CmdGenerateSubUpdater{
+			PackageName:  workloadCommand.GetPackageName(),
+			RootCmd:      rootCommand,
+			SubCmd:       subCommand,
+			IsComponent:  workloadCommand.IsComponent() || workloadCommand.IsCollection(),
+			IsCollection: workloadCommand.IsCollection(),
+			IsStandalone: workloadCommand.IsStandalone(),
+		}
 
 		if workloadCommand.IsCollection() || workloadCommand.IsComponent() {
+			// scaffold the initial base subcommand first
 			//nolint:forcetypeassert // this will be refactored later
 			generateSubCommand.Collection = s.workload.(*workloadv1.WorkloadCollection)
 			generateSubCommand.ComponentResource = workloadCommand.GetComponentResource(
+				s.config.GetDomain(),
+				s.config.GetRepository(),
+				workloadCommand.IsClusterScoped(),
+			)
+
+			// update the scaffold with specific version information
+			//nolint:forcetypeassert // this will be refactored later
+			generateSubUpdaterCommand.Collection = s.workload.(*workloadv1.WorkloadCollection)
+			generateSubUpdaterCommand.ComponentResource = workloadCommand.GetComponentResource(
 				s.config.GetDomain(),
 				s.config.GetRepository(),
 				workloadCommand.IsClusterScoped(),
@@ -431,7 +449,7 @@ func (s *apiScaffolder) scaffoldCLI(scaffold *machinery.Scaffold) error {
 
 		// scaffold the generate command unless we have a collection without resources
 		if (workloadCommand.HasChildResources() && workloadCommand.IsCollection()) || !workloadCommand.IsCollection() {
-			if err := scaffold.Execute(generateSubCommand); err != nil {
+			if err := scaffold.Execute(generateSubCommand, generateSubUpdaterCommand); err != nil {
 				return fmt.Errorf("unable to scaffold generate subcommand, %w", err)
 			}
 		}

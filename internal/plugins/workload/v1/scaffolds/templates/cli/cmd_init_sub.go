@@ -103,7 +103,7 @@ func (f *CmdInitSubLatest) SetTemplateDefaults() error {
 	return nil
 }
 
-// CmdInitSubUpdater updates a specific components version subcommand with
+// CmdInitSubUpdater updates a specific components init subcommand with
 // appropriate initialization information.
 type CmdInitSubUpdater struct { //nolint:maligned
 	machinery.RepositoryMixin
