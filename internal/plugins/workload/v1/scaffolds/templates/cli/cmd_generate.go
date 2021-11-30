@@ -134,15 +134,6 @@ func (g *GenerateSubCommand) Setup() {
 		}
 	}
 
-	// always add the api-version flag
-	g.Flags().StringVarP(
-		&g.APIVersion,
-		"api-version",
-		"",
-		"",
-		"API Version of the workload to generate child resources for.",
-	)
-
 	// add this as a subcommand of another command if set
 	if g.SubCommandOf != nil {
 		g.SubCommandOf.AddCommand(g.Command)
