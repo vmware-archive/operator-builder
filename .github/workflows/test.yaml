@@ -168,6 +168,6 @@ jobs:
           codebase-artifact: ${{ matrix.artifact }}
 
       - name: Run CLI Integration Tests
-        uses: ./.github/common-actions/integration-test-cli
+        uses: ./.github/common-actions/e2e-test-cli
         with:
           test-deploy: ${{ matrix.test-deploy }}
