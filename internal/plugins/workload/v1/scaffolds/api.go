@@ -339,12 +339,6 @@ func (s *apiScaffolder) Scaffold() error {
 // scaffoldCLI runs the specific logic to scaffold the companion CLI
 //nolint:funlen,gocyclo //this will be refactored later
 func (s *apiScaffolder) scaffoldCLI(scaffold *machinery.Scaffold) error {
-	// create a root command object in memory
-	rootCommand := workloadv1.CliCommand{
-		Name:    s.workload.GetRootcommandName(),
-		VarName: s.workload.GetRootcommandVarName(),
-	}
-
 	// obtain a list of workload commands to generate, to include the parent collection
 	// and its children
 	workloadCommands := make([]workloadv1.WorkloadAPIBuilder, len(s.workload.GetComponents())+1)
@@ -370,14 +364,6 @@ func (s *apiScaffolder) scaffoldCLI(scaffold *machinery.Scaffold) error {
 			workloadCommand.IsClusterScoped(),
 		)
 
-		// create subcommand object in memory
-		subCommand := workloadv1.CliCommand{
-			Name:        workloadCommand.GetSubcommandName(),
-			VarName:     workloadCommand.GetSubcommandVarName(),
-			Description: workloadCommand.GetSubcommandDescr(),
-			FileName:    workloadCommand.GetSubcommandFileName(),
-		}
-
 		// scaffold init subcommand
 		if err := scaffold.Execute(
 			&cli.CmdInitSubLatest{Builder: workloadCommand, ComponentResource: componentResource},
@@ -397,69 +383,10 @@ func (s *apiScaffolder) scaffoldCLI(scaffold *machinery.Scaffold) error {
 			}
 		}
 
-		// // build generate subcommand
-		// generateSubCommand := &cli.CmdGenerateSub{
-		// 	PackageName:  workloadCommand.GetPackageName(),
-		// 	RootCmd:      rootCommand,
-		// 	SubCmd:       subCommand,
-		// 	IsComponent:  workloadCommand.IsComponent() || workloadCommand.IsCollection(),
-		// 	IsCollection: workloadCommand.IsCollection(),
-		// 	IsStandalone: workloadCommand.IsStandalone(),
-		// }
-		// generateSubUpdaterCommand := &cli.CmdGenerateSubUpdater{
-		// 	PackageName:  workloadCommand.GetPackageName(),
-		// 	RootCmd:      rootCommand,
-		// 	SubCmd:       subCommand,
-		// 	IsComponent:  workloadCommand.IsComponent() || workloadCommand.IsCollection(),
-		// 	IsCollection: workloadCommand.IsCollection(),
-		// 	IsStandalone: workloadCommand.IsStandalone(),
-		// }
-
-		// if workloadCommand.IsCollection() || workloadCommand.IsComponent() {
-		// 	// scaffold the initial base subcommand first
-		// 	//nolint:forcetypeassert // this will be refactored later
-		// 	generateSubCommand.Collection = s.workload.(*workloadv1.WorkloadCollection)
-		// 	generateSubCommand.ComponentResource = workloadCommand.GetComponentResource(
-		// 		s.config.GetDomain(),
-		// 		s.config.GetRepository(),
-		// 		workloadCommand.IsClusterScoped(),
-		// 	)
-
-		// 	// update the scaffold with specific version information
-		// 	//nolint:forcetypeassert // this will be refactored later
-		// 	generateSubUpdaterCommand.Collection = s.workload.(*workloadv1.WorkloadCollection)
-		// 	generateSubUpdaterCommand.ComponentResource = workloadCommand.GetComponentResource(
-		// 		s.config.GetDomain(),
-		// 		s.config.GetRepository(),
-		// 		workloadCommand.IsClusterScoped(),
-		// 	)
-		// }
-
-		// // scaffold the generate command unless we have a collection without resources
-		// if (workloadCommand.HasChildResources() && workloadCommand.IsCollection()) || !workloadCommand.IsCollection() {
-		// 	if err := scaffold.Execute(generateSubCommand, generateSubUpdaterCommand); err != nil {
-		// 		return fmt.Errorf("unable to scaffold generate subcommand, %w", err)
-		// 	}
-		// }
-
 		// scaffold version subcommand
 		if err := scaffold.Execute(
-			&cli.CmdVersionSub{
-				RootCmd:      rootCommand,
-				SubCmd:       subCommand,
-				IsStandalone: workloadCommand.IsStandalone(),
-				IsComponent:  workloadCommand.IsComponent() || workloadCommand.IsCollection(),
-				ComponentResource: workloadCommand.GetComponentResource(
-					s.config.GetDomain(),
-					s.config.GetRepository(),
-					workloadCommand.IsClusterScoped(),
-				),
-			},
-			&cli.CmdVersionSubUpdater{
-				RootCmd:     rootCommand,
-				SubCmd:      subCommand,
-				IsComponent: workloadCommand.IsComponent() || workloadCommand.IsCollection(),
-			},
+			&cli.CmdVersionSub{Builder: workloadCommand, ComponentResource: componentResource},
+			&cli.CmdVersionSubUpdater{Builder: workloadCommand, ComponentResource: componentResource},
 		); err != nil {
 			return fmt.Errorf("unable to scaffold version subcommand, %w", err)
 		}
@@ -467,7 +394,6 @@ func (s *apiScaffolder) scaffoldCLI(scaffold *machinery.Scaffold) error {
 		// scaffold the root command
 		if err := scaffold.Execute(
 			&cli.CmdRootUpdater{
-				RootCmdName:     rootCommand.Name,
 				InitCommand:     true,
 				GenerateCommand: true,
 				VersionCommand:  true,

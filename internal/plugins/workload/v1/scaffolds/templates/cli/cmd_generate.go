@@ -26,6 +26,7 @@ type CmdGenerate struct {
 	machinery.BoilerplateMixin
 	machinery.RepositoryMixin
 
+	// input variables
 	Initializer workloadv1.WorkloadInitializer
 
 	// template variables

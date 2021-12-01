@@ -23,6 +23,7 @@ type CmdRoot struct {
 	machinery.BoilerplateMixin
 	machinery.RepositoryMixin
 
+	// input variables
 	Initializer workloadv1.WorkloadInitializer
 
 	// template variables
@@ -53,19 +54,19 @@ type CmdRootUpdater struct { //nolint:maligned
 	machinery.MultiGroupMixin
 	machinery.ResourceMixin
 
+	// input variables
+	Builder         workloadv1.WorkloadAPIBuilder
+	InitCommand     bool
+	GenerateCommand bool
+	VersionCommand  bool
+
+	// template variables
 	RootCmdName string
-
-	Builder workloadv1.WorkloadAPIBuilder
-
-	IsComponent, IsCollection, IsStandalone bool
-
-	// Flags to indicate which parts need to be included when updating the file
-	InitCommand, GenerateCommand, VersionCommand bool
 }
 
 // GetPath implements file.Builder interface.
 func (f *CmdRootUpdater) GetPath() string {
-	return filepath.Join("cmd", f.RootCmdName, "commands", "root.go")
+	return filepath.Join("cmd", f.Builder.GetRootCommand().Name, "commands", "root.go")
 }
 
 // GetIfExistsAction implements file.Builder interface.
@@ -104,6 +105,8 @@ func (f *CmdRootUpdater) GetCodeFragments() machinery.CodeFragmentsMap {
 	if f.Resource == nil {
 		return fragments
 	}
+
+	f.RootCmdName = f.Builder.GetRootCommand().Name
 
 	// Generate a command path for imports
 	commandPath := fmt.Sprintf("%s/cmd/%s/commands", f.Repo, f.RootCmdName)

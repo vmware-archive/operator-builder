@@ -18,6 +18,13 @@ var (
 	_ machinery.Inserter = &CmdVersionSubUpdater{}
 )
 
+// cmdVersionSubCommon include the common fields that are shared by all version
+// subcommand structs for templating purposes.
+type cmdVersionSubCommon struct {
+	RootCmd workloadv1.CliCommand
+	SubCmd  workloadv1.CliCommand
+}
+
 // CmdVersionSub scaffolds the root command file for the companion CLI.
 type CmdVersionSub struct {
 	machinery.TemplateMixin
@@ -25,46 +32,47 @@ type CmdVersionSub struct {
 	machinery.ResourceMixin
 	machinery.RepositoryMixin
 
-	RootCmd workloadv1.CliCommand
-	SubCmd  workloadv1.CliCommand
+	// input fields
+	Builder           workloadv1.WorkloadAPIBuilder
+	ComponentResource *resource.Resource
 
-	// VersionCommandName is the version sub command
-	VersionCommandName  string
-	VersionCommandDescr string
-
-	// Variable Names
+	// template fields
+	cmdVersionSubCommon
+	VersionCommandName       string
+	VersionCommandDescr      string
 	APIVersionsVarName       string
 	APIVersionsLatestVarName string
-
-	IsComponent       bool
-	IsStandalone      bool
-	ComponentResource *resource.Resource
 }
 
 func (f *CmdVersionSub) SetTemplateDefaults() error {
-	if f.IsComponent {
+	if f.Builder.IsComponent() {
 		f.Resource = f.ComponentResource
 	}
 
-	f.Path = f.SubCmd.GetSubCmdRelativeFileName(
-		f.RootCmd.Name,
-		"version",
-		f.Resource.Group,
-		utils.ToFileName(f.Resource.Kind),
-	)
+	// set template fields
+	f.RootCmd = *f.Builder.GetRootCommand()
+	f.SubCmd = *f.Builder.GetSubCommand()
 
-	// prepend the kind with 'apiVersions' to guarantee uniqueness within
-	// this group and use it as the variable within the scaffolded code.
-	f.APIVersionsVarName = fmt.Sprintf("APIVersions%s", f.Resource.Kind)
-	f.APIVersionsLatestVarName = fmt.Sprintf("APIVersionLatest%s", f.Resource.Kind)
-
-	if f.IsStandalone {
+	if f.Builder.IsStandalone() {
 		f.VersionCommandName = versionCommandName
 		f.VersionCommandDescr = versionCommandDescr
 	} else {
 		f.VersionCommandName = f.SubCmd.Name
 		f.VersionCommandDescr = f.SubCmd.Description
 	}
+
+	// prepend the kind with 'apiVersions' to guarantee uniqueness within
+	// this group and use it as the variable within the scaffolded code.
+	f.APIVersionsVarName = fmt.Sprintf("APIVersions%s", f.Resource.Kind)
+	f.APIVersionsLatestVarName = fmt.Sprintf("APIVersionLatest%s", f.Resource.Kind)
+
+	// set interface fields
+	f.Path = f.SubCmd.GetSubCmdRelativeFileName(
+		f.RootCmd.Name,
+		"version",
+		f.Resource.Group,
+		utils.ToFileName(f.Resource.Kind),
+	)
 
 	f.TemplateBody = fmt.Sprintf(
 		cmdVersionSubHeader,
@@ -82,16 +90,22 @@ type CmdVersionSubUpdater struct { //nolint:maligned
 	machinery.MultiGroupMixin
 	machinery.ResourceMixin
 
-	RootCmd workloadv1.CliCommand
-	SubCmd  workloadv1.CliCommand
+	// input fields
+	Builder           workloadv1.WorkloadAPIBuilder
+	ComponentResource *resource.Resource
 
-	IsComponent bool
+	// template fields
+	cmdVersionSubCommon
 }
 
 // GetPath implements file.Builder interface.
 func (f *CmdVersionSubUpdater) GetPath() string {
+	if f.Builder.IsComponent() {
+		f.Resource = f.ComponentResource
+	}
+
 	return f.SubCmd.GetSubCmdRelativeFileName(
-		f.RootCmd.Name,
+		f.Builder.GetRootCommand().Name,
 		"version",
 		f.Resource.Group,
 		utils.ToFileName(f.Resource.Kind),
@@ -126,6 +140,14 @@ func (f *CmdVersionSubUpdater) GetCodeFragments() machinery.CodeFragmentsMap {
 	if f.Resource == nil {
 		return fragments
 	}
+
+	if f.Builder.IsComponent() {
+		f.Resource = f.ComponentResource
+	}
+
+	// set template fields
+	f.RootCmd = *f.Builder.GetRootCommand()
+	f.SubCmd = *f.Builder.GetSubCommand()
 
 	// Generate subCommands code fragments
 	apiVersions := make([]string, 0)

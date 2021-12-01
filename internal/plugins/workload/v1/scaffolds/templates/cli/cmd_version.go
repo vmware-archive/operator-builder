@@ -25,6 +25,7 @@ type CmdVersion struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
 
+	// input variables
 	Initializer workloadv1.WorkloadInitializer
 
 	// template variables
