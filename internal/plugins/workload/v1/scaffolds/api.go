@@ -356,12 +356,20 @@ func (s *apiScaffolder) scaffoldCLI(scaffold *machinery.Scaffold) error {
 		}
 	}
 
-	// scaffold the common code
+	// scaffold the utility code
 	if err := scaffold.Execute(&cli.CmdUtils{Builder: s.workload}); err != nil {
 		return fmt.Errorf("unable to scaffold companion cli utility code; %w", err)
 	}
 
 	for _, workloadCommand := range workloadCommands {
+		// create this component as a kubebuilder component resource for those
+		// commands that need it
+		componentResource := workloadCommand.GetComponentResource(
+			s.config.GetDomain(),
+			s.config.GetRepository(),
+			workloadCommand.IsClusterScoped(),
+		)
+
 		// create subcommand object in memory
 		subCommand := workloadv1.CliCommand{
 			Name:        workloadCommand.GetSubcommandName(),
@@ -372,39 +380,9 @@ func (s *apiScaffolder) scaffoldCLI(scaffold *machinery.Scaffold) error {
 
 		// scaffold init subcommand
 		if err := scaffold.Execute(
-			&cli.CmdInitSub{
-				RootCmd:      rootCommand,
-				SubCmd:       subCommand,
-				SpecFields:   workloadCommand.GetAPISpecFields(),
-				IsComponent:  workloadCommand.IsComponent() || workloadCommand.IsCollection(),
-				IsStandalone: workloadCommand.IsStandalone(),
-				ComponentResource: workloadCommand.GetComponentResource(
-					s.config.GetDomain(),
-					s.config.GetRepository(),
-					workloadCommand.IsClusterScoped(),
-				),
-			},
-			&cli.CmdInitSubLatest{
-				RootCmd:     rootCommand,
-				SubCmd:      subCommand,
-				IsComponent: workloadCommand.IsComponent() || workloadCommand.IsCollection(),
-				ComponentResource: workloadCommand.GetComponentResource(
-					s.config.GetDomain(),
-					s.config.GetRepository(),
-					workloadCommand.IsClusterScoped(),
-				),
-			},
-			&cli.CmdInitSubUpdater{
-				RootCmd:     rootCommand,
-				SubCmd:      subCommand,
-				SpecFields:  workloadCommand.GetAPISpecFields(),
-				IsComponent: workloadCommand.IsComponent() || workloadCommand.IsCollection(),
-				ComponentResource: workloadCommand.GetComponentResource(
-					s.config.GetDomain(),
-					s.config.GetRepository(),
-					workloadCommand.IsClusterScoped(),
-				),
-			},
+			&cli.CmdInitSubLatest{Builder: workloadCommand, ComponentResource: componentResource},
+			&cli.CmdInitSub{Builder: workloadCommand, ComponentResource: componentResource},
+			&cli.CmdInitSubUpdater{Builder: workloadCommand, ComponentResource: componentResource},
 		); err != nil {
 			return fmt.Errorf("unable to scaffold init subcommand, %w", err)
 		}

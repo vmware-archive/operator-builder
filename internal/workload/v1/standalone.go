@@ -236,6 +236,11 @@ func (s *StandaloneWorkload) GetRootCommand() *CliCommand {
 	return &s.Spec.CompanionCliRootcmd
 }
 
+func (s *StandaloneWorkload) GetSubCommand() *CliCommand {
+	// no subcommands for a standalone workload
+	return &CliCommand{}
+}
+
 func (s *StandaloneWorkload) GetSubcommands() *[]CliCommand {
 	// no subcommands for a standalone workload
 	return &[]CliCommand{}

@@ -287,6 +287,10 @@ func (c *WorkloadCollection) GetRootCommand() *CliCommand {
 	return &c.Spec.CompanionCliRootcmd
 }
 
+func (c *WorkloadCollection) GetSubCommand() *CliCommand {
+	return &c.Spec.CompanionCliSubcmd
+}
+
 func (c *WorkloadCollection) GetSubcommands() *[]CliCommand {
 	commands := []CliCommand{}
 

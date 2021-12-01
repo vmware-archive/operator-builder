@@ -63,6 +63,7 @@ type WorkloadAPIBuilder interface {
 	GetComponentResource(domain, repo string, clusterScoped bool) *resource.Resource
 	GetFuncNames() (createFuncNames, initFuncNames []string)
 	GetRootCommand() *CliCommand
+	GetSubCommand() *CliCommand
 	GetSubcommands() *[]CliCommand
 
 	SetNames()
