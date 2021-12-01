@@ -92,32 +92,6 @@ func (c *ComponentWorkload) GetAPIKind() string {
 	return c.Spec.API.Kind
 }
 
-func (c *ComponentWorkload) GetSubcommandName() string {
-	return c.Spec.CompanionCliSubcmd.Name
-}
-
-func (c *ComponentWorkload) GetSubcommandDescr() string {
-	return c.Spec.CompanionCliSubcmd.Description
-}
-
-func (c *ComponentWorkload) GetSubcommandVarName() string {
-	return c.Spec.CompanionCliSubcmd.VarName
-}
-
-func (c *ComponentWorkload) GetSubcommandFileName() string {
-	return c.Spec.CompanionCliSubcmd.FileName
-}
-
-func (*ComponentWorkload) GetRootcommandName() string {
-	// no root commands for component workloads
-	return ""
-}
-
-func (c *ComponentWorkload) GetRootcommandVarName() string {
-	// no root commands for component workloads
-	return ""
-}
-
 func (c *ComponentWorkload) IsClusterScoped() bool {
 	return c.Spec.API.ClusterScoped
 }
@@ -243,16 +217,6 @@ func (c *ComponentWorkload) GetRootCommand() *CliCommand {
 
 func (c *ComponentWorkload) GetSubCommand() *CliCommand {
 	return &c.Spec.CompanionCliSubcmd
-}
-
-func (c *ComponentWorkload) GetSubcommands() *[]CliCommand {
-	commands := []CliCommand{}
-
-	if c.HasSubCmdName() {
-		commands = append(commands, c.Spec.CompanionCliSubcmd)
-	}
-
-	return &commands
 }
 
 func (c *ComponentWorkload) LoadManifests(workloadPath string) error {

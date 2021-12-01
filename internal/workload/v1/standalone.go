@@ -84,14 +84,6 @@ func (*StandaloneWorkload) HasSubCmdName() bool {
 	return false
 }
 
-func (s *StandaloneWorkload) GetRootCmdName() string {
-	return s.Spec.CompanionCliRootcmd.Name
-}
-
-func (s *StandaloneWorkload) GetRootCmdDescr() string {
-	return s.Spec.CompanionCliRootcmd.Description
-}
-
 // methods that implement WorkloadAPIBuilder.
 func (s *StandaloneWorkload) GetName() string {
 	return s.Name
@@ -111,34 +103,6 @@ func (s *StandaloneWorkload) GetAPIVersion() string {
 
 func (s *StandaloneWorkload) GetAPIKind() string {
 	return s.Spec.API.Kind
-}
-
-func (*StandaloneWorkload) GetSubcommandName() string {
-	// no subcommands for standalone workloads
-	return ""
-}
-
-func (*StandaloneWorkload) GetSubcommandDescr() string {
-	// no subcommands for standalone workloads
-	return ""
-}
-
-func (*StandaloneWorkload) GetSubcommandVarName() string {
-	// no subcommands for standalone workloads
-	return ""
-}
-
-func (*StandaloneWorkload) GetSubcommandFileName() string {
-	// no subcommands for standalone workloads
-	return ""
-}
-
-func (s *StandaloneWorkload) GetRootcommandName() string {
-	return s.Spec.CompanionCliRootcmd.Name
-}
-
-func (s *StandaloneWorkload) GetRootcommandVarName() string {
-	return s.Spec.CompanionCliRootcmd.VarName
 }
 
 func (s *StandaloneWorkload) IsClusterScoped() bool {
@@ -239,11 +203,6 @@ func (s *StandaloneWorkload) GetRootCommand() *CliCommand {
 func (s *StandaloneWorkload) GetSubCommand() *CliCommand {
 	// no subcommands for a standalone workload
 	return &CliCommand{}
-}
-
-func (s *StandaloneWorkload) GetSubcommands() *[]CliCommand {
-	// no subcommands for a standalone workload
-	return &[]CliCommand{}
 }
 
 func (s *StandaloneWorkload) LoadManifests(workloadPath string) error {

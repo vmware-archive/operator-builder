@@ -20,8 +20,6 @@ type WorkloadInitializer interface {
 
 	GetDomain() string
 	GetRootCommand() *CliCommand
-	GetRootCmdName() string
-	GetRootCmdDescr() string
 
 	SetNames()
 
@@ -47,12 +45,6 @@ type WorkloadAPIBuilder interface {
 	GetAPIGroup() string
 	GetAPIVersion() string
 	GetAPIKind() string
-	GetSubcommandName() string
-	GetSubcommandDescr() string
-	GetSubcommandVarName() string
-	GetSubcommandFileName() string
-	GetRootcommandName() string
-	GetRootcommandVarName() string
 	GetDependencies() []*ComponentWorkload
 	GetCollection() *WorkloadCollection
 	GetComponents() []*ComponentWorkload
@@ -64,7 +56,6 @@ type WorkloadAPIBuilder interface {
 	GetFuncNames() (createFuncNames, initFuncNames []string)
 	GetRootCommand() *CliCommand
 	GetSubCommand() *CliCommand
-	GetSubcommands() *[]CliCommand
 
 	SetNames()
 	SetResources(workloadPath string) error

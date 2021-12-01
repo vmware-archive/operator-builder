@@ -92,14 +92,6 @@ func (c *WorkloadCollection) HasSubCmdDescription() bool {
 	return c.Spec.CompanionCliSubcmd.hasDescription()
 }
 
-func (c *WorkloadCollection) GetRootCmdName() string {
-	return c.Spec.CompanionCliRootcmd.Name
-}
-
-func (c *WorkloadCollection) GetRootCmdDescr() string {
-	return c.Spec.CompanionCliRootcmd.Description
-}
-
 // methods that implement WorkloadAPIBuilder.
 func (c *WorkloadCollection) GetName() string {
 	return c.Name
@@ -119,30 +111,6 @@ func (c *WorkloadCollection) GetAPIVersion() string {
 
 func (c *WorkloadCollection) GetAPIKind() string {
 	return c.Spec.API.Kind
-}
-
-func (c *WorkloadCollection) GetSubcommandName() string {
-	return c.Spec.CompanionCliSubcmd.Name
-}
-
-func (c *WorkloadCollection) GetSubcommandDescr() string {
-	return c.Spec.CompanionCliSubcmd.Description
-}
-
-func (c *WorkloadCollection) GetSubcommandVarName() string {
-	return c.Spec.CompanionCliSubcmd.VarName
-}
-
-func (c *WorkloadCollection) GetSubcommandFileName() string {
-	return c.Spec.CompanionCliSubcmd.FileName
-}
-
-func (c *WorkloadCollection) GetRootcommandName() string {
-	return c.Spec.CompanionCliRootcmd.Name
-}
-
-func (c *WorkloadCollection) GetRootcommandVarName() string {
-	return c.Spec.CompanionCliRootcmd.VarName
 }
 
 func (c *WorkloadCollection) IsClusterScoped() bool {
@@ -289,24 +257,6 @@ func (c *WorkloadCollection) GetRootCommand() *CliCommand {
 
 func (c *WorkloadCollection) GetSubCommand() *CliCommand {
 	return &c.Spec.CompanionCliSubcmd
-}
-
-func (c *WorkloadCollection) GetSubcommands() *[]CliCommand {
-	commands := []CliCommand{}
-
-	// only add a collection subcommand as a subcommand to itself if we have
-	// child resources
-	if c.HasChildResources() {
-		commands = append(commands, c.Spec.CompanionCliSubcmd)
-	}
-
-	for _, comp := range c.Spec.Components {
-		if comp.HasSubCmdName() {
-			commands = append(commands, comp.Spec.CompanionCliSubcmd)
-		}
-	}
-
-	return &commands
 }
 
 func (c *WorkloadCollection) LoadManifests(workloadPath string) error {
