@@ -25,8 +25,8 @@ type Main struct {
 }
 
 func (f *Main) SetTemplateDefaults() error {
+	// set interface variables
 	f.Path = filepath.Join("cmd", f.RootCmd.Name, "main.go")
-
 	f.TemplateBody = cliMainTemplate
 
 	return nil

@@ -194,6 +194,10 @@ func (c *WorkloadCollection) HasChildResources() bool {
 	return len(c.Spec.Resources) > 0
 }
 
+func (c *WorkloadCollection) GetCollection() *WorkloadCollection {
+	return c.Spec.Collection
+}
+
 func (c *WorkloadCollection) GetComponents() []*ComponentWorkload {
 	return c.Spec.Components
 }
@@ -277,6 +281,10 @@ func (c *WorkloadCollection) SetNames() {
 		c.Spec.API.Kind,
 		defaultCollectionSubcommandDescription,
 	)
+}
+
+func (c *WorkloadCollection) GetRootCommand() *CliCommand {
+	return &c.Spec.CompanionCliRootcmd
 }
 
 func (c *WorkloadCollection) GetSubcommands() *[]CliCommand {

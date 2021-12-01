@@ -19,6 +19,7 @@ type WorkloadInitializer interface {
 	HasRootCmdName() bool
 
 	GetDomain() string
+	GetRootCommand() *CliCommand
 	GetRootCmdName() string
 	GetRootCmdDescr() string
 
@@ -53,6 +54,7 @@ type WorkloadAPIBuilder interface {
 	GetRootcommandName() string
 	GetRootcommandVarName() string
 	GetDependencies() []*ComponentWorkload
+	GetCollection() *WorkloadCollection
 	GetComponents() []*ComponentWorkload
 	GetSourceFiles() *[]SourceFile
 	GetAPISpecFields() *APIFields
@@ -60,6 +62,7 @@ type WorkloadAPIBuilder interface {
 	GetOwnershipRules() *[]OwnershipRule
 	GetComponentResource(domain, repo string, clusterScoped bool) *resource.Resource
 	GetFuncNames() (createFuncNames, initFuncNames []string)
+	GetRootCommand() *CliCommand
 	GetSubcommands() *[]CliCommand
 
 	SetNames()

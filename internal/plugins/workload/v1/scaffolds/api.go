@@ -357,7 +357,7 @@ func (s *apiScaffolder) scaffoldCLI(scaffold *machinery.Scaffold) error {
 	}
 
 	// scaffold the common code
-	if err := scaffold.Execute(&cli.CmdUtils{RootCmdName: rootCommand.Name}); err != nil {
+	if err := scaffold.Execute(&cli.CmdUtils{Builder: s.workload}); err != nil {
 		return fmt.Errorf("unable to scaffold companion cli utility code; %w", err)
 	}
 

@@ -178,6 +178,11 @@ func (s *StandaloneWorkload) HasChildResources() bool {
 	return len(s.Spec.Resources) > 0
 }
 
+func (s *StandaloneWorkload) GetCollection() *WorkloadCollection {
+	// no collection for standalone workloads
+	return nil
+}
+
 func (s *StandaloneWorkload) GetComponents() []*ComponentWorkload {
 	return []*ComponentWorkload{}
 }
@@ -225,6 +230,10 @@ func (s *StandaloneWorkload) SetNames() {
 		s.Spec.API.Kind,
 		defaultStandaloneDescription,
 	)
+}
+
+func (s *StandaloneWorkload) GetRootCommand() *CliCommand {
+	return &s.Spec.CompanionCliRootcmd
 }
 
 func (s *StandaloneWorkload) GetSubcommands() *[]CliCommand {

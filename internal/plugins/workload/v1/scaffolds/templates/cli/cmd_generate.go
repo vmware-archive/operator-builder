@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 
 	"sigs.k8s.io/kubebuilder/v3/pkg/machinery"
+
+	workloadv1 "github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1"
 )
 
 const (
@@ -24,20 +26,21 @@ type CmdGenerate struct {
 	machinery.BoilerplateMixin
 	machinery.RepositoryMixin
 
-	RootCmdName string
+	Initializer workloadv1.WorkloadInitializer
 
-	IsCollection bool
-
+	// template variables
 	GenerateCommandName  string
 	GenerateCommandDescr string
 }
 
 func (f *CmdGenerate) SetTemplateDefaults() error {
-	f.Path = filepath.Join("cmd", f.RootCmdName, "commands", "generate", "generate.go")
-	f.TemplateBody = cliCmdGenerateTemplate
-
+	// set template variables
 	f.GenerateCommandName = generateCommandName
 	f.GenerateCommandDescr = generateCommandDescr
+
+	// set interface variables
+	f.Path = filepath.Join("cmd", f.Initializer.GetRootCommand().Name, "commands", "generate", "generate.go")
+	f.TemplateBody = cliCmdGenerateTemplate
 
 	return nil
 }
@@ -73,7 +76,7 @@ type GenerateSubCommand struct {
 	GenerateFunc GenerateFunc
 }
 
-{{ if .IsCollection }}
+{{ if .Initializer.IsCollection }}
 // NewBaseGenerateSubCommand returns a subcommand that is meant to belong to a parent
 // subcommand but have subcommands itself.
 func NewBaseGenerateSubCommand(parentCommand *cobra.Command) *GenerateSubCommand {

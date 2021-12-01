@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 
 	"sigs.k8s.io/kubebuilder/v3/pkg/machinery"
+
+	workloadv1 "github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1"
 )
 
 var _ machinery.Template = &CmdUtils{}
@@ -18,12 +20,12 @@ type CmdUtils struct {
 	machinery.BoilerplateMixin
 	machinery.RepositoryMixin
 
-	RootCmdName string
+	Builder workloadv1.WorkloadAPIBuilder
 }
 
 func (f *CmdUtils) SetTemplateDefaults() error {
-	f.Path = filepath.Join("cmd", f.RootCmdName, "commands", "utils", "utils.go")
-
+	// set interface variables
+	f.Path = filepath.Join("cmd", f.Builder.GetRootCommand().Name, "commands", "utils", "utils.go")
 	f.TemplateBody = cliCmdUtilsTemplate
 
 	return nil

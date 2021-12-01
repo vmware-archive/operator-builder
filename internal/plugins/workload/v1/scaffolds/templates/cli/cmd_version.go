@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 
 	"sigs.k8s.io/kubebuilder/v3/pkg/machinery"
+
+	workloadv1 "github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1"
 )
 
 const (
@@ -23,20 +25,21 @@ type CmdVersion struct {
 	machinery.TemplateMixin
 	machinery.BoilerplateMixin
 
-	RootCmdName string
+	Initializer workloadv1.WorkloadInitializer
 
-	IsCollection bool
-
+	// template variables
 	VersionCommandName  string
 	VersionCommandDescr string
 }
 
 func (f *CmdVersion) SetTemplateDefaults() error {
-	f.Path = filepath.Join("cmd", f.RootCmdName, "commands", "version", "version.go")
-	f.TemplateBody = cliCmdVersionTemplate
-
+	// set template variables
 	f.VersionCommandName = versionCommandName
 	f.VersionCommandDescr = versionCommandDescr
+
+	// set interface variables
+	f.Path = filepath.Join("cmd", f.Initializer.GetRootCommand().Name, "commands", "version", "version.go")
+	f.TemplateBody = cliCmdVersionTemplate
 
 	return nil
 }
@@ -73,7 +76,7 @@ type VersionSubCommand struct {
 	VersionFunc VersionFunc
 }
 
-{{ if .IsCollection }}
+{{ if .Initializer.IsCollection }}
 // NewBaseVersionSubCommand returns a subcommand that is meant to belong to a parent
 // subcommand but have subcommands itself.
 func NewBaseVersionSubCommand(parentCommand *cobra.Command) *VersionSubCommand {

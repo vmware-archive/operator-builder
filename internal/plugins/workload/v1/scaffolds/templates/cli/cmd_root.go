@@ -23,14 +23,20 @@ type CmdRoot struct {
 	machinery.BoilerplateMixin
 	machinery.RepositoryMixin
 
-	RootCmd workloadv1.CliCommand
+	Initializer workloadv1.WorkloadInitializer
 
+	// template variables
+	RootCmd      workloadv1.CliCommand
 	IsCollection bool
 }
 
 func (f *CmdRoot) SetTemplateDefaults() error {
-	f.Path = filepath.Join("cmd", f.RootCmd.Name, "commands", "root.go")
+	// set template variables
+	f.IsCollection = f.Initializer.IsCollection()
+	f.RootCmd = *f.Initializer.GetRootCommand()
 
+	// set interface variables
+	f.Path = filepath.Join("cmd", f.RootCmd.Name, "commands", "root.go")
 	f.TemplateBody = fmt.Sprintf(CmdRootTemplate,
 		machinery.NewMarkerFor(f.Path, subcommandsImportsMarker),
 		machinery.NewMarkerFor(f.Path, subcommandsInitMarker),

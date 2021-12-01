@@ -15,7 +15,6 @@ import (
 
 	"github.com/vmware-tanzu-labs/operator-builder/internal/plugins/workload/v1/scaffolds/templates"
 	"github.com/vmware-tanzu-labs/operator-builder/internal/plugins/workload/v1/scaffolds/templates/cli"
-	"github.com/vmware-tanzu-labs/operator-builder/internal/utils"
 	workloadv1 "github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1"
 )
 
@@ -66,31 +65,13 @@ func (s *initScaffolder) Scaffold() error {
 		machinery.WithBoilerplate(string(boilerplate)),
 	)
 
-	rootCommand := workloadv1.CliCommand{
-		Name:        s.workload.GetRootCmdName(),
-		VarName:     utils.ToPascalCase(s.workload.GetRootCmdName()),
-		Description: s.workload.GetRootCmdDescr(),
-	}
-
 	if s.workload.HasRootCmdName() {
 		if err := scaffold.Execute(
-			&cli.Main{RootCmd: rootCommand},
-			&cli.CmdRoot{
-				RootCmd:      rootCommand,
-				IsCollection: s.workload.IsCollection(),
-			},
-			&cli.CmdInit{
-				RootCmdName:  rootCommand.Name,
-				IsCollection: s.workload.IsCollection(),
-			},
-			&cli.CmdGenerate{
-				RootCmdName:  rootCommand.Name,
-				IsCollection: s.workload.IsCollection(),
-			},
-			&cli.CmdVersion{
-				RootCmdName:  rootCommand.Name,
-				IsCollection: s.workload.IsCollection(),
-			},
+			&cli.Main{RootCmd: *s.workload.GetRootCommand()},
+			&cli.CmdRoot{Initializer: s.workload},
+			&cli.CmdInit{Initializer: s.workload},
+			&cli.CmdGenerate{Initializer: s.workload},
+			&cli.CmdVersion{Initializer: s.workload},
 		); err != nil {
 			return fmt.Errorf("unable to scaffold initial configuration for companionCli, %w", err)
 		}
@@ -103,8 +84,8 @@ func (s *initScaffolder) Scaffold() error {
 			CobraVersion:             CobraVersion,
 		},
 		&templates.Dockerfile{},
-		&templates.Makefile{RootCmdName: rootCommand.Name},
-		&templates.Readme{RootCmdName: rootCommand.Name},
+		&templates.Makefile{RootCmdName: s.cliRootCommandName},
+		&templates.Readme{RootCmdName: s.cliRootCommandName},
 	); err != nil {
 		return fmt.Errorf("unable to scaffold initial configuration, %w", err)
 	}

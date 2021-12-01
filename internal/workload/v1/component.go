@@ -23,7 +23,8 @@ var ErrNoComponentsOnComponent = errors.New("cannot set component workloads on a
 type ComponentWorkloadSpec struct {
 	API                   WorkloadAPISpec `json:"api" yaml:"api"`
 	CompanionCliSubcmd    CliCommand      `json:"companionCliSubcmd" yaml:"companionCliSubcmd" validate:"omitempty"`
-	Dependencies          []string        `json:"dependencies" yaml:"dependencies"`
+	CompanionCliRootcmd   CliCommand
+	Dependencies          []string `json:"dependencies" yaml:"dependencies"`
 	ConfigPath            string
 	ComponentDependencies []*ComponentWorkload
 	WorkloadSpec          `yaml:",inline"`
@@ -154,6 +155,10 @@ func (c *ComponentWorkload) HasChildResources() bool {
 	return len(c.Spec.Resources) > 0
 }
 
+func (c *ComponentWorkload) GetCollection() *WorkloadCollection {
+	return c.Spec.Collection
+}
+
 func (*ComponentWorkload) GetComponents() []*ComponentWorkload {
 	return []*ComponentWorkload{}
 }
@@ -230,6 +235,10 @@ func (c *ComponentWorkload) SetNames() {
 		c.Spec.API.Kind,
 		defaultComponentDescription,
 	)
+}
+
+func (c *ComponentWorkload) GetRootCommand() *CliCommand {
+	return &c.Spec.Collection.Spec.CompanionCliRootcmd
 }
 
 func (c *ComponentWorkload) GetSubcommands() *[]CliCommand {
