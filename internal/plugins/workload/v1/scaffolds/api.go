@@ -336,7 +336,7 @@ func (s *apiScaffolder) Scaffold() error {
 	return nil
 }
 
-// scaffoldCLI runs the specific logic to scaffold the companion CLI
+// scaffoldCLI runs the specific logic to scaffold the companion CLI.
 func (s *apiScaffolder) scaffoldCLI(scaffold *machinery.Scaffold) error {
 	// obtain a list of workload commands to generate, to include the parent collection
 	// and its children
