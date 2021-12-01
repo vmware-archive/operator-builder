@@ -65,7 +65,7 @@ func (s *apiScaffolder) InjectFS(fs machinery.Filesystem) {
 	s.fs = fs
 }
 
-//nolint:funlen //this will be refactored later
+//nolint:funlen,gocyclo //this will be refactored later
 // scaffold implements cmdutil.Scaffolder.
 func (s *apiScaffolder) Scaffold() error {
 	log.Println("Building API...")
@@ -278,7 +278,7 @@ func (s *apiScaffolder) Scaffold() error {
 			// component child resource definition files
 			// these are the resources defined in the static yaml manifests
 			for _, sourceFile := range *component.GetSourceFiles() {
-				scaffold := machinery.NewScaffold(s.fs,
+				resourcesScaffold := machinery.NewScaffold(s.fs,
 					machinery.WithConfig(s.config),
 					machinery.WithBoilerplate(string(boilerplate)),
 					machinery.WithResource(component.GetComponentResource(
@@ -288,7 +288,7 @@ func (s *apiScaffolder) Scaffold() error {
 					)),
 				)
 
-				err = scaffold.Execute(
+				err = resourcesScaffold.Execute(
 					&resources.Definition{
 						ClusterScoped: component.IsClusterScoped(),
 						SourceFile:    sourceFile,
@@ -307,13 +307,13 @@ func (s *apiScaffolder) Scaffold() error {
 	// child resource definition files
 	// these are the resources defined in the static yaml manifests
 	for _, sourceFile := range *s.workload.GetSourceFiles() {
-		scaffold := machinery.NewScaffold(s.fs,
+		definitionScaffold := machinery.NewScaffold(s.fs,
 			machinery.WithConfig(s.config),
 			machinery.WithBoilerplate(string(boilerplate)),
 			machinery.WithResource(s.resource),
 		)
 
-		err = scaffold.Execute(
+		err = definitionScaffold.Execute(
 			&resources.Definition{
 				ClusterScoped: s.workload.IsClusterScoped(),
 				SourceFile:    sourceFile,
@@ -337,7 +337,6 @@ func (s *apiScaffolder) Scaffold() error {
 }
 
 // scaffoldCLI runs the specific logic to scaffold the companion CLI
-//nolint:funlen,gocyclo //this will be refactored later
 func (s *apiScaffolder) scaffoldCLI(scaffold *machinery.Scaffold) error {
 	// obtain a list of workload commands to generate, to include the parent collection
 	// and its children

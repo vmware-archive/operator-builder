@@ -57,7 +57,7 @@ func (f *CmdGenerateSub) SetTemplateDefaults() error {
 
 	// if we have a standalone simply use the default command name and description
 	// for generate since the 'generate' command will be the last in the chain,
-	// otherwise we will use the requested subcommand name
+	// otherwise we will use the requested subcommand name.
 	if f.Builder.IsStandalone() {
 		f.GenerateCommandName = generateCommandName
 		f.GenerateCommandDescr = generateCommandDescr
@@ -141,7 +141,7 @@ func (f *CmdGenerateSubUpdater) GetMarkers() []machinery.Marker {
 // Code Fragments.
 const (
 	// this fragment is the function that a standalone workload will use to generate
-	// its child resources
+	// its child resources.
 	generateFuncStandaloneFragment = `// %sGenerate%s returns the child resources that are associated
 // with this %s workload.
 func %sGenerate%s(yamlFile []byte) ([]client.Object, error) {
@@ -171,7 +171,7 @@ func %sGenerate%s(yamlFile []byte) ([]client.Object, error) {
 `
 
 	// this fragment is the function that a workload with a collection will use to generate
-	// its child resources
+	// its child resources.
 	generateFuncWithCollectionFragment = `// %sGenerate%s returns the child resources that are associated
 // with this %s workload.
 func %sGenerate%s(workloadFile, collectionFile []byte) ([]client.Object, error) {
@@ -210,13 +210,13 @@ func %sGenerate%s(workloadFile, collectionFile []byte) ([]client.Object, error) 
 `
 
 	// this fragment is the imports which are created and updated upon each new
-	// api version that is created
+	// api version that is created.
 	generateImportFragment = `%s "%s"
 	%s "%s/%s"
 `
 
 	// this fragment switches between each new api version that is created in order
-	// to generate that specific api versions child resources
+	// to generate that specific api versions child resources.
 	generateSwitchesFragment = `case "%s":
 	resourceObjects, err = %sGenerate%s(%s)
 `
