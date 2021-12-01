@@ -131,18 +131,21 @@ func (f *CmdRootUpdater) GetCodeFragments() machinery.CodeFragmentsMap {
 		)
 	}
 
-	if f.GenerateCommand {
-		imports = append(imports, fmt.Sprintf(importSubCommandCodeFragment,
-			"generate",
-			f.Builder.GetAPIGroup(),
-			fmt.Sprintf("%s/generate/%s", commandPath, f.Builder.GetAPIGroup())),
-		)
+	// scaffold the generate command code fragments unless we have a collection without resources
+	if (f.Builder.HasChildResources() && f.Builder.IsCollection()) || !f.Builder.IsCollection() {
+		if f.GenerateCommand {
+			imports = append(imports, fmt.Sprintf(importSubCommandCodeFragment,
+				"generate",
+				f.Builder.GetAPIGroup(),
+				fmt.Sprintf("%s/generate/%s", commandPath, f.Builder.GetAPIGroup())),
+			)
 
-		generateCommands = append(generateCommands, fmt.Sprintf(subcommandCodeFragment,
-			"generate",
-			f.Builder.GetAPIGroup(),
-			f.Builder.GetAPIKind()),
-		)
+			generateCommands = append(generateCommands, fmt.Sprintf(subcommandCodeFragment,
+				"generate",
+				f.Builder.GetAPIGroup(),
+				f.Builder.GetAPIKind()),
+			)
+		}
 	}
 
 	if f.VersionCommand {
