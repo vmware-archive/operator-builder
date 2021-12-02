@@ -51,16 +51,23 @@ package {{ .Resource.Group }}
 
 import (
 	"context"
+	{{- if .IsComponent }}
+	"errors"
+	{{- end }}
 	"fmt"
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/nukleros/operator-builder-tools/pkg/controller/phases"
+	"github.com/nukleros/operator-builder-tools/pkg/controller/predicates"
+	"github.com/nukleros/operator-builder-tools/pkg/controller/reconcile"
+	"github.com/nukleros/operator-builder-tools/pkg/controller/workload"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
-	"{{ .Repo }}/apis/common"
 	{{ .Resource.ImportAlias }} "{{ .Resource.Path }}"
 	{{ if .IsComponent -}}
 	{{ .Collection.Spec.API.Group }}{{ .Collection.Spec.API.Version }} "{{ .Repo }}/apis/{{ .Collection.Spec.API.Group }}/{{ .Collection.Spec.API.Version }}"
@@ -68,35 +75,31 @@ import (
 	{{- if .HasChildResources -}}
 	"{{ .Resource.Path }}/{{ .PackageName }}"
 	{{ end -}}
-	"{{ .Repo }}/internal/controllers/phases"
-	"{{ .Repo }}/internal/controllers/utils"
 	"{{ .Repo }}/internal/dependencies"
 	"{{ .Repo }}/internal/mutate"
-	"{{ .Repo }}/internal/resources"
-	"{{ .Repo }}/internal/wait"
 )
 
 // {{ .Resource.Kind }}Reconciler reconciles a {{ .Resource.Kind }} object.
 type {{ .Resource.Kind }}Reconciler struct {
 	client.Client
-	Name       string
-	Log        logr.Logger
-	Controller controller.Controller
-	Watches    []client.Object
-	Component  *{{ .Resource.ImportAlias }}.{{ .Resource.Kind }}
-	{{- if .IsComponent }}
-	Collection *{{ .Collection.Spec.API.Group }}{{ .Collection.Spec.API.Version }}.{{ .Collection.Spec.API.Kind }}
-	{{- end }}
-	Phases     *phases.Registry
+	Name         string
+	Log          logr.Logger
+	Controller   controller.Controller
+	Events       record.EventRecorder
+	FieldManager string
+	Watches      []client.Object
+	Phases       *phases.Registry
 }
 
 func New{{ .Resource.Kind }}Reconciler(mgr ctrl.Manager) *{{ .Resource.Kind }}Reconciler {
 	return &{{ .Resource.Kind }}Reconciler{
-		Name:      "{{ .Resource.Kind }}",
-		Client:    mgr.GetClient(),
-		Log:       ctrl.Log.WithName("controllers").WithName("{{ .Resource.Group }}").WithName("{{ .Resource.Kind }}"),
-		Component: &{{ .Resource.ImportAlias }}.{{ .Resource.Kind }}{},
-		Phases:    &phases.Registry{},
+		Name:         "{{ .Resource.Kind }}",
+		Client:       mgr.GetClient(),
+		Events:       mgr.GetEventRecorderFor("{{ .Resource.Kind }}-Controller"),
+		FieldManager: "{{ .Resource.Kind }}-reconciler",
+		Log:          ctrl.Log.WithName("controllers").WithName("{{ .Resource.Group }}").WithName("{{ .Resource.Kind }}"),
+		Watches:      []client.Object{},
+		Phases:       &phases.Registry{},
 	}
 }
 
@@ -106,85 +109,118 @@ func New{{ .Resource.Kind }}Reconciler(mgr ctrl.Manager) *{{ .Resource.Kind }}Re
 // +kubebuilder:rbac:groups={{ .Group }},resources={{ .Resource }},verbs={{ .VerbString }}
 {{ end }}
 
+// Until Webhooks are implemented we need to list and watch namespaces to ensure
+// they are available before deploying resources,
+// See:
+//   - https://github.com/vmware-tanzu-labs/operator-builder/issues/141
+//   - https://github.com/vmware-tanzu-labs/operator-builder/issues/162
+
+// +kubebuilder:rbac:groups=core,resources=namespaces,verbs=list;watch
+
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the WebApp object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.7.2/pkg/reconcile
-func (r *{{ .Resource.Kind }}Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := r.Log.WithValues(
-		"kind", r.Component.Kind,
-		"name", req.Name,
-		"namespace", req.Namespace,
-	)
-
-	// get and store the component
-	if err := r.Get(ctx, req.NamespacedName, r.Component); err != nil {
-		if !apierrs.IsNotFound(err) {
-			log.Error(err, "unable to fetch resource")
-
-			return ctrl.Result{}, fmt.Errorf("unable to fetch resource, %w", err)
+func (r *{{ .Resource.Kind }}Reconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
+	req, err := r.NewRequest(ctx, request)
+	if err != nil {
+		{{- if .IsComponent }}
+		if errors.Is(err, workload.ErrCollectionNotFound) {
+			return ctrl.Result{Requeue: true}, nil
 		}
+		{{- end }}
 
+		if !apierrs.IsNotFound(err) {
+			return ctrl.Result{}, err
+		}
+		
 		return ctrl.Result{}, nil
 	}
 
-	{{ if .IsComponent }}
+	if err := phases.RegisterDeleteHooks(r, req); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	// execute the phases
+	return r.Phases.HandleExecution(r, req)
+}
+
+func (r *{{ .Resource.Kind }}Reconciler) NewRequest(ctx context.Context, request ctrl.Request) (*workload.Request, error) {
+	component := &{{ .Resource.ImportAlias }}.{{ .Resource.Kind }}{}
+
+	log := r.Log.WithValues(
+		"kind", component.GetWorkloadGVK().Kind,
+		"name", request.Name,
+		"namespace", request.Namespace,
+	)
+
+	// get and store the component
+	if err := r.Get(ctx, request.NamespacedName, component); err != nil {
+		if !apierrs.IsNotFound(err) {
+			log.Error(err, "unable to fetch workload")
+
+			return nil, fmt.Errorf("unable to fetch workload, %w", err)
+		}
+
+		return nil, err
+	}
+
+	{{ if .IsComponent -}}
 	// get and store the collection
 	var collectionList {{ .Collection.Spec.API.Group }}{{ .Collection.Spec.API.Version }}.{{ .Collection.Spec.API.Kind }}List
+	
+	var collection *{{ .Collection.Spec.API.Group }}{{ .Collection.Spec.API.Version }}.{{ .Collection.Spec.API.Kind }}
 
 	if err := r.List(ctx, &collectionList); err != nil {
-		return ctrl.Result{}, fmt.Errorf("unable to list collection {{ .Collection.Spec.API.Kind }}, %w", err)
+		return nil, fmt.Errorf("unable to list collection {{ .Collection.Spec.API.Kind }}, %w", err)
 	}
 
 	switch len(collectionList.Items) {
 	case 0:
-		if r.GetComponent().GetDeletionTimestamp().IsZero() {
+		if component.GetDeletionTimestamp().IsZero() {
 			log.Info("no collections available; initiating controller requeue")
 
-			return ctrl.Result{Requeue: true}, nil
+			return nil, workload.ErrCollectionNotFound
 		}
 	case 1:
-		r.Collection = &collectionList.Items[0]
+		collection = &collectionList.Items[0]
 	default:
 		log.Info("multiple collections found; expected 1; cannot proceed")
 
-		return ctrl.Result{}, nil
+		return nil, nil
 	}
-
 	{{- end }}
 
-	// execute the phases
-	switch {
-	case !r.GetComponent().GetDeletionTimestamp().IsZero():
-		log.Info("deleting component")
-
-		return r.Phases.HandleDelete(ctx, r)
-	case !r.GetComponent().GetReadyStatus():
-		return r.Phases.Execute(ctx, r, phases.CreateEvent)
-	default:
-		return r.Phases.Execute(ctx, r, phases.UpdateEvent)
-	}
+	return &workload.Request{
+		Context:    ctx,
+		Workload:   component,
+		{{- if .IsComponent }}
+		Collection: collection,
+		{{- end }}
+		Log:        log,
+	}, nil
 }
 
 // GetResources resources runs the methods to properly construct the resources in memory.
-func (r *{{ .Resource.Kind }}Reconciler) GetResources() ([]client.Object, error) {
+func (r *{{ .Resource.Kind }}Reconciler) GetResources(req *workload.Request) ([]client.Object, error) {
 	{{- if .HasChildResources }}
 	resourceObjects := []client.Object{}
 
+	component, {{ if .IsComponent }}collection,{{ end }} err := {{ .PackageName }}.ConvertWorkload(req.Workload{{ if .IsComponent }}, req.Collection{{ end }})
+	if err != nil {
+		return nil, err
+	}
+
 	// create resources in memory
 	for _, f := range {{ .PackageName }}.CreateFuncs {
-		resource, err := f(r.Component{{ if .IsComponent }}, r.Collection){{ else }}){{ end }}
+		resource, err := f(component{{ if .IsComponent }}, collection{{ end }})
 		if err != nil {
 			return nil, err
 		}
 
 		// run through the mutation functions to mutate the resources
-		mutatedResources, skip, err := r.Mutate(resource)
+		mutatedResources, skip, err := r.Mutate(req, resource)
 		if err != nil {
 			return []client.Object{}, err
 		}
@@ -202,39 +238,14 @@ func (r *{{ .Resource.Kind }}Reconciler) GetResources() ([]client.Object, error)
 {{ end -}}
 }
 
-// CreateOrUpdate creates a resource if it does not already exist or updates a resource
-// if it does already exist.
-func (r *{{ .Resource.Kind }}Reconciler) CreateOrUpdate(ctx context.Context, resource client.Object) error {
-	// set ownership on the underlying resource being created or updated
-	if err := ctrl.SetControllerReference(r.Component, resource, r.Scheme()); err != nil {
-		r.GetLogger().V(0).Error(
-			err, "unable to set owner reference on resource",
-			"name", resource.GetName(),
-			"namespace", resource.GetNamespace(),
-		)
+// GetEventRecorder returns the event recorder for writing kubernetes events.
+func (r *{{ .Resource.Kind }}Reconciler) GetEventRecorder() record.EventRecorder {
+	return r.Events
+}
 
-		return fmt.Errorf("unable to set owner reference on %s, %w", resource.GetName(), err)
-	}
-
-	// get the resource from the cluster
-	clusterResource, err := resources.Get(ctx, r, resource)
-	if err != nil {
-		return fmt.Errorf("unable to retrieve resource %s, %w", resource.GetName(), err)
-	}
-
-	// create the resource if we have a nil object, or update the resource if we have one
-	// that exists in the cluster already
-	if clusterResource == nil {
-		if err := resources.Create(ctx, r, resource); err != nil {
-			return fmt.Errorf("unable to create resource %s, %w", resource.GetName(), err)
-		}
-	} else {
-		if err := resources.Update(ctx, r, resource, clusterResource); err != nil {
-			return fmt.Errorf("unable to update resource %s, %w", resource.GetName(), err)
-		}
-	}
-
-	return utils.Watch(r, resource)
+// GetFieldManager returns the name of the field manager for the controller.
+func (r *{{ .Resource.Kind }}Reconciler) GetFieldManager() string {
+	return r.FieldManager
 }
 
 // GetLogger returns the logger from the reconciler.
@@ -245,11 +256,6 @@ func (r *{{ .Resource.Kind }}Reconciler) GetLogger() logr.Logger {
 // GetName returns the name of the reconciler.
 func (r *{{ .Resource.Kind }}Reconciler) GetName() string {
 	return r.Name
-}
-
-// GetComponent returns the component the reconciler is operating against.
-func (r *{{ .Resource.Kind }}Reconciler) GetComponent() common.Component {
-	return r.Component
 }
 
 // GetController returns the controller object associated with the reconciler.
@@ -268,35 +274,28 @@ func (r *{{ .Resource.Kind }}Reconciler) SetWatch(watch client.Object) {
 }
 
 // CheckReady will return whether a component is ready.
-func (r *{{ .Resource.Kind }}Reconciler) CheckReady(ctx context.Context) (bool, error) {
-	return dependencies.{{ .Resource.Kind }}CheckReady(ctx, r)
+func (r *{{ .Resource.Kind }}Reconciler) CheckReady(req *workload.Request) (bool, error) {
+	return dependencies.{{ .Resource.Kind }}CheckReady(r, req)
 }
 
-// Mutate will run the mutate phase of a resource.
+// Mutate will run the mutate function for the workload.
 func (r *{{ .Resource.Kind }}Reconciler) Mutate(
+	req *workload.Request,
 	object client.Object,
 ) ([]client.Object, bool, error) {
-	return mutate.{{ .Resource.Kind }}Mutate(r, object)
-}
-
-// Wait will run the wait phase of a resource.
-func (r *{{ .Resource.Kind }}Reconciler) Wait(
-	ctx context.Context,
-	object client.Object,
-) (bool, error) {
-	return wait.{{ .Resource.Kind }}Wait(ctx, r, object)
+	return mutate.{{ .Resource.Kind }}Mutate(r, req, object)
 }
 
 func (r *{{ .Resource.Kind }}Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 	options := controller.Options{
-		RateLimiter: utils.NewDefaultRateLimiter(5*time.Microsecond, 5*time.Minute),
+		RateLimiter: reconcile.NewDefaultRateLimiter(5*time.Microsecond, 5*time.Minute),
 	}
 
 	r.InitializePhases()
 
 	baseController, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
-		WithEventFilter(utils.ComponentPredicates()).
+		WithEventFilter(predicates.WorkloadPredicates()).
 		For(&{{ .Resource.ImportAlias }}.{{ .Resource.Kind }}{}).
 		Build(r)
 	if err != nil {

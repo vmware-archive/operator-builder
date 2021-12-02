@@ -42,27 +42,74 @@ const phasesTemplate = `{{ .Boilerplate }}
 package {{ .Resource.Group }}
 
 import (
-	"{{ .Repo }}/internal/controllers/phases"
+	"time"
+
+	"github.com/nukleros/operator-builder-tools/pkg/controller/phases"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 // InitializePhases defines what phases should be run for each event loop. phases are executed
 // in the order they are listed.
 func (r *{{ .Resource.Kind }}Reconciler) InitializePhases() {
 	// Create Phases
-	r.Phases.Register("Pre-Flight", phases.PreFlightPhase, phases.CreateEvent)
-	r.Phases.Register("Dependency", phases.DependencyPhase, phases.CreateEvent)
-	r.Phases.Register("Create-Resources", phases.CreateResourcesPhase, phases.CreateEvent)
-	r.Phases.Register("Check-Ready", phases.CheckReadyPhase, phases.CreateEvent)
-	r.Phases.Register("Complete", phases.CompletePhase, phases.CreateEvent)
+	r.Phases.Register(
+		"Dependency",
+		phases.DependencyPhase,
+		phases.CreateEvent,
+		phases.WithCustomRequeueResult(ctrl.Result{RequeueAfter: 5 * time.Second }),
+	)
+
+	r.Phases.Register(
+		"Create-Resources",
+		phases.CreateResourcesPhase,
+		phases.CreateEvent,
+	)
+
+	r.Phases.Register(
+		"Check-Ready",
+		phases.CheckReadyPhase,
+		phases.CreateEvent,
+		phases.WithCustomRequeueResult(ctrl.Result{RequeueAfter: 5 * time.Second }),
+	)
+
+	r.Phases.Register(
+		"Complete",
+		phases.CompletePhase,
+		phases.CreateEvent,
+	)
 
 	// Update Phases
-	r.Phases.Register("Pre-Flight", phases.PreFlightPhase, phases.UpdateEvent)
-	r.Phases.Register("Dependency", phases.DependencyPhase, phases.UpdateEvent)
-	r.Phases.Register("Create-Resources", phases.CreateResourcesPhase, phases.UpdateEvent)
-	r.Phases.Register("Check-Ready", phases.CheckReadyPhase, phases.UpdateEvent)
-	r.Phases.Register("Complete", phases.CompletePhase, phases.UpdateEvent)
+	r.Phases.Register(
+		"Dependency",
+		phases.DependencyPhase,
+		phases.UpdateEvent,
+		phases.WithCustomRequeueResult(ctrl.Result{RequeueAfter: 5 * time.Second }),
+	)
+
+	r.Phases.Register(
+		"Create-Resources",
+		phases.CreateResourcesPhase,
+		phases.UpdateEvent,
+	)
+
+	r.Phases.Register(
+		"Check-Ready",
+		phases.CheckReadyPhase,
+		phases.UpdateEvent,
+		phases.WithCustomRequeueResult(ctrl.Result{RequeueAfter: 5 * time.Second }),
+	)
+
+	r.Phases.Register(
+		"Complete",
+		phases.CompletePhase,
+		phases.UpdateEvent,
+	)
 
 	// Delete Phases
-	r.Phases.Register("Complete", phases.CompletePhase, phases.DeleteEvent)
+	r.Phases.Register(
+		"DeletionComplete",
+		phases.DeletionCompletePhase,
+		phases.DeleteEvent,
+	)
 }
 `
