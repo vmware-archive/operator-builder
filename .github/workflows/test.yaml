@@ -127,15 +127,19 @@ jobs:
           # inputs to the collection CLI become much more complicated to test.
           - name: Standalone Operator
             artifact: standalone-codebase
+            test-build: "true"
             test-deploy: "true"
           - name: Standalone Edge Cases Operator
             artifact: standalone-edge-codebase
+            test-build: "false"
             test-deploy: "false"
           - name: Workload Collection Operator
             artifact: collection-codebase
+            test-build: "true"
             test-deploy: "false"
           - name: Workload Collection Edge Cases Operator
             artifact: collection-edge-codebase
+            test-build: "true"
             test-deploy: "false"
     services:
       registry:
@@ -170,4 +174,5 @@ jobs:
       - name: Run CLI Integration Tests
         uses: ./.github/common-actions/e2e-test-cli
         with:
+          test-build: ${{ matrix.test-build }}
           test-deploy: ${{ matrix.test-deploy }}
