@@ -55,12 +55,10 @@ import (
 	"errors"
 	{{- end }}
 	"fmt"
-	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/nukleros/operator-builder-tools/pkg/controller/phases"
 	"github.com/nukleros/operator-builder-tools/pkg/controller/predicates"
-	"github.com/nukleros/operator-builder-tools/pkg/controller/reconcile"
 	"github.com/nukleros/operator-builder-tools/pkg/controller/workload"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
@@ -287,14 +285,9 @@ func (r *{{ .Resource.Kind }}Reconciler) Mutate(
 }
 
 func (r *{{ .Resource.Kind }}Reconciler) SetupWithManager(mgr ctrl.Manager) error {
-	options := controller.Options{
-		RateLimiter: reconcile.NewDefaultRateLimiter(5*time.Microsecond, 5*time.Minute),
-	}
-
 	r.InitializePhases()
 
 	baseController, err := ctrl.NewControllerManagedBy(mgr).
-		WithOptions(options).
 		WithEventFilter(predicates.WorkloadPredicates()).
 		For(&{{ .Resource.ImportAlias }}.{{ .Resource.Kind }}{}).
 		Build(r)
