@@ -105,6 +105,9 @@ func (s *apiScaffolder) Scaffold() error {
 				IsStandalone:      s.workload.IsStandalone(),
 				IsComponent:       s.workload.IsComponent(),
 			},
+			&controller.Phases{
+				PackageName: s.workload.GetPackageName(),
+			},
 			&dependencies.Component{},
 			&mutate.Component{},
 			&samples.CRDSample{
