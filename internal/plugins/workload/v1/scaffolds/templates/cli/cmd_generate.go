@@ -13,7 +13,7 @@ import (
 
 const (
 	generateCommandName  = "generate"
-	generateCommandDescr = "Generate child resource manifests from a workload's custom resource"
+	generateCommandDescr = "generate child resource manifests from a workload's custom resource"
 )
 
 var _ machinery.Template = &CmdGenerate{}

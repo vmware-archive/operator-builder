@@ -13,7 +13,7 @@ import (
 
 const (
 	versionCommandName  = "version"
-	versionCommandDescr = "Display the version information"
+	versionCommandDescr = "display the version information"
 )
 
 var _ machinery.Template = &CmdVersion{}

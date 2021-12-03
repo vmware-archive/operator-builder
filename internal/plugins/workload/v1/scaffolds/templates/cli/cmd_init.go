@@ -13,7 +13,7 @@ import (
 
 const (
 	initCommandName  = "init"
-	initCommandDescr = "Write a sample custom resource manifest for a workload to standard out"
+	initCommandDescr = "write a sample custom resource manifest for a workload to standard out"
 )
 
 var _ machinery.Template = &CmdInit{}
@@ -106,7 +106,7 @@ func (i *InitSubCommand) Setup() {
 		"api-version",
 		"",
 		"",
-		"API Version of the workload to generate workload manifest for.",
+		"api version of the workload to generate a workload manifest for",
 	)
 
 	// add this as a subcommand of another command if set
