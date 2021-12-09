@@ -279,14 +279,20 @@ func generateUniqueResourceName(object unstructured.Unstructured) string {
 	resourceName := strings.ReplaceAll(strings.Title(object.GetName()), "-", "")
 	resourceName = strings.ReplaceAll(resourceName, ".", "")
 	resourceName = strings.ReplaceAll(resourceName, ":", "")
+	resourceName = strings.ReplaceAll(resourceName, "!!start", "")
+	resourceName = strings.ReplaceAll(resourceName, "!!end", "")
 	resourceName = strings.ReplaceAll(resourceName, "ParentSpec", "")
 	resourceName = strings.ReplaceAll(resourceName, "CollectionSpec", "")
+	resourceName = strings.ReplaceAll(resourceName, " ", "")
 
 	namespaceName := strings.ReplaceAll(strings.Title(object.GetNamespace()), "-", "")
 	namespaceName = strings.ReplaceAll(namespaceName, ".", "")
 	namespaceName = strings.ReplaceAll(namespaceName, ":", "")
+	namespaceName = strings.ReplaceAll(namespaceName, "!!start", "")
+	namespaceName = strings.ReplaceAll(namespaceName, "!!end", "")
 	namespaceName = strings.ReplaceAll(namespaceName, "ParentSpec", "")
 	namespaceName = strings.ReplaceAll(namespaceName, "CollectionSpec", "")
+	namespaceName = strings.ReplaceAll(namespaceName, " ", "")
 
 	resourceName = fmt.Sprintf("%s%s%s", object.GetKind(), namespaceName, resourceName)
 
