@@ -25,6 +25,7 @@ type Resources struct {
 	InitFuncNames   []string
 	IsComponent     bool
 	Collection      *workloadv1.WorkloadCollection
+	SpecFields      *workloadv1.APIFields
 }
 
 func (f *Resources) SetTemplateDefaults() error {
@@ -57,6 +58,16 @@ import (
 	{{ end -}}
 )
 
+const sample{{ .Resource.Kind }} = ` + "`" + `apiVersion: {{ .Resource.QualifiedGroup }}/{{ .Resource.Version }}
+kind: {{ .Resource.Kind }}
+metadata:
+  name: {{ lower .Resource.Kind }}-sample
+{{ .SpecFields.GenerateSampleSpec -}}` + "`" + `
+
+// Sample{{ .Resource.Kind }} returns the sample manifest for this custom resource.
+func Sample{{ .Resource.Kind }}() string {
+	return sample{{ .Resource.Kind }}
+}
 
 // CreateFuncs is an array of functions that are called to create the child resources for the controller
 // in memory during the reconciliation loop prior to persisting the changes or updates to the Kubernetes
