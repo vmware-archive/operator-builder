@@ -115,7 +115,7 @@ func (g *GenerateSubCommand) Setup() {
 			"workload-manifest",
 			"w",
 			"",
-			"Filepath to the workload manifest to generate child resources for.",
+			"filepath to the workload manifest to generate child resources for",
 		)
 
 		if err := g.MarkFlagRequired("workload-manifest"); err != nil {
@@ -130,7 +130,7 @@ func (g *GenerateSubCommand) Setup() {
 			"collection-manifest",
 			"c",
 			"",
-			"Filepath to the workload collection manifest.",
+			"filepath to the workload collection manifest",
 		)
 
 		if err := g.MarkFlagRequired("collection-manifest"); err != nil {
