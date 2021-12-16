@@ -92,10 +92,13 @@ func (s *apiScaffolder) Scaffold() error {
 				IsStandalone:  s.workload.IsStandalone(),
 			},
 			&resources.Resources{
+				RootCmdName:     s.cliRootCommandName,
 				PackageName:     s.workload.GetPackageName(),
 				CreateFuncNames: createFuncNames,
 				InitFuncNames:   initFuncNames,
 				IsComponent:     s.workload.IsComponent(),
+				IsStandalone:    s.workload.IsStandalone(),
+				IsCollection:    s.workload.IsCollection(),
 				SpecFields:      s.workload.GetAPISpecFields(),
 			},
 			&controller.Controller{
@@ -136,10 +139,14 @@ func (s *apiScaffolder) Scaffold() error {
 				IsStandalone:  s.workload.IsStandalone(),
 			},
 			&resources.Resources{
+				RootCmdName:     s.cliRootCommandName,
 				PackageName:     s.workload.GetPackageName(),
 				CreateFuncNames: createFuncNames,
 				InitFuncNames:   initFuncNames,
 				IsComponent:     s.workload.IsComponent(),
+				IsStandalone:    s.workload.IsStandalone(),
+				IsCollection:    s.workload.IsCollection(),
+				Collection:      s.workload.(*workloadv1.WorkloadCollection),
 				SpecFields:      s.workload.GetAPISpecFields(),
 			},
 			&controller.Controller{
@@ -194,10 +201,13 @@ func (s *apiScaffolder) Scaffold() error {
 				},
 				&api.Group{},
 				&resources.Resources{
+					RootCmdName:     s.cliRootCommandName,
 					PackageName:     component.GetPackageName(),
 					CreateFuncNames: createFuncNames,
 					InitFuncNames:   initFuncNames,
 					IsComponent:     component.IsComponent(),
+					IsStandalone:    component.IsStandalone(),
+					IsCollection:    component.IsCollection(),
 					Collection:      s.workload.(*workloadv1.WorkloadCollection),
 					SpecFields:      s.workload.GetAPISpecFields(),
 				},

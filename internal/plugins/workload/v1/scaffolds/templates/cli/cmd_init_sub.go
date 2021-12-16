@@ -194,8 +194,6 @@ func (f *CmdInitSubUpdater) GetCodeFragments() machinery.CodeFragmentsMap {
 		return fragments
 	}
 
-	fmt.Printf("api version: %s", f.Resource.Version)
-
 	// Generate subCommands code fragments
 	imports := make([]string, 0)
 	switches := make([]string, 0)
@@ -210,10 +208,9 @@ func (f *CmdInitSubUpdater) GetCodeFragments() machinery.CodeFragmentsMap {
 	// add the switches
 	switches = append(switches, fmt.Sprintf(initVersionMapFragment,
 		f.Resource.Version,
-		fmt.Sprintf("%s%s.Sample%s()",
+		fmt.Sprintf("%s%s.Sample()",
 			f.Resource.Version,
 			strings.ToLower(f.Resource.Kind),
-			f.Resource.Kind,
 		)),
 	)
 
@@ -306,6 +303,6 @@ func Init{{ .Resource.Kind }}(i *cmdinit.InitSubCommand) error {
 
 	import {{ .Resource.Version }}{{ lower .Resource.Kind }} "{{ .Resource.Path }}/{{ .PackageName }}"
 
-	var latest{{ .Resource.Kind }} = {{ .Resource.Version }}{{ lower .Resource.Kind }}.Sample{{ .Resource.Kind }}()
+	var latest{{ .Resource.Kind }} = {{ .Resource.Version }}{{ lower .Resource.Kind }}.Sample()
 `
 )

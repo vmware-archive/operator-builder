@@ -20,10 +20,13 @@ type Resources struct {
 	machinery.RepositoryMixin
 	machinery.ResourceMixin
 
+	RootCmdName     string
 	PackageName     string
 	CreateFuncNames []string
 	InitFuncNames   []string
 	IsComponent     bool
+	IsStandalone    bool
+	IsCollection    bool
 	Collection      *workloadv1.WorkloadCollection
 	SpecFields      *workloadv1.APIFields
 }
@@ -49,9 +52,14 @@ const resourcesTemplate = `{{ .Boilerplate }}
 package {{ .PackageName }}
 
 import (
-	"github.com/nukleros/operator-builder-tools/pkg/controller/workload"
+	{{ if ne .RootCmdName "" }}"fmt"{{ end }}
+
+	{{ if ne .RootCmdName "" }}"sigs.k8s.io/yaml"{{ end }}
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/nukleros/operator-builder-tools/pkg/controller/workload"
 	
+	{{ if ne .RootCmdName "" }}cmdutils "{{ .Repo }}/cmd/{{ .RootCmdName }}/commands/utils"{{ end }}
 	{{ .Resource.ImportAlias }} "{{ .Resource.Path }}"
 	{{- if .IsComponent }}
 	{{ .Collection.Spec.API.Group }}{{ .Collection.Spec.API.Version }} "{{ .Repo }}/apis/{{ .Collection.Spec.API.Group }}/{{ .Collection.Spec.API.Version }}"
@@ -64,20 +72,91 @@ metadata:
   name: {{ lower .Resource.Kind }}-sample
 {{ .SpecFields.GenerateSampleSpec -}}` + "`" + `
 
-// Sample{{ .Resource.Kind }} returns the sample manifest for this custom resource.
-func Sample{{ .Resource.Kind }}() string {
+// Sample returns the sample manifest for this custom resource.
+func Sample() string {
 	return sample{{ .Resource.Kind }}
 }
+
+// Generate returns the child resources that are associated with this workload given 
+// appropriate structured inputs.
+{{ if .IsComponent -}}
+func Generate(
+	workload {{ .Resource.ImportAlias }}.{{ .Resource.Kind }}, 
+	collection {{ .Collection.Spec.API.Group }}{{ .Collection.Spec.API.Version }}.{{ .Collection.Spec.API.Kind }},
+) ([]client.Object, error) {
+{{ else if .IsCollection -}}
+func Generate(collection {{ .Collection.Spec.API.Group }}{{ .Collection.Spec.API.Version }}.{{ .Collection.Spec.API.Kind }}) ([]client.Object, error) {
+{{ else -}}
+func Generate(workload {{ .Resource.ImportAlias }}.{{ .Resource.Kind }}) ([]client.Object, error) {
+{{ end -}}
+	resourceObjects := make([]client.Object, len(CreateFuncs))
+
+	for i, f := range CreateFuncs {
+		{{ if .IsComponent -}}
+		resource, err := f(&workload, &collection)
+		{{ else if .IsCollection -}}
+		resource, err := f(&collection)
+		{{ else -}}
+		resource, err := f(&workload)
+		{{ end }}
+		if err != nil {
+			return nil, err
+		}
+
+		resourceObjects[i] = resource
+	}
+
+	return resourceObjects, nil
+}
+
+{{ if ne .RootCmdName "" }}
+// GenerateForCLI returns the child resources that are associated with this workload given
+// appropriate YAML manifest files.
+func GenerateForCLI(
+	{{- if or (.IsStandalone) (.IsComponent) }}workloadFile []byte,{{ end -}}
+	{{- if or (.IsComponent) (.IsCollection) }}collectionFile []byte,{{ end -}}
+) ([]client.Object, error) {
+	{{- if or (.IsStandalone) (.IsComponent) }}
+	var workload {{ .Resource.ImportAlias }}.{{ .Resource.Kind }}
+	if err := yaml.Unmarshal(workloadFile, &workload); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal yaml into workload, %w", err)
+	}
+
+	if err := cmdutils.ValidateWorkload(&workload); err != nil {
+		return nil, fmt.Errorf("error validating workload yaml, %w", err)
+	}
+	{{ end }}
+
+	{{- if or (.IsComponent) (.IsCollection) }}
+	var collection {{ .Collection.Spec.API.Group }}{{ .Collection.Spec.API.Version }}.{{ .Collection.Spec.API.Kind }}
+	if err := yaml.Unmarshal(collectionFile, &collection); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal yaml into collection, %w", err)
+	}
+
+	if err := cmdutils.ValidateWorkload(&collection); err != nil {
+		return nil, fmt.Errorf("error validating collection yaml, %w", err)
+	}
+	{{ end }}
+
+	{{ if .IsComponent }}
+	return Generate(workload, collection)
+	{{ else if .IsCollection }}
+	return Generate(collection)
+	{{ else }}
+	return Generate(workload)
+	{{ end -}}
+}
+{{ end }}
 
 // CreateFuncs is an array of functions that are called to create the child resources for the controller
 // in memory during the reconciliation loop prior to persisting the changes or updates to the Kubernetes
 // database.
 var CreateFuncs = []func(
 	*{{ .Resource.ImportAlias }}.{{ .Resource.Kind }},
-	{{- if $.IsComponent }}
+	{{ if $.IsComponent -}}
 	*{{ .Collection.Spec.API.Group }}{{ .Collection.Spec.API.Version }}.{{ .Collection.Spec.API.Kind }},
 	{{ end -}}
-) (client.Object, error){
+) (client.Object, error) {
 	{{ range .CreateFuncNames }}
 		{{- . -}},
 	{{ end }}
@@ -93,10 +172,10 @@ var CreateFuncs = []func(
 // setup, it will fail.
 var InitFuncs = []func(
 	*{{ .Resource.ImportAlias }}.{{ .Resource.Kind }},
-	{{- if $.IsComponent }}
+	{{ if $.IsComponent -}}
 	*{{ .Collection.Spec.API.Group }}{{ .Collection.Spec.API.Version }}.{{ .Collection.Spec.API.Kind }},
 	{{ end -}}
-) (client.Object, error){
+) (client.Object, error) {
 	{{ range .InitFuncNames }}
 		{{- . -}},
 	{{ end }}
