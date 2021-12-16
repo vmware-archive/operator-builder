@@ -67,7 +67,7 @@ func (ws *WorkloadSpec) processManifests(markerTypes ...MarkerType) error {
 		}
 
 		// determine sourceFile filename
-		sourceFile := determineSourceFileName(manifestFile.FileName)
+		sourceFile := determineSourceFileName(manifestFile.relativeFileName)
 
 		var childResources []ChildResource
 
