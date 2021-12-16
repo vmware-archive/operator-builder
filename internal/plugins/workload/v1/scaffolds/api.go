@@ -312,11 +312,6 @@ func (s *apiScaffolder) scaffoldCLI(scaffold *machinery.Scaffold) error {
 		}
 	}
 
-	// scaffold the utility code
-	if err := scaffold.Execute(&cli.CmdUtils{Builder: s.workload}); err != nil {
-		return fmt.Errorf("unable to scaffold companion cli utility code; %w", err)
-	}
-
 	for _, workloadCommand := range workloadCommands {
 		// create this component as a kubebuilder component resource for those
 		// commands that need it

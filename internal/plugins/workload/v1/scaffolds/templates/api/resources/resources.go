@@ -59,7 +59,6 @@ import (
 
 	"github.com/nukleros/operator-builder-tools/pkg/controller/workload"
 	
-	{{ if ne .RootCmdName "" }}cmdutils "{{ .Repo }}/cmd/{{ .RootCmdName }}/commands/utils"{{ end }}
 	{{ .Resource.ImportAlias }} "{{ .Resource.Path }}"
 	{{- if .IsComponent }}
 	{{ .Collection.Spec.API.Group }}{{ .Collection.Spec.API.Version }} "{{ .Repo }}/apis/{{ .Collection.Spec.API.Group }}/{{ .Collection.Spec.API.Version }}"
@@ -81,23 +80,23 @@ func Sample() string {
 // appropriate structured inputs.
 {{ if .IsComponent -}}
 func Generate(
-	workload {{ .Resource.ImportAlias }}.{{ .Resource.Kind }}, 
-	collection {{ .Collection.Spec.API.Group }}{{ .Collection.Spec.API.Version }}.{{ .Collection.Spec.API.Kind }},
+	workloadObj {{ .Resource.ImportAlias }}.{{ .Resource.Kind }}, 
+	collectionObj {{ .Collection.Spec.API.Group }}{{ .Collection.Spec.API.Version }}.{{ .Collection.Spec.API.Kind }},
 ) ([]client.Object, error) {
 {{ else if .IsCollection -}}
-func Generate(collection {{ .Collection.Spec.API.Group }}{{ .Collection.Spec.API.Version }}.{{ .Collection.Spec.API.Kind }}) ([]client.Object, error) {
+func Generate(collectionObj {{ .Collection.Spec.API.Group }}{{ .Collection.Spec.API.Version }}.{{ .Collection.Spec.API.Kind }}) ([]client.Object, error) {
 {{ else -}}
-func Generate(workload {{ .Resource.ImportAlias }}.{{ .Resource.Kind }}) ([]client.Object, error) {
+func Generate(workloadObj {{ .Resource.ImportAlias }}.{{ .Resource.Kind }}) ([]client.Object, error) {
 {{ end -}}
 	resourceObjects := make([]client.Object, len(CreateFuncs))
 
 	for i, f := range CreateFuncs {
 		{{ if .IsComponent -}}
-		resource, err := f(&workload, &collection)
+		resource, err := f(&workloadObj, &collectionObj)
 		{{ else if .IsCollection -}}
-		resource, err := f(&collection)
+		resource, err := f(&collectionObj)
 		{{ else -}}
-		resource, err := f(&workload)
+		resource, err := f(&workloadObj)
 		{{ end }}
 		if err != nil {
 			return nil, err
@@ -117,33 +116,33 @@ func GenerateForCLI(
 	{{- if or (.IsComponent) (.IsCollection) }}collectionFile []byte,{{ end -}}
 ) ([]client.Object, error) {
 	{{- if or (.IsStandalone) (.IsComponent) }}
-	var workload {{ .Resource.ImportAlias }}.{{ .Resource.Kind }}
-	if err := yaml.Unmarshal(workloadFile, &workload); err != nil {
+	var workloadObj {{ .Resource.ImportAlias }}.{{ .Resource.Kind }}
+	if err := yaml.Unmarshal(workloadFile, &workloadObj); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal yaml into workload, %w", err)
 	}
 
-	if err := cmdutils.ValidateWorkload(&workload); err != nil {
+	if err := workload.Validate(&workloadObj); err != nil {
 		return nil, fmt.Errorf("error validating workload yaml, %w", err)
 	}
 	{{ end }}
 
 	{{- if or (.IsComponent) (.IsCollection) }}
-	var collection {{ .Collection.Spec.API.Group }}{{ .Collection.Spec.API.Version }}.{{ .Collection.Spec.API.Kind }}
-	if err := yaml.Unmarshal(collectionFile, &collection); err != nil {
+	var collectionObj {{ .Collection.Spec.API.Group }}{{ .Collection.Spec.API.Version }}.{{ .Collection.Spec.API.Kind }}
+	if err := yaml.Unmarshal(collectionFile, &collectionObj); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal yaml into collection, %w", err)
 	}
 
-	if err := cmdutils.ValidateWorkload(&collection); err != nil {
+	if err := workload.Validate(&collectionObj); err != nil {
 		return nil, fmt.Errorf("error validating collection yaml, %w", err)
 	}
 	{{ end }}
 
 	{{ if .IsComponent }}
-	return Generate(workload, collection)
+	return Generate(workloadObj, collectionObj)
 	{{ else if .IsCollection }}
-	return Generate(collection)
+	return Generate(collectionObj)
 	{{ else }}
-	return Generate(workload)
+	return Generate(workloadObj)
 	{{ end -}}
 }
 {{ end }}
