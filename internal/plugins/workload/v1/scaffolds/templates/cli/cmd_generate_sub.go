@@ -248,10 +248,20 @@ func New{{ .Resource.Kind }}SubCommand(parentCommand *cobra.Command) {
 	generateCmd := &cmdgenerate.GenerateSubCommand{
 		Name:                  "{{ .GenerateCommandName }}",
 		Description:           "{{ .GenerateCommandDescr }}",
-		UseCollectionManifest: {{ .UseCollectionManifestFlag }},
-		UseWorkloadManifest:   {{ .UseWorkloadManifestFlag }},
 		SubCommandOf:          parentCommand,
 		GenerateFunc:          Generate{{ .Resource.Kind }},
+		{{- if .UseCollectionManifestFlag }}
+		UseCollectionManifest: true,
+		{{- if .Builder.IsCollection }}
+		CollectionKind:        "{{ .Resource.Kind }}",
+		{{- else }}
+		CollectionKind:        "{{ .Collection.Spec.API.Kind }}",
+		{{ end -}}
+		{{ end -}}
+		{{ if .UseWorkloadManifestFlag -}}
+		UseWorkloadManifest:   true,
+		WorkloadKind:          "{{ .Resource.Kind }}",
+		{{ end -}}
 	}
 
 	generateCmd.Setup()
