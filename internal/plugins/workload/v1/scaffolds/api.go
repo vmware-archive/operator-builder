@@ -75,8 +75,6 @@ func (s *apiScaffolder) Scaffold() error {
 		machinery.WithResource(s.resource),
 	)
 
-	createFuncNames, initFuncNames := s.workload.GetFuncNames()
-
 	//nolint:nestif //this will be refactored later
 	// API types
 	if s.workload.IsStandalone() {
@@ -91,16 +89,7 @@ func (s *apiScaffolder) Scaffold() error {
 				Dependencies:  s.workload.GetDependencies(),
 				IsStandalone:  s.workload.IsStandalone(),
 			},
-			&resources.Resources{
-				RootCmdName:     s.cliRootCommandName,
-				PackageName:     s.workload.GetPackageName(),
-				CreateFuncNames: createFuncNames,
-				InitFuncNames:   initFuncNames,
-				IsComponent:     s.workload.IsComponent(),
-				IsStandalone:    s.workload.IsStandalone(),
-				IsCollection:    s.workload.IsCollection(),
-				SpecFields:      s.workload.GetAPISpecFields(),
-			},
+			&resources.Resources{Builder: s.workload},
 			&controller.Controller{
 				PackageName:       s.workload.GetPackageName(),
 				RBACRules:         s.workload.GetRBACRules(),
@@ -138,17 +127,7 @@ func (s *apiScaffolder) Scaffold() error {
 				Dependencies:  s.workload.GetDependencies(),
 				IsStandalone:  s.workload.IsStandalone(),
 			},
-			&resources.Resources{
-				RootCmdName:     s.cliRootCommandName,
-				PackageName:     s.workload.GetPackageName(),
-				CreateFuncNames: createFuncNames,
-				InitFuncNames:   initFuncNames,
-				IsComponent:     s.workload.IsComponent(),
-				IsStandalone:    s.workload.IsStandalone(),
-				IsCollection:    s.workload.IsCollection(),
-				Collection:      s.workload.(*workloadv1.WorkloadCollection),
-				SpecFields:      s.workload.GetAPISpecFields(),
-			},
+			&resources.Resources{Builder: s.workload},
 			&controller.Controller{
 				PackageName:       s.workload.GetPackageName(),
 				RBACRules:         s.workload.GetRBACRules(),
@@ -186,8 +165,6 @@ func (s *apiScaffolder) Scaffold() error {
 				)),
 			)
 
-			createFuncNames, initFuncNames := component.GetFuncNames()
-
 			err = componentScaffold.Execute(
 				&templates.MainUpdater{
 					WireResource:   true,
@@ -200,17 +177,7 @@ func (s *apiScaffolder) Scaffold() error {
 					IsStandalone:  component.IsStandalone(),
 				},
 				&api.Group{},
-				&resources.Resources{
-					RootCmdName:     s.cliRootCommandName,
-					PackageName:     component.GetPackageName(),
-					CreateFuncNames: createFuncNames,
-					InitFuncNames:   initFuncNames,
-					IsComponent:     component.IsComponent(),
-					IsStandalone:    component.IsStandalone(),
-					IsCollection:    component.IsCollection(),
-					Collection:      s.workload.(*workloadv1.WorkloadCollection),
-					SpecFields:      component.GetAPISpecFields(),
-				},
+				&resources.Resources{Builder: component},
 				&controller.Controller{
 					PackageName:       component.GetPackageName(),
 					RBACRules:         component.GetRBACRules(),

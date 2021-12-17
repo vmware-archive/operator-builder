@@ -34,15 +34,22 @@ func (f *CRDSample) SetTemplateDefaults() error {
 			utils.ToFileName(f.Resource.Kind)),
 	)
 
-	f.TemplateBody = crdSampleTemplate
+	f.TemplateBody = SampleTemplate
 	f.IfExistsAction = machinery.OverwriteFile
 
 	return nil
 }
 
-const crdSampleTemplate = `apiVersion: {{ .Resource.QualifiedGroup }}/{{ .Resource.Version }}
+const SampleTemplate = `apiVersion: {{ .Resource.QualifiedGroup }}/{{ .Resource.Version }}
 kind: {{ .Resource.Kind }}
 metadata:
   name: {{ lower .Resource.Kind }}-sample
-{{ .SpecFields.GenerateSampleSpec -}}
+{{ .SpecFields.GenerateSampleSpec false -}}
+`
+
+const SampleTemplateRequiredOnly = `apiVersion: {{ .Resource.QualifiedGroup }}/{{ .Resource.Version }}
+kind: {{ .Resource.Kind }}
+metadata:
+  name: {{ lower .Resource.Kind }}-sample
+{{ .SpecFields.GenerateSampleSpec true -}}
 `
