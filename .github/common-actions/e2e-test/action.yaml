@@ -79,8 +79,8 @@ runs:
         # TODO: this is temporary to ensure we test the reconciliation loop
         # for our test workloads.  the end goal would be to genericize this
         # to ensure we can test any workload.
-        if [[ -f .workloadConfig/v1alpha1_workloads_test.go.test ]]; then
-          cp .workloadConfig/v1alpha1_workloads_test.go.test test/e2e/v1alpha1_workloads_test.go
+        if [[ -f .workloadConfig/apps_v1alpha1_webstore_test.go.test ]]; then
+          cp .workloadConfig/apps_v1alpha1_webstore_test.go.test test/e2e/apps_v1alpha1_webstore_test.go
         fi
 
         # run the e2e tests
