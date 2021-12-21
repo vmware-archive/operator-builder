@@ -116,6 +116,7 @@ func {{ .TesterName }}NewHarness(namespace string) *E2ETest {
 		workload:           &{{ .Resource.ImportAlias }}.{{ .Resource.Kind }}{},
 		sampleManifestFile: "{{ .TesterSamplePath }}",
 		getChildrenFunc:    {{ .TesterName }}ChildrenFuncs,
+		logSyntax:          "controllers.{{ .Resource.Group }}.{{ .Resource.Kind }}",
 		{{ if .Builder.IsComponent -}}
 		collectionTester:   {{ .TesterCollectionName }}NewHarness("{{ .TesterCollectionNamespace }}"),     
 		{{ end }}
@@ -144,6 +145,9 @@ func (tester *E2ETest) {{ .TesterName }}Test(testSuite *E2EComponentTestSuite) {
 	// test the update of a parent object
 	// TODO: need immutable fields so that we can predict which managed fields we can modify to test reconciliation
 	// see https://github.com/vmware-tanzu-labs/operator-builder/issues/67
+
+	// test that controller logs do not contain errors
+	require.NoErrorf(testSuite.T(), testControllerLogsNoErrors(tester.suiteConfig, tester.logSyntax), "found errors in controller logs")
 }
 
 {{ if .Builder.IsCollection -}}
