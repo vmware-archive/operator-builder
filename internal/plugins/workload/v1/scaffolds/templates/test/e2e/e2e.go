@@ -63,6 +63,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/nukleros/operator-builder-tools/pkg/resources"
+	"github.com/nukleros/operator-builder-tools/pkg/controller/workload"
 	kbresource "sigs.k8s.io/kubebuilder/v3/pkg/model/resource"
 )
 
@@ -99,7 +100,7 @@ type E2ETest struct {
 	namespace          string
 	sampleManifestFile string
 	unstructured       *unstructured.Unstructured
-	workload           client.Object
+	workload           workload.Workload
 	collectionTester   *E2ETest
 	children           []client.Object
 	getChildrenFunc    getChildren
