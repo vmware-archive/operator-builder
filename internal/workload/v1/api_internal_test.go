@@ -75,7 +75,7 @@ func TestAPIFields_GenerateSampleSpec(t *testing.T) {
 					},
 					{
 						Sample:  "test2: content2",
-						Default: "",
+						Default: "defaultValue",
 					},
 				},
 			},
