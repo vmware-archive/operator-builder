@@ -104,7 +104,8 @@ func (s *apiScaffolder) Scaffold() error {
 			&dependencies.Component{},
 			&mutate.Component{},
 			&samples.CRDSample{
-				SpecFields: s.workload.GetAPISpecFields(),
+				SpecFields:      s.workload.GetAPISpecFields(),
+				IsClusterScoped: s.workload.IsClusterScoped(),
 			},
 		)
 		if err != nil {
@@ -142,7 +143,8 @@ func (s *apiScaffolder) Scaffold() error {
 			&dependencies.Component{},
 			&mutate.Component{},
 			&samples.CRDSample{
-				SpecFields: s.workload.GetAPISpecFields(),
+				SpecFields:      s.workload.GetAPISpecFields(),
+				IsClusterScoped: s.workload.IsClusterScoped(),
 			},
 			&crd.Kustomization{},
 		)
@@ -193,7 +195,8 @@ func (s *apiScaffolder) Scaffold() error {
 				&dependencies.Component{},
 				&mutate.Component{},
 				&samples.CRDSample{
-					SpecFields: component.Spec.APISpecFields,
+					SpecFields:      component.Spec.APISpecFields,
+					IsClusterScoped: s.workload.IsClusterScoped(),
 				},
 				&crd.Kustomization{},
 			)

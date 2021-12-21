@@ -27,6 +27,7 @@ type Resources struct {
 
 	// template fields
 	SpecFields      *workloadv1.APIFields
+	IsClusterScoped bool
 	CreateFuncNames []string
 	InitFuncNames   []string
 }
@@ -35,6 +36,7 @@ func (f *Resources) SetTemplateDefaults() error {
 	// set template fields
 	f.CreateFuncNames, f.InitFuncNames = f.Builder.GetFuncNames()
 	f.SpecFields = f.Builder.GetAPISpecFields()
+	f.IsClusterScoped = f.Builder.IsClusterScoped()
 
 	// set interface fields
 	f.Path = filepath.Join(

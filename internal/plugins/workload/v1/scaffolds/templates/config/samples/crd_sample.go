@@ -20,7 +20,9 @@ type CRDSample struct {
 	machinery.TemplateMixin
 	machinery.ResourceMixin
 
-	SpecFields *workloadv1.APIFields
+	SpecFields      *workloadv1.APIFields
+	IsClusterScoped bool
+	RequiredOnly    bool
 }
 
 func (f *CRDSample) SetTemplateDefaults() error {
@@ -34,6 +36,7 @@ func (f *CRDSample) SetTemplateDefaults() error {
 			utils.ToFileName(f.Resource.Kind)),
 	)
 
+	f.RequiredOnly = false
 	f.TemplateBody = SampleTemplate
 	f.IfExistsAction = machinery.OverwriteFile
 
@@ -44,6 +47,9 @@ const SampleTemplate = `apiVersion: {{ .Resource.QualifiedGroup }}/{{ .Resource.
 kind: {{ .Resource.Kind }}
 metadata:
   name: {{ lower .Resource.Kind }}-sample
+{{- if not .IsClusterScoped }}
+  namespace: default
+{{- end }}
 {{ .SpecFields.GenerateSampleSpec false -}}
 `
 
@@ -51,5 +57,8 @@ const SampleTemplateRequiredOnly = `apiVersion: {{ .Resource.QualifiedGroup }}/{
 kind: {{ .Resource.Kind }}
 metadata:
   name: {{ lower .Resource.Kind }}-sample
+{{- if not .IsClusterScoped }}
+  namespace: default
+{{- end }}
 {{ .SpecFields.GenerateSampleSpec true -}}
 `
