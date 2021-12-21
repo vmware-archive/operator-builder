@@ -35,20 +35,22 @@ type WorkloadTest struct {
 	Builder workloadv1.WorkloadAPIBuilder
 
 	// template fields
-	TesterName           string
-	TesterNamespace      string
-	TesterSamplePath     string
-	TesterCollectionName string
+	TesterName                string
+	TesterNamespace           string
+	TesterSamplePath          string
+	TesterCollectionName      string
+	TesterCollectionNamespace string
 }
 
 func (f *WorkloadTest) SetTemplateDefaults() error {
 	// set template fields
-	f.TesterNamespace = getTesterNamespace(f.Builder.IsClusterScoped(), f.Resource)
+	f.TesterNamespace = getTesterNamespace(f.Builder)
 	f.TesterSamplePath = getTesterSamplePath(f.Resource)
 	f.TesterName = getTesterName(f.Resource)
 
 	if f.Builder.GetCollection() != nil {
 		f.TesterCollectionName = getTesterCollectionName(f.Builder.GetCollection())
+		f.TesterCollectionNamespace = getTesterNamespace(f.Builder.GetCollection())
 	}
 
 	// set interface fields
@@ -107,26 +109,24 @@ func {{ .TesterName }}ChildrenFuncs(tester *E2ETest) error {
 	return nil
 }
 
-func {{ .TesterName }}Test() *E2ETest {
+func {{ .TesterName }}NewHarness(namespace string) *E2ETest {
 	return &E2ETest{
-		namespace:          "{{ .TesterNamespace }}",
+		namespace:          namespace,
 		unstructured:       &unstructured.Unstructured{},
 		workload:           &{{ .Resource.ImportAlias }}.{{ .Resource.Kind }}{},
 		sampleManifestFile: "{{ .TesterSamplePath }}",
 		getChildrenFunc:    {{ .TesterName }}ChildrenFuncs,
 		{{ if .Builder.IsComponent -}}
-		collectionTester:   {{ .TesterCollectionName }}Test(),     
+		collectionTester:   {{ .TesterCollectionName }}NewHarness("{{ .TesterCollectionNamespace }}"),     
 		{{ end }}
 	}
-} 
+}
 
 {{ if .Builder.IsCollection -}}
-func (testSuite *E2ECollectionTestSuite) Test_{{ .TesterName }}() {
+func (tester *E2ETest) {{ .TesterName }}Test(testSuite *E2ECollectionTestSuite) {
 {{ else }}
-func (testSuite *E2EComponentTestSuite) Test_{{ .TesterName }}() {
+func (tester *E2ETest) {{ .TesterName }}Test(testSuite *E2EComponentTestSuite) {
 {{ end -}}
-	// setup
-	tester := {{ .TesterName }}Test()
 	testSuite.suiteConfig.tests = append(testSuite.suiteConfig.tests, tester)
 	tester.suiteConfig = &testSuite.suiteConfig
 	require.NoErrorf(testSuite.T(), tester.setup(), "failed to setup test")
@@ -145,6 +145,22 @@ func (testSuite *E2EComponentTestSuite) Test_{{ .TesterName }}() {
 	// TODO: need immutable fields so that we can predict which managed fields we can modify to test reconciliation
 	// see https://github.com/vmware-tanzu-labs/operator-builder/issues/67
 }
+
+{{ if .Builder.IsCollection -}}
+func (testSuite *E2ECollectionTestSuite) Test_{{ .TesterName }}() {
+{{ else }}
+func (testSuite *E2EComponentTestSuite) Test_{{ .TesterName }}() {
+{{ end -}}
+	tester := {{ .TesterName }}NewHarness("{{ .TesterNamespace }}")
+	tester.{{ .TesterName }}Test(testSuite)
+}
+
+{{ if and (not .Builder.IsClusterScoped) (not .Builder.IsCollection) }}
+func (testSuite *E2EComponentTestSuite) Test_{{ .TesterName }}Multi() {
+	tester := {{ .TesterName }}NewHarness("{{ .TesterNamespace }}-2")
+	tester.{{ .TesterName }}Test(testSuite)
+}
+{{ end }}
 `
 
 func getTesterSamplePath(r *resource.Resource) string {
@@ -162,13 +178,13 @@ func getTesterSamplePath(r *resource.Resource) string {
 	)
 }
 
-func getTesterNamespace(clusterScoped bool, r *resource.Resource) (namespace string) {
-	if !clusterScoped {
+func getTesterNamespace(builder workloadv1.WorkloadAPIBuilder) (namespace string) {
+	if !builder.IsClusterScoped() {
 		namespaceElements := []string{
 			"test",
-			strings.ToLower(r.Group),
-			strings.ToLower(r.Version),
-			strings.ToLower(r.Kind),
+			strings.ToLower(builder.GetAPIGroup()),
+			strings.ToLower(builder.GetAPIVersion()),
+			strings.ToLower(builder.GetAPIKind()),
 		}
 		namespace = strings.Join(namespaceElements, "-")
 	}
