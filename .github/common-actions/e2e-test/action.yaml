@@ -35,7 +35,7 @@ runs:
 
     - name: Setup KIND Cluster
       shell: bash
-      run: kind create cluster --name operator-builder-test
+      run: kind create cluster --name operator-builder-test --config test/cases/default/kind-config.yaml
 
     - name: Install Custom Resources
       shell: bash
