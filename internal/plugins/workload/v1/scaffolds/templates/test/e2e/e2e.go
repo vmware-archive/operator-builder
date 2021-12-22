@@ -238,6 +238,9 @@ func (tester *E2ETest) setup() error {
 		return fmt.Errorf("unable to unmarshal yaml to api object; %w", err)
 	}
 
+	// ensure the namespace for the underlying manifest matches the tester namespace
+	tester.unstructured.SetNamespace(tester.namespace)
+
 	// create a namespace for each test case
 	// NOTE: cluster-scoped resources will not have a namespace and therefore will
 	// not receive an individual namespace for their test case
