@@ -4,6 +4,7 @@
 package scaffolds
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -28,6 +29,13 @@ import (
 )
 
 var _ plugins.Scaffolder = &apiScaffolder{}
+
+var (
+	ErrScaffoldAPITypes       = errors.New("error scaffolding api types")
+	ErrScaffoldKindInfo       = errors.New("error scaffolding kind information")
+	ErrScaffoldResources      = errors.New("error scaffolding resources")
+	ErrScaffoldChildResources = errors.New("error scaffolding child resource definitions")
+)
 
 type apiScaffolder struct {
 	config             config.Config
@@ -76,6 +84,13 @@ func (s *apiScaffolder) Scaffold() error {
 		machinery.WithResource(s.resource),
 	)
 
+	// scaffold the api
+	if err := s.scaffoldAPI(scaffold, s.workload); err != nil {
+		return fmt.Errorf("error scaffolding workload apis; %w", err)
+	}
+
+	//createFuncNames, initFuncNames := s.workload.GetFuncNames()
+
 	//nolint:nestif //this will be refactored later
 	// API types
 	if s.workload.IsStandalone() {
@@ -84,26 +99,26 @@ func (s *apiScaffolder) Scaffold() error {
 				WireResource:   true,
 				WireController: true,
 			},
-			&api.Types{
-				SpecFields:    s.workload.GetAPISpecFields(),
-				ClusterScoped: s.workload.IsClusterScoped(),
-				Dependencies:  s.workload.GetDependencies(),
-				IsStandalone:  s.workload.IsStandalone(),
-			},
-			&api.Group{},
-			&api.Kind{},
-			&api.KindLatest{PackageName: s.workload.GetPackageName()},
-			&api.KindUpdater{},
-			&resources.Resources{
-				RootCmdName:     s.cliRootCommandName,
-				PackageName:     s.workload.GetPackageName(),
-				CreateFuncNames: createFuncNames,
-				InitFuncNames:   initFuncNames,
-				IsComponent:     s.workload.IsComponent(),
-				IsStandalone:    s.workload.IsStandalone(),
-				IsCollection:    s.workload.IsCollection(),
-				SpecFields:      s.workload.GetAPISpecFields(),
-			},
+			// &api.Types{
+			// 	SpecFields:    s.workload.GetAPISpecFields(),
+			// 	ClusterScoped: s.workload.IsClusterScoped(),
+			// 	Dependencies:  s.workload.GetDependencies(),
+			// 	IsStandalone:  s.workload.IsStandalone(),
+			// },
+			// &api.Group{},
+			// &api.Kind{},
+			// &api.KindLatest{PackageName: s.workload.GetPackageName()},
+			// &api.KindUpdater{},
+			// &resources.Resources{
+			// 	RootCmdName:     s.cliRootCommandName,
+			// 	PackageName:     s.workload.GetPackageName(),
+			// 	CreateFuncNames: createFuncNames,
+			// 	InitFuncNames:   initFuncNames,
+			// 	IsComponent:     s.workload.IsComponent(),
+			// 	IsStandalone:    s.workload.IsStandalone(),
+			// 	IsCollection:    s.workload.IsCollection(),
+			// 	SpecFields:      s.workload.GetAPISpecFields(),
+			// },
 			&controller.Controller{
 				PackageName:       s.workload.GetPackageName(),
 				RBACRules:         s.workload.GetRBACRules(),
@@ -136,27 +151,27 @@ func (s *apiScaffolder) Scaffold() error {
 				WireResource:   true,
 				WireController: true,
 			},
-			&api.Types{
-				SpecFields:    s.workload.GetAPISpecFields(),
-				ClusterScoped: s.workload.IsClusterScoped(),
-				Dependencies:  s.workload.GetDependencies(),
-				IsStandalone:  s.workload.IsStandalone(),
-			},
-			&api.Group{},
-			&api.Kind{},
-			&api.KindLatest{PackageName: s.workload.GetPackageName()},
-			&api.KindUpdater{},
-			&resources.Resources{
-				RootCmdName:     s.cliRootCommandName,
-				PackageName:     s.workload.GetPackageName(),
-				CreateFuncNames: createFuncNames,
-				InitFuncNames:   initFuncNames,
-				IsComponent:     s.workload.IsComponent(),
-				IsStandalone:    s.workload.IsStandalone(),
-				IsCollection:    s.workload.IsCollection(),
-				Collection:      s.workload.(*workloadv1.WorkloadCollection),
-				SpecFields:      s.workload.GetAPISpecFields(),
-			},
+			// &api.Types{
+			// 	SpecFields:    s.workload.GetAPISpecFields(),
+			// 	ClusterScoped: s.workload.IsClusterScoped(),
+			// 	Dependencies:  s.workload.GetDependencies(),
+			// 	IsStandalone:  s.workload.IsStandalone(),
+			// },
+			// &api.Group{},
+			// &api.Kind{},
+			// &api.KindLatest{PackageName: s.workload.GetPackageName()},
+			// &api.KindUpdater{},
+			// &resources.Resources{
+			// 	RootCmdName:     s.cliRootCommandName,
+			// 	PackageName:     s.workload.GetPackageName(),
+			// 	CreateFuncNames: createFuncNames,
+			// 	InitFuncNames:   initFuncNames,
+			// 	IsComponent:     s.workload.IsComponent(),
+			// 	IsStandalone:    s.workload.IsStandalone(),
+			// 	IsCollection:    s.workload.IsCollection(),
+			// 	Collection:      s.workload.(*workloadv1.WorkloadCollection),
+			// 	SpecFields:      s.workload.GetAPISpecFields(),
+			// },
 			&controller.Controller{
 				PackageName:       s.workload.GetPackageName(),
 				RBACRules:         s.workload.GetRBACRules(),
@@ -195,32 +210,34 @@ func (s *apiScaffolder) Scaffold() error {
 				)),
 			)
 
+			//createFuncNames, initFuncNames := component.GetFuncNames()
+
 			err = componentScaffold.Execute(
 				&templates.MainUpdater{
 					WireResource:   true,
 					WireController: true,
 				},
-				&api.Types{
-					SpecFields:    component.Spec.APISpecFields,
-					ClusterScoped: component.IsClusterScoped(),
-					Dependencies:  component.GetDependencies(),
-					IsStandalone:  component.IsStandalone(),
-				},
-				&api.Group{},
-				&api.Kind{},
-				&api.KindLatest{PackageName: component.PackageName},
-				&api.KindUpdater{},
-				&resources.Resources{
-					RootCmdName:     s.cliRootCommandName,
-					PackageName:     component.GetPackageName(),
-					CreateFuncNames: createFuncNames,
-					InitFuncNames:   initFuncNames,
-					IsComponent:     component.IsComponent(),
-					IsStandalone:    component.IsStandalone(),
-					IsCollection:    component.IsCollection(),
-					Collection:      s.workload.(*workloadv1.WorkloadCollection),
-					SpecFields:      component.GetAPISpecFields(),
-				},
+				// &api.Types{
+				// 	SpecFields:    component.Spec.APISpecFields,
+				// 	ClusterScoped: component.IsClusterScoped(),
+				// 	Dependencies:  component.GetDependencies(),
+				// 	IsStandalone:  component.IsStandalone(),
+				// },
+				// &api.Group{},
+				// &api.Kind{},
+				// &api.KindLatest{PackageName: component.PackageName},
+				// &api.KindUpdater{},
+				// &resources.Resources{
+				// 	RootCmdName:     s.cliRootCommandName,
+				// 	PackageName:     component.GetPackageName(),
+				// 	CreateFuncNames: createFuncNames,
+				// 	InitFuncNames:   initFuncNames,
+				// 	IsComponent:     component.IsComponent(),
+				// 	IsStandalone:    component.IsStandalone(),
+				// 	IsCollection:    component.IsCollection(),
+				// 	Collection:      s.workload.(*workloadv1.WorkloadCollection),
+				// 	SpecFields:      component.GetAPISpecFields(),
+				// },
 				&controller.Controller{
 					PackageName:       component.GetPackageName(),
 					RBACRules:         component.GetRBACRules(),
@@ -278,32 +295,116 @@ func (s *apiScaffolder) Scaffold() error {
 		}
 	}
 
-	// child resource definition files
-	// these are the resources defined in the static yaml manifests
-	for _, sourceFile := range *s.workload.GetSourceFiles() {
-		definitionScaffold := machinery.NewScaffold(s.fs,
-			machinery.WithConfig(s.config),
-			machinery.WithBoilerplate(string(boilerplate)),
-			machinery.WithResource(s.resource),
-		)
+	// // child resource definition files
+	// // these are the resources defined in the static yaml manifests
+	// for _, sourceFile := range *s.workload.GetSourceFiles() {
+	// 	definitionScaffold := machinery.NewScaffold(s.fs,
+	// 		machinery.WithConfig(s.config),
+	// 		machinery.WithBoilerplate(string(boilerplate)),
+	// 		machinery.WithResource(s.resource),
+	// 	)
 
-		err = definitionScaffold.Execute(
-			&resources.Definition{
-				ClusterScoped: s.workload.IsClusterScoped(),
-				SourceFile:    sourceFile,
-				PackageName:   s.workload.GetPackageName(),
-				IsComponent:   s.workload.IsComponent(),
-			},
-		)
-		if err != nil {
-			return fmt.Errorf("unable to scaffold resource files, %w", err)
-		}
-	}
+	// 	err = definitionScaffold.Execute(
+	// 		&resources.Definition{
+	// 			ClusterScoped: s.workload.IsClusterScoped(),
+	// 			SourceFile:    sourceFile,
+	// 			PackageName:   s.workload.GetPackageName(),
+	// 			IsComponent:   s.workload.IsComponent(),
+	// 		},
+	// 	)
+	// 	if err != nil {
+	// 		return fmt.Errorf("unable to scaffold resource files, %w", err)
+	// 	}
+	// }
 
 	// scaffold the companion CLI last only if we have a root command name
 	if s.cliRootCommandName != "" {
 		if err = s.scaffoldCLI(scaffold); err != nil {
 			return fmt.Errorf("error scaffolding CLI; %w", err)
+		}
+	}
+
+	return nil
+}
+
+// scaffoldAPI runs the specific logic to scaffold anything existing in the apis directory.
+func (s *apiScaffolder) scaffoldAPI(
+	scaffold *machinery.Scaffold,
+	workload workloadv1.WorkloadAPIBuilder,
+) error {
+	createFuncNames, initFuncNames := workload.GetFuncNames()
+
+	// scaffold the base api types
+	if err := scaffold.Execute(
+		&api.Types{
+			SpecFields:    workload.GetAPISpecFields(),
+			ClusterScoped: workload.IsClusterScoped(),
+			Dependencies:  workload.GetDependencies(),
+			IsStandalone:  workload.IsStandalone(),
+		},
+		&api.Group{},
+		&resources.Resources{
+			RootCmdName:     s.cliRootCommandName,
+			PackageName:     workload.GetPackageName(),
+			CreateFuncNames: createFuncNames,
+			InitFuncNames:   initFuncNames,
+			IsComponent:     workload.IsComponent(),
+			IsStandalone:    workload.IsStandalone(),
+			IsCollection:    workload.IsCollection(),
+			Collection:      workload.(*workloadv1.WorkloadCollection),
+			SpecFields:      workload.GetAPISpecFields(),
+		},
+	); err != nil {
+		return fmt.Errorf("%w; %s for workload type %T", err, ErrScaffoldAPITypes.Error(), workload)
+	}
+
+	// scaffold the specific kind files
+	if err := scaffold.Execute(
+		&api.Kind{},
+		&api.KindLatest{PackageName: workload.GetPackageName()},
+		&api.KindUpdater{},
+	); err != nil {
+		return fmt.Errorf("%w; %s for workload type %T", err, ErrScaffoldKindInfo.Error(), workload)
+	}
+
+	// scaffold the resources
+	if err := scaffold.Execute(
+		&resources.Resources{
+			RootCmdName:     s.cliRootCommandName,
+			PackageName:     workload.GetPackageName(),
+			CreateFuncNames: createFuncNames,
+			InitFuncNames:   initFuncNames,
+			IsComponent:     workload.IsComponent(),
+			IsStandalone:    workload.IsStandalone(),
+			IsCollection:    workload.IsCollection(),
+			Collection:      workload.(*workloadv1.WorkloadCollection),
+			SpecFields:      workload.GetAPISpecFields(),
+		},
+	); err != nil {
+		return fmt.Errorf("%w; %s for workload type %T", err, ErrScaffoldResources.Error(), workload)
+	}
+
+	// child resource definition files
+	// these are the resources defined in the static yaml manifests
+	for _, sourceFile := range *s.workload.GetSourceFiles() {
+		if err := scaffold.Execute(
+			&resources.Definition{
+				ClusterScoped: workload.IsClusterScoped(),
+				SourceFile:    sourceFile,
+				PackageName:   workload.GetPackageName(),
+				IsComponent:   workload.IsComponent(),
+			},
+		); err != nil {
+			return fmt.Errorf("%w; %s for workload type %T", err, ErrScaffoldChildResources.Error(), workload)
+		}
+	}
+
+	// scaffold the components
+	if workload.IsCollection() {
+		for _, component := range workload.GetComponents() {
+			if err := s.scaffoldAPI(scaffold, component); err != nil {
+				return fmt.Errorf("%w; %s for workload type %T", err, ErrScaffoldResources.Error(), component)
+			}
 		}
 	}
 
