@@ -183,6 +183,6 @@ var {{ .Resource.Kind }}LatestGroupVersion = {{ .Resource.Version }}{{ .Resource
 
 // {{ .Resource.Kind }}LatestSample returns the latest sample manifest associated with this
 // particular kind.
-var {{ .Resource.Kind }}LatestSample = {{ .Resource.Version }}{{ lower .Resource.Kind }}.Sample()
+var {{ .Resource.Kind }}LatestSample = {{ .Resource.Version }}{{ lower .Resource.Kind }}.Sample(false)
 `
 )
