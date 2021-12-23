@@ -15,7 +15,6 @@ import (
 )
 
 var _ machinery.Template = &CmdInitSub{}
-var _ machinery.Template = &CmdInitSubLatest{}
 var _ machinery.Inserter = &CmdInitSubUpdater{}
 
 // cmdInitSubCommon include the common fields that are shared by all init
@@ -73,48 +72,6 @@ func (f *CmdInitSub) SetTemplateDefaults() error {
 		machinery.NewMarkerFor(f.Path, initImportsMarker),
 		machinery.NewMarkerFor(f.Path, initVersionMapMarker),
 	)
-
-	return nil
-}
-
-// CmdInitSubLatest scaffolds the companion CLI's init subcommand logic
-// for the latest API that was created.
-type CmdInitSubLatest struct {
-	machinery.TemplateMixin
-	machinery.BoilerplateMixin
-	machinery.ResourceMixin
-
-	// input fields
-	Builder           workloadv1.WorkloadAPIBuilder
-	ComponentResource *resource.Resource
-
-	// template fields
-	cmdInitSubCommon
-	PackageName string
-}
-
-func (f *CmdInitSubLatest) SetTemplateDefaults() error {
-	if f.Builder.IsComponent() {
-		f.Resource = f.ComponentResource
-	}
-
-	// set template fields
-	f.RootCmd = *f.Builder.GetRootCommand()
-	f.SubCmd = *f.Builder.GetSubCommand()
-	f.PackageName = f.Builder.GetPackageName()
-
-	// set interface fields
-	f.Path = f.SubCmd.GetSubCmdRelativeFileName(
-		f.RootCmd.Name,
-		"init",
-		f.Resource.Group,
-		utils.ToFileName(f.Resource.Kind+"_latest"),
-	)
-	f.TemplateBody = cmdInitSubLatest
-
-	// always overwrite the file to ensure we update this with the latest
-	// version as we generate them.
-	f.IfExistsAction = machinery.OverwriteFile
 
 	return nil
 }
@@ -238,6 +195,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"{{ .Repo }}/apis/{{ .Resource.Group }}"
+
 	cmdinit "{{ .Repo }}/cmd/{{ .RootCmd.Name }}/commands/init"
 	%s
 )
@@ -247,7 +206,7 @@ import (
 func get{{ .Resource.Kind }}Manifest(i *cmdinit.InitSubCommand) (string, error) {
 	apiVersion := i.APIVersion
 	if apiVersion == "" || apiVersion == "latest" {
-		return latest{{ .Resource.Kind }}(i.RequiredOnly), nil
+		return {{ .Resource.Group }}.{{ .Resource.Kind }}LatestSample, nil
 	}
 
 	// generate a map of all versions to samples for each api version created
@@ -293,6 +252,7 @@ func Init{{ .Resource.Kind }}(i *cmdinit.InitSubCommand) error {
 	return nil
 }
 `
+<<<<<<< HEAD
 	// cmdInitSubLatest scaffolds the CLI subcommand logic for an individual component's
 	// latest version information for use by the api-version flag.
 	cmdInitSubLatest = `{{ .Boilerplate }}
@@ -307,4 +267,6 @@ func Init{{ .Resource.Kind }}(i *cmdinit.InitSubCommand) error {
 		return {{ .Resource.Version }}{{ lower .Resource.Kind }}.Sample(requiredOnly)
 	}
 `
+=======
+>>>>>>> f977b2a (fix: Fixes #234, moved latest version info to apis directory)
 )

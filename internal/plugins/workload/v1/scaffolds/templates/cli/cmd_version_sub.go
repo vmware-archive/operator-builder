@@ -38,10 +38,8 @@ type CmdVersionSub struct {
 
 	// template fields
 	cmdVersionSubCommon
-	VersionCommandName       string
-	VersionCommandDescr      string
-	APIVersionsVarName       string
-	APIVersionsLatestVarName string
+	VersionCommandName  string
+	VersionCommandDescr string
 }
 
 func (f *CmdVersionSub) SetTemplateDefaults() error {
@@ -61,11 +59,6 @@ func (f *CmdVersionSub) SetTemplateDefaults() error {
 		f.VersionCommandDescr = f.SubCmd.Description
 	}
 
-	// prepend the kind with 'apiVersions' to guarantee uniqueness within
-	// this group and use it as the variable within the scaffolded code.
-	f.APIVersionsVarName = fmt.Sprintf("APIVersions%s", f.Resource.Kind)
-	f.APIVersionsLatestVarName = fmt.Sprintf("APIVersionLatest%s", f.Resource.Kind)
-
 	// set interface fields
 	f.Path = f.SubCmd.GetSubCmdRelativeFileName(
 		f.RootCmd.Name,
@@ -74,11 +67,7 @@ func (f *CmdVersionSub) SetTemplateDefaults() error {
 		utils.ToFileName(f.Resource.Kind),
 	)
 
-	f.TemplateBody = fmt.Sprintf(
-		cmdVersionSubHeader,
-		machinery.NewMarkerFor(f.Path, apiVersionsMarker),
-		cmdVersionSubBody,
-	)
+	f.TemplateBody = cmdVersionSub
 
 	return nil
 }
@@ -162,7 +151,7 @@ func (f *CmdVersionSubUpdater) GetCodeFragments() machinery.CodeFragmentsMap {
 }
 
 const (
-	cmdVersionSubHeader = `{{ .Boilerplate }}
+	cmdVersionSub = `{{ .Boilerplate }}
 
 package {{ .Resource.Group }}
 
@@ -170,16 +159,10 @@ import (
 	"github.com/spf13/cobra"
 	
 	cmdversion "{{ .Repo }}/cmd/{{ .RootCmd.Name }}/commands/version"
+
+	"{{ .Repo }}/apis/{{ .Resource.Group }}"
 )
 
-var {{ .APIVersionsLatestVarName }} = "{{ .Resource.Version }}"
-var {{ .APIVersionsVarName }} = []string{
-	%s
-}
-
-%s
-`
-	cmdVersionSubBody = `
 // New{{ .Resource.Kind }}SubCommand creates a new command and adds it to its 
 // parent command.
 func New{{ .Resource.Kind }}SubCommand(parentCommand *cobra.Command) {
@@ -194,9 +177,15 @@ func New{{ .Resource.Kind }}SubCommand(parentCommand *cobra.Command) {
 }
 
 func Version{{ .Resource.Kind }}(v *cmdversion.VersionSubCommand) error {
+	apiVersions := make([]string, len({{ .Resource.Group }}.{{ .Resource.Kind }}GroupVersions()))
+
+	for i, groupVersion := range {{ .Resource.Group }}.{{ .Resource.Kind }}GroupVersions() {
+		apiVersions[i] = groupVersion.Version
+	}
+
 	versionInfo := cmdversion.VersionInfo{
 		CLIVersion:  cmdversion.CLIVersion,
-		APIVersions: {{ .APIVersionsVarName }},
+		APIVersions: apiVersions,
 	}
 
 	return versionInfo.Display()
