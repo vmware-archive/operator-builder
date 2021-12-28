@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"sigs.k8s.io/kubebuilder/v3/pkg/machinery"
-	"sigs.k8s.io/kubebuilder/v3/pkg/model/resource"
 
 	"github.com/vmware-tanzu-labs/operator-builder/internal/utils"
 	workloadv1 "github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1"
@@ -33,8 +32,7 @@ type CmdInitSub struct {
 	machinery.RepositoryMixin
 
 	// input fields
-	Builder           workloadv1.WorkloadAPIBuilder
-	ComponentResource *resource.Resource
+	Builder workloadv1.WorkloadAPIBuilder
 
 	// template fields
 	cmdInitSubCommon
@@ -43,10 +41,6 @@ type CmdInitSub struct {
 }
 
 func (f *CmdInitSub) SetTemplateDefaults() error {
-	if f.Builder.IsComponent() {
-		f.Resource = f.ComponentResource
-	}
-
 	// set template fields
 	f.RootCmd = *f.Builder.GetRootCommand()
 	f.SubCmd = *f.Builder.GetSubCommand()
@@ -84,8 +78,7 @@ type CmdInitSubUpdater struct { //nolint:maligned
 	machinery.ResourceMixin
 
 	// input fields
-	Builder           workloadv1.WorkloadAPIBuilder
-	ComponentResource *resource.Resource
+	Builder workloadv1.WorkloadAPIBuilder
 
 	// template fields
 	cmdInitSubCommon
@@ -93,10 +86,6 @@ type CmdInitSubUpdater struct { //nolint:maligned
 
 // GetPath implements file.Builder interface.
 func (f *CmdInitSubUpdater) GetPath() string {
-	if f.Builder.IsComponent() {
-		f.Resource = f.ComponentResource
-	}
-
 	return f.SubCmd.GetSubCmdRelativeFileName(
 		f.Builder.GetRootCommand().Name,
 		"init",
@@ -137,10 +126,6 @@ const (
 // GetCodeFragments implements file.Inserter interface.
 func (f *CmdInitSubUpdater) GetCodeFragments() machinery.CodeFragmentsMap {
 	fragments := make(machinery.CodeFragmentsMap, 1)
-
-	if f.Builder.IsComponent() {
-		f.Resource = f.ComponentResource
-	}
 
 	// set template fields
 	f.RootCmd = *f.Builder.GetRootCommand()

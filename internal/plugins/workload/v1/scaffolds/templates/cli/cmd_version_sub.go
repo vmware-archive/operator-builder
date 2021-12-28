@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"sigs.k8s.io/kubebuilder/v3/pkg/machinery"
-	"sigs.k8s.io/kubebuilder/v3/pkg/model/resource"
 
 	"github.com/vmware-tanzu-labs/operator-builder/internal/utils"
 	workloadv1 "github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1"
@@ -33,8 +32,7 @@ type CmdVersionSub struct {
 	machinery.RepositoryMixin
 
 	// input fields
-	Builder           workloadv1.WorkloadAPIBuilder
-	ComponentResource *resource.Resource
+	Builder workloadv1.WorkloadAPIBuilder
 
 	// template fields
 	cmdVersionSubCommon
@@ -43,10 +41,6 @@ type CmdVersionSub struct {
 }
 
 func (f *CmdVersionSub) SetTemplateDefaults() error {
-	if f.Builder.IsComponent() {
-		f.Resource = f.ComponentResource
-	}
-
 	// set template fields
 	f.RootCmd = *f.Builder.GetRootCommand()
 	f.SubCmd = *f.Builder.GetSubCommand()
@@ -80,8 +74,7 @@ type CmdVersionSubUpdater struct { //nolint:maligned
 	machinery.ResourceMixin
 
 	// input fields
-	Builder           workloadv1.WorkloadAPIBuilder
-	ComponentResource *resource.Resource
+	Builder workloadv1.WorkloadAPIBuilder
 
 	// template fields
 	cmdVersionSubCommon
@@ -89,10 +82,6 @@ type CmdVersionSubUpdater struct { //nolint:maligned
 
 // GetPath implements file.Builder interface.
 func (f *CmdVersionSubUpdater) GetPath() string {
-	if f.Builder.IsComponent() {
-		f.Resource = f.ComponentResource
-	}
-
 	return f.SubCmd.GetSubCmdRelativeFileName(
 		f.Builder.GetRootCommand().Name,
 		"version",
@@ -128,10 +117,6 @@ func (f *CmdVersionSubUpdater) GetCodeFragments() machinery.CodeFragmentsMap {
 	// If resource is not being provided we are creating the file, not updating it
 	if f.Resource == nil {
 		return fragments
-	}
-
-	if f.Builder.IsComponent() {
-		f.Resource = f.ComponentResource
 	}
 
 	// set template fields
