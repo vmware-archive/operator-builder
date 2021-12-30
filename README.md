@@ -50,7 +50,7 @@ namespace-scoped based on the requirements of the project.  More info
 
 ## Installation Options
 
-### [Download the latest binary](https://github.com/vmare-tanzu-labs/operator-builder/releases/latest)
+### [Download the latest binary](https://github.com/vmware-tanzu-labs/operator-builder/releases/latest)
 
 ### wget
 Use wget to download the pre-compiled binaries:
