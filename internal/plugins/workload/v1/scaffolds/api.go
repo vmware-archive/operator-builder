@@ -34,14 +34,14 @@ var _ plugins.Scaffolder = &apiScaffolder{}
 
 var (
 	ErrScaffoldWorkload             = errors.New("error scaffolding workload")
+	ErrScaffoldMainUpdater          = errors.New("error updating main.go")
+	ErrScaffoldCRDSample            = errors.New("error scaffolding CRD sample file")
+	ErrScaffoldKustomization        = errors.New("error scaffolding kustomization overlay")
 	ErrScaffoldAPITypes             = errors.New("error scaffolding api types")
 	ErrScaffoldAPIKindInfo          = errors.New("error scaffolding api kind information")
 	ErrScaffoldAPIResources         = errors.New("error scaffolding api resource methods")
 	ErrScaffoldAPIChildResources    = errors.New("error scaffolding api child resource definitions")
-	ErrScaffoldMainUpdater          = errors.New("error updating main.go")
 	ErrScaffoldController           = errors.New("error scaffolding controller logic")
-	ErrScaffoldCRDSample            = errors.New("error scaffolding CRD sample file")
-	ErrScaffoldKustomization        = errors.New("error scaffolding Kustomization overlay")
 	ErrScaffoldE2ETest              = errors.New("error scaffolding e2e tests")
 	ErrScaffoldCompanionCLI         = errors.New("error scaffolding companion CLI")
 	ErrScaffoldCompanionCLIInit     = errors.New("error scaffolding companion CLI init sub-command")
@@ -126,22 +126,14 @@ func (s *apiScaffolder) scaffoldWorkload(
 		)
 	}
 
-	// scaffold the workload api
+	// scaffold the workload api.  this generates files within the apis/ folder to include
+	// items such as common resource methods, api type definitions and child resource typed
+	// object definitions.
 	if err := s.scaffoldAPI(scaffold, workload); err != nil {
 		return fmt.Errorf("%w; %s", err, ErrScaffoldAPIResources)
 	}
 
-	// update controller main entrypoint
-	if err := scaffold.Execute(
-		&templates.MainUpdater{
-			WireResource:   true,
-			WireController: true,
-		},
-	); err != nil {
-		return fmt.Errorf("%w; %s", err, ErrScaffoldMainUpdater)
-	}
-
-	// lay down controller and related logic
+	// scaffold the controller.  this generates the main controller logic.
 	if err := scaffold.Execute(
 		&controller.Controller{Builder: workload},
 		&controller.Phases{PackageName: workload.GetPackageName()},
@@ -152,7 +144,18 @@ func (s *apiScaffolder) scaffoldWorkload(
 		return fmt.Errorf("%w; %s", err, ErrScaffoldController)
 	}
 
-	// generate the custom resource sample files
+	// update controller main entrypoint.  this updates the main.go file with logic related to
+	// creating the new controllers.
+	if err := scaffold.Execute(
+		&templates.MainUpdater{
+			WireResource:   true,
+			WireController: true,
+		},
+	); err != nil {
+		return fmt.Errorf("%w; %s", err, ErrScaffoldMainUpdater)
+	}
+
+	// scaffold the custom resource sample files.  this will generate sample manifest files.
 	if err := scaffold.Execute(
 		&samples.CRDSample{
 			SpecFields:      workload.GetAPISpecFields(),
@@ -162,9 +165,11 @@ func (s *apiScaffolder) scaffoldWorkload(
 		return fmt.Errorf("%w; %s", err, ErrScaffoldController)
 	}
 
-	// scaffold the end-to-end tests
-	if err := s.scaffoldE2ETests(scaffold, workload); err != nil {
-		return fmt.Errorf("%w; %s", err, ErrScaffoldE2ETest)
+	// scaffold the end-to-end tests.  this will generate some common end-to-end tests for
+	// the controller.
+	if err := scaffold.Execute(&e2e.WorkloadTest{Builder: workload}); err != nil {
+		return fmt.Errorf("%w; %s - error updating test/e2e/%s_%s_%s_test.go", err, ErrScaffoldController,
+			workload.GetAPIGroup(), workload.GetAPIVersion(), strings.ToLower(workload.GetAPIKind()))
 	}
 
 	// scaffold the companion CLI only if we have a root command name
@@ -174,7 +179,8 @@ func (s *apiScaffolder) scaffoldWorkload(
 		}
 	}
 
-	// scaffold the components of a collection if we have a collection
+	// scaffold the components of a collection if we have a collection.  this will scaffold the
+	// logic for a companion CLI.
 	if workload.IsCollection() {
 		for _, component := range workload.GetComponents() {
 			if err := s.scaffoldWorkload(scaffold, component); err != nil {
@@ -270,21 +276,6 @@ func (s *apiScaffolder) scaffoldCLI(
 		},
 	); err != nil {
 		return fmt.Errorf("%w; %s", err, ErrScaffoldCompanionCLIRoot)
-	}
-
-	return nil
-}
-
-// scaffoldE2ETests run the specific logic to scaffold the end to end tests.
-func (s *apiScaffolder) scaffoldE2ETests(
-	scaffold *machinery.Scaffold,
-	workload workloadv1.WorkloadAPIBuilder,
-) error {
-	if err := scaffold.Execute(&e2e.WorkloadTest{Builder: workload}); err != nil {
-		return fmt.Errorf("error updating test/e2e/%s_%s_%s_test.go; %w",
-			workload.GetAPIGroup(), workload.GetAPIVersion(), strings.ToLower(workload.GetAPIKind()),
-			err,
-		)
 	}
 
 	return nil
