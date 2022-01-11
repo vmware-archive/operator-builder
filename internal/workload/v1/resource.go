@@ -32,6 +32,8 @@ type ChildResource struct {
 	Kind          string
 	StaticContent string
 	SourceCode    string
+	IncludeCode   string
+	ExcludeCode   string
 }
 
 // Resource represents a single input manifest for a given config.
@@ -47,7 +49,7 @@ func (r *Resource) UnmarshalYAML(node *yaml.Node) error {
 	return nil
 }
 
-func (r *Resource) loadManifest() error {
+func (r *Resource) loadContent() error {
 	manifestContent, err := os.ReadFile(r.FileName)
 	if err != nil {
 		return formatProcessError(r.FileName, err)
@@ -58,10 +60,10 @@ func (r *Resource) loadManifest() error {
 	return nil
 }
 
-func extractManifests(manifestContent []byte) []string {
+func (r *Resource) extractManifests() []string {
 	var manifests []string
 
-	lines := strings.Split(string(manifestContent), "\n")
+	lines := strings.Split(string(r.Content), "\n")
 
 	var manifest string
 
@@ -150,4 +152,89 @@ func expandResources(path string, resources []*Resource) ([]*Resource, error) {
 	}
 
 	return expandedResources, nil
+}
+
+const (
+	includeCode = `		if %s != %s {
+		return []client.Object{}, nil
+	}`
+
+	excludeCode = `		if %s == %s {
+		return []client.Object{}, nil
+	}`
+)
+
+func (cr *ChildResource) processMarkers(spec WorkloadSpec) error {
+	// return immediately if our entire workload spec has no field markers
+	// TODO: should we return an error here or continue silently
+	// TODO: duplicates?
+	if len(spec.CollectionFieldMarkers) == 0 && len(spec.FieldMarkers) == 0 {
+		return fmt.Errorf("%w for resource kind %s and name %s",
+			ErrResourceMarkerMissingAssociation, cr.Kind, cr.Name)
+	}
+
+	// obtain the marker results from the input yaml
+	_, markerResults, err := inspectMarkersForYAML([]byte(cr.StaticContent), ResourceMarkerType)
+	if err != nil {
+		return err
+	}
+
+	if len(markerResults) == 0 {
+		return nil
+	}
+
+	var resourceMarker ResourceMarker
+
+	var fieldMarker interface{}
+
+MARKERS:
+	for _, markerResult := range markerResults {
+		switch marker := markerResult.Object.(type) {
+		case ResourceMarker:
+			// associate relevant field markers with this marker
+			for _, fm := range spec.FieldMarkers {
+				if fm.Name == marker.Field {
+					resourceMarker = marker
+					fieldMarker = fm
+
+					break MARKERS
+				}
+			}
+
+			// associate relevant collection field markers with this marker
+			for _, cm := range spec.CollectionFieldMarkers {
+				if cm.Name == marker.Field {
+					resourceMarker = marker
+					fieldMarker = cm
+
+					break MARKERS
+				}
+			}
+		default:
+			continue
+		}
+	}
+
+	// return an error if the marker includes both include and exclude statements
+	if resourceMarker.Include && resourceMarker.Exclude {
+		return ErrResourceMarkerHasIncludeExclude
+	}
+
+	if err := resourceMarker.process(fieldMarker); err != nil {
+		return err
+	}
+
+	if resourceMarker.Include {
+		cr.IncludeCode = fmt.Sprintf(includeCode, resourceMarker.sourceCodeVar, resourceMarker.sourceCodeValue)
+
+		return nil
+	}
+
+	if resourceMarker.Exclude {
+		cr.ExcludeCode = fmt.Sprintf(excludeCode, resourceMarker.sourceCodeVar, resourceMarker.sourceCodeValue)
+
+		return nil
+	}
+
+	return nil
 }

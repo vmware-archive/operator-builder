@@ -1,3 +1,24 @@
+---
+# +operator-builder:resource:field=provider,value="aws",exclude
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: test-exclude
+  labels:
+    provider: "aws" # +operator-builder:field:name=provider,type=string,default="aws"
+data:
+  test: "data"
+---
+# +operator-builder:resource:field=provider,value="aws",include
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: test-include
+  labels:
+    provider: "aws" # +operator-builder:field:name=provider,type=string,default="aws"
+data:
+  test: "data"
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:

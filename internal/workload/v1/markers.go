@@ -4,6 +4,7 @@
 package v1
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -17,6 +18,7 @@ import (
 const (
 	FieldMarkerType MarkerType = iota
 	CollectionMarkerType
+	ResourceMarkerType
 )
 
 type MarkerType int
@@ -29,6 +31,25 @@ type FieldMarker struct {
 	Replace       *string
 	originalValue interface{}
 }
+
+// TODO: pointer to string/bool
+type ResourceMarker struct {
+	Field           string `marker:",optional"`
+	CollectionField string `marker:",optional"`
+	Value           interface{}
+	Exclude         bool `marker:",optional"`
+	Include         bool `marker:",optional"`
+
+	sourceCodeVar   string
+	sourceCodeValue string
+}
+
+var ErrMismatchedMarkerTypes = errors.New("resource marker and field marker have mismatched types")
+var ErrResourceMarkerUnknownValueType = errors.New("resource marker 'value' is of unknown type")
+var ErrResourceMarkerHasIncludeExclude = errors.New("resource marker cannot have both 'include' and 'exclude' specified")
+var ErrResourceMarkerMissingAssociation = errors.New("resource marker cannot find an associated field marker")
+var ErrResourceMarkerMissingFieldValue = errors.New("resource marker missing 'field' or 'value'")
+var ErrFieldMarkerInvalidType = errors.New("field marker type is invalid")
 
 func (fm FieldMarker) String() string {
 	return fmt.Sprintf("FieldMarker{Name: %s Type: %v Description: %q Default: %v}",
@@ -50,6 +71,16 @@ func (cfm CollectionFieldMarker) String() string {
 	)
 }
 
+func (rm ResourceMarker) String() string {
+	return fmt.Sprintf("ResourceMarker{Field: %s CollectionField: %s Value: %v Exclude: %v Include: %v}",
+		rm.Field,
+		rm.CollectionField,
+		rm.Value,
+		rm.Exclude,
+		rm.Include,
+	)
+}
+
 func InitializeMarkerInspector(markerTypes ...MarkerType) (*inspect.Inspector, error) {
 	registry := marker.NewRegistry()
 
@@ -63,12 +94,19 @@ func InitializeMarkerInspector(markerTypes ...MarkerType) (*inspect.Inspector, e
 		return nil, fmt.Errorf("%w", err)
 	}
 
+	resourceMarker, err := marker.Define("+operator-builder:resource", ResourceMarker{})
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+
 	for _, markerType := range markerTypes {
 		switch markerType {
 		case FieldMarkerType:
 			registry.Add(fieldMarker)
 		case CollectionMarkerType:
 			registry.Add(collectionMarker)
+		case ResourceMarkerType:
+			registry.Add(resourceMarker)
 		}
 	}
 
@@ -166,4 +204,79 @@ func containsMarkerType(s []MarkerType, e MarkerType) bool {
 	}
 
 	return false
+}
+
+func inspectMarkersForYAML(yamlContent []byte, markerTypes ...MarkerType) ([]*yaml.Node, []*inspect.YAMLResult, error) {
+	insp, err := InitializeMarkerInspector(markerTypes...)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return insp.InspectYAML(yamlContent, TransformYAML)
+}
+
+func (rm *ResourceMarker) setSourceCodeVar(prefix string) {
+	if rm.Field != "" {
+		rm.sourceCodeVar = fmt.Sprintf("%s.%s", prefix, strings.Title(rm.Field))
+	} else {
+		rm.sourceCodeVar = fmt.Sprintf("%s.%s", prefix, strings.Title(rm.CollectionField))
+	}
+}
+
+func (rm *ResourceMarker) hasField() bool {
+	return rm.Field != "" || rm.CollectionField != ""
+}
+
+func (rm *ResourceMarker) hasValue() bool {
+	return rm.Value != ""
+}
+
+func (rm *ResourceMarker) process(fieldMarker interface{}) error {
+	var fieldType string
+
+	// ensure that a field and value exist
+	if !rm.hasField() || !rm.hasValue() {
+		return ErrResourceMarkerMissingFieldValue
+	}
+
+	// determine if our associated field marker is a collection or regular field marker and
+	// set appropriate variables
+	switch marker := fieldMarker.(type) {
+	case *CollectionFieldMarker:
+		fieldType = marker.Type.String()
+
+		rm.setSourceCodeVar("collection.Spec")
+	case *FieldMarker:
+		fieldType = marker.Type.String()
+
+		rm.setSourceCodeVar("parent.Spec")
+	default:
+		return fmt.Errorf("%w; %T", ErrFieldMarkerInvalidType, fieldMarker)
+	}
+
+	// validate that the field types match
+	switch value := rm.Value.(type) {
+	case string:
+		if fieldType != "string" {
+			return fmt.Errorf("%w; expected: string, got: %s", ErrMismatchedMarkerTypes, fieldType)
+		}
+
+		rm.sourceCodeValue = fmt.Sprintf("%q", value)
+	case int:
+		if fieldType != "int" {
+			return fmt.Errorf("%w; expected: int, got: %s", ErrMismatchedMarkerTypes, fieldType)
+		}
+
+		rm.sourceCodeValue = fmt.Sprintf("%v", value)
+	case bool:
+		if fieldType != "bool" {
+			return fmt.Errorf("%w; expected: bool, got: %s", ErrMismatchedMarkerTypes, fieldType)
+		}
+
+		rm.sourceCodeValue = fmt.Sprintf("%v", value)
+	default:
+		return ErrResourceMarkerUnknownValueType
+	}
+
+	return nil
 }
