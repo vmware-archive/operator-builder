@@ -16,7 +16,7 @@ That is followed by arguments separated by `,`.  Arguments can be given in any o
 
 ## Field Marker
 
-defined as `+operator-builder:field` this marker can be used to define a CRD
+Defined as `+operator-builder:field` this marker can be used to define a CRD
 field for your workload.
 
 ### Arguments
@@ -183,3 +183,65 @@ resource](workload-collections.md#collection-resources) it will be treated as a
 collection marker and will configure a field in the collection's custom
 resource.
 
+## Resource Marker
+
+Defined as `+operator-builder:resource` this marker can be used to control a specific
+resource with arguments in the marker.
+
+### Arguments
+
+Arguments are separated from the marker name with a `:` they are given in the
+format of `argument=value` and separated by the `,`. additionally if the
+argument name is given by itself with no value, it is assumed to have an
+implict `=true` on the end and is treated as a flag.
+
+At this time, the `include` argument with `field` and `value` can be simply thought of 
+as (pseudo-code):
+
+  if field == value {
+    if include {
+      includeResource()
+    }
+  }
+
+#### Include (required)
+
+The action to perform on the resource.  Include will include the resource for
+deployment during a control loop given a `field` or `collectionField` and a `value`.  
+Using this means that the resource will **only be included** if this condition 
+is met.  If the condition is not met, the resource will not be deployed:
+
+ex. +operator-builder:resource:field=provider,value="aws",include
+ex. +operator-builder:resource:field=provider,value="aws",include=true
+ex. +operator-builder:resource:collectionField=provider,value="aws",include
+ex. +operator-builder:resource:collectionField=provider,value="aws",include=true
+
+With include set to `false`, the opposite is true and the resource is 
+excluded from being deployed during a control loop if a condition is met:
+
+ex. +operator-builder:resource:field=provider,value="aws",include=false
+ex. +operator-builder:resource:collectionField=provider,value="aws",include=false
+
+**IMPORTANT:** A resource marker is not required and should only be used when there is a desire 
+to act upon a resource.  If no resource marker is provided, a resource is always 
+deployed during a control loop.
+
+#### Field / CollectionField (required)
+
+The conditional field to associate with an action (currently only `include` - see
+above).  If `field` is not provided, `collectionField` must be provided, if there 
+is a desire to compare a field on a collection.  The field input relates directly 
+to a given workload marker such as `+operator-builder:field:name=provider` would 
+produce a field of `provider` to be used in a resource marker.
+
+ex. +operator-builder:resource:collectionField=provider,value="aws",include
+ex. +operator-builder:resource:field=provider,value="aws",include=false
+
+#### Value (required)
+
+The conditional value to associate with an action (currently only `include` - see
+above).  The `value` input relates directly to the value of `field` as it exists
+in the API spec requested by the user.
+
+ex. +operator-builder:resource:collectionField=provider,value="aws",include
+ex. +operator-builder:resource:field=provider,value="aws",include=false
