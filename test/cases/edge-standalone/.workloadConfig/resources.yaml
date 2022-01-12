@@ -1,3 +1,73 @@
+---
+# +operator-builder:resource:field=provider,value="aws",include=false
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: test-exclude
+  labels:
+    provider: "aws" # +operator-builder:field:name=provider,type=string,default="aws"
+data:
+  test: "data"
+---
+# +operator-builder:resource:field=provider,value="aws",include
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: test-include
+  labels:
+    provider: "aws" # +operator-builder:field:name=provider,type=string,default="aws"
+data:
+  test: "data"
+---
+# +operator-builder:resource:field=provider,value="aws",include=true
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: test-include-true
+  labels:
+    provider: "aws" # +operator-builder:field:name=provider,type=string,default="aws"
+data:
+  test: "data"
+---
+# +operator-builder:resource:field=useHostNet,value=true,include=false
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-include-bool
+spec:
+  replicas: 2  # +operator-builder:field:name=webStoreReplicas,default=2,type=int
+  selector:
+    matchLabels:
+      app: webstore
+  template:
+    metadata:
+      labels:
+        app: webstore
+    spec:
+      hostNetwork: true #+operator-builder:field:name=useHostNet,type=bool,default=false
+      containers:
+      - name: webstore-container
+        image: nginx:1.17
+---
+# +operator-builder:resource:field=webStoreReplicas,value=2,include=false
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-include-int
+spec:
+  replicas: 2  # +operator-builder:field:name=webStoreReplicas,default=2,type=int
+  selector:
+    matchLabels:
+      app: webstore
+  template:
+    metadata:
+      labels:
+        app: webstore
+    spec:
+      containers:
+      - name: webstore-container
+        image: nginx:1.17
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
