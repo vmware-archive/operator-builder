@@ -1,5 +1,5 @@
 ---
-# +operator-builder:resource:field=provider,value="aws",exclude
+# +operator-builder:resource:field=provider,value="aws",include=false
 kind: ConfigMap
 apiVersion: v1
 metadata:
@@ -14,6 +14,16 @@ kind: ConfigMap
 apiVersion: v1
 metadata:
   name: test-include
+  labels:
+    provider: "aws" # +operator-builder:field:name=provider,type=string,default="aws"
+data:
+  test: "data"
+---
+# +operator-builder:resource:field=provider,value="aws",include=true
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: test-include-true
   labels:
     provider: "aws" # +operator-builder:field:name=provider,type=string,default="aws"
 data:

@@ -33,7 +33,6 @@ type ChildResource struct {
 	StaticContent string
 	SourceCode    string
 	IncludeCode   string
-	ExcludeCode   string
 }
 
 // Resource represents a single input manifest for a given config.
@@ -105,10 +104,10 @@ func getResourcesFromFiles(resourceFiles []string) []*Resource {
 
 func getFuncNames(sourceFiles []SourceFile) (createFuncNames, initFuncNames []string) {
 	for _, sourceFile := range sourceFiles {
-		for _, childResource := range sourceFile.Children {
-			funcName := fmt.Sprintf("Create%s", childResource.UniqueName)
+		for i := range sourceFile.Children {
+			funcName := fmt.Sprintf("Create%s", sourceFile.Children[i].UniqueName)
 
-			if strings.EqualFold(childResource.Kind, "customresourcedefinition") {
+			if strings.EqualFold(sourceFile.Children[i].Kind, "customresourcedefinition") {
 				initFuncNames = append(initFuncNames, funcName)
 			}
 
@@ -155,19 +154,17 @@ func expandResources(path string, resources []*Resource) ([]*Resource, error) {
 }
 
 const (
-	includeCode = `		if %s != %s {
+	includeCode = `if %s != %s {
 		return []client.Object{}, nil
 	}`
 
-	excludeCode = `		if %s == %s {
+	excludeCode = `if %s == %s {
 		return []client.Object{}, nil
 	}`
 )
 
-func (cr *ChildResource) processMarkers(spec WorkloadSpec) error {
+func (cr *ChildResource) processMarkers(spec *WorkloadSpec) error {
 	// return immediately if our entire workload spec has no field markers
-	// TODO: should we return an error here or continue silently
-	// TODO: duplicates?
 	if len(spec.CollectionFieldMarkers) == 0 && len(spec.FieldMarkers) == 0 {
 		return fmt.Errorf("%w for resource kind %s and name %s",
 			ErrResourceMarkerMissingAssociation, cr.Kind, cr.Name)
@@ -193,7 +190,7 @@ MARKERS:
 		case ResourceMarker:
 			// associate relevant field markers with this marker
 			for _, fm := range spec.FieldMarkers {
-				if fm.Name == marker.Field {
+				if fm.Name == *marker.Field {
 					resourceMarker = marker
 					fieldMarker = fm
 
@@ -203,7 +200,7 @@ MARKERS:
 
 			// associate relevant collection field markers with this marker
 			for _, cm := range spec.CollectionFieldMarkers {
-				if cm.Name == marker.Field {
+				if cm.Name == *marker.Field {
 					resourceMarker = marker
 					fieldMarker = cm
 
@@ -215,25 +212,14 @@ MARKERS:
 		}
 	}
 
-	// return an error if the marker includes both include and exclude statements
-	if resourceMarker.Include && resourceMarker.Exclude {
-		return ErrResourceMarkerHasIncludeExclude
-	}
-
 	if err := resourceMarker.process(fieldMarker); err != nil {
 		return err
 	}
 
-	if resourceMarker.Include {
+	if *resourceMarker.Include {
 		cr.IncludeCode = fmt.Sprintf(includeCode, resourceMarker.sourceCodeVar, resourceMarker.sourceCodeValue)
-
-		return nil
-	}
-
-	if resourceMarker.Exclude {
-		cr.ExcludeCode = fmt.Sprintf(excludeCode, resourceMarker.sourceCodeVar, resourceMarker.sourceCodeValue)
-
-		return nil
+	} else {
+		cr.IncludeCode = fmt.Sprintf(excludeCode, resourceMarker.sourceCodeVar, resourceMarker.sourceCodeValue)
 	}
 
 	return nil

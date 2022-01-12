@@ -32,13 +32,11 @@ type FieldMarker struct {
 	originalValue interface{}
 }
 
-// TODO: pointer to string/bool
 type ResourceMarker struct {
-	Field           string `marker:",optional"`
-	CollectionField string `marker:",optional"`
+	Field           *string
+	CollectionField *string
 	Value           interface{}
-	Exclude         bool `marker:",optional"`
-	Include         bool `marker:",optional"`
+	Include         *bool
 
 	sourceCodeVar   string
 	sourceCodeValue string
@@ -46,9 +44,9 @@ type ResourceMarker struct {
 
 var ErrMismatchedMarkerTypes = errors.New("resource marker and field marker have mismatched types")
 var ErrResourceMarkerUnknownValueType = errors.New("resource marker 'value' is of unknown type")
-var ErrResourceMarkerHasIncludeExclude = errors.New("resource marker cannot have both 'include' and 'exclude' specified")
 var ErrResourceMarkerMissingAssociation = errors.New("resource marker cannot find an associated field marker")
-var ErrResourceMarkerMissingFieldValue = errors.New("resource marker missing 'field' or 'value'")
+var ErrResourceMarkerMissingFieldValue = errors.New("resource marker missing 'collectionField', 'field' or 'value'")
+var ErrResourceMarkerMissingInclude = errors.New("resource marker missing 'include' value")
 var ErrFieldMarkerInvalidType = errors.New("field marker type is invalid")
 
 func (fm FieldMarker) String() string {
@@ -72,12 +70,11 @@ func (cfm CollectionFieldMarker) String() string {
 }
 
 func (rm ResourceMarker) String() string {
-	return fmt.Sprintf("ResourceMarker{Field: %s CollectionField: %s Value: %v Exclude: %v Include: %v}",
-		rm.Field,
-		rm.CollectionField,
+	return fmt.Sprintf("ResourceMarker{Field: %s CollectionField: %s Value: %v Include: %v}",
+		*rm.Field,
+		*rm.CollectionField,
 		rm.Value,
-		rm.Exclude,
-		rm.Include,
+		*rm.Include,
 	)
 }
 
@@ -190,6 +187,11 @@ func TransformYAML(results ...*inspect.YAMLResult) error {
 			}
 
 			r.Object = t
+		case ResourceMarker:
+			// remove the marker from the resulting yaml
+			key.HeadComment = ""
+			key.FootComment = ""
+			value.LineComment = ""
 		}
 	}
 
@@ -209,35 +211,55 @@ func containsMarkerType(s []MarkerType, e MarkerType) bool {
 func inspectMarkersForYAML(yamlContent []byte, markerTypes ...MarkerType) ([]*yaml.Node, []*inspect.YAMLResult, error) {
 	insp, err := InitializeMarkerInspector(markerTypes...)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("%w; error initializing markers %v", err, markerTypes)
 	}
 
-	return insp.InspectYAML(yamlContent, TransformYAML)
+	nodes, results, err := insp.InspectYAML(yamlContent, TransformYAML)
+	if err != nil {
+		return nil, nil, fmt.Errorf("%w; error inspecting YAML for markers %v", err, markerTypes)
+	}
+
+	return nodes, results, nil
 }
 
 func (rm *ResourceMarker) setSourceCodeVar(prefix string) {
-	if rm.Field != "" {
-		rm.sourceCodeVar = fmt.Sprintf("%s.%s", prefix, strings.Title(rm.Field))
+	if rm.Field != nil {
+		rm.sourceCodeVar = fmt.Sprintf("%s.%s", prefix, strings.Title(*rm.Field))
 	} else {
-		rm.sourceCodeVar = fmt.Sprintf("%s.%s", prefix, strings.Title(rm.CollectionField))
+		rm.sourceCodeVar = fmt.Sprintf("%s.%s", prefix, strings.Title(*rm.CollectionField))
 	}
 }
 
 func (rm *ResourceMarker) hasField() bool {
-	return rm.Field != "" || rm.CollectionField != ""
+	return rm.Field != nil || rm.CollectionField != nil
 }
 
 func (rm *ResourceMarker) hasValue() bool {
 	return rm.Value != ""
 }
 
-func (rm *ResourceMarker) process(fieldMarker interface{}) error {
-	var fieldType string
+func (rm *ResourceMarker) validate() error {
+	// check include field for a provided value
+	// NOTE: this field is mandatory now, but could be optional later, so we return
+	// an error here rather than using a pointer to a bool to control the mandate.
+	if rm.Include == nil {
+		return ErrResourceMarkerMissingInclude
+	}
 
 	// ensure that a field and value exist
 	if !rm.hasField() || !rm.hasValue() {
 		return ErrResourceMarkerMissingFieldValue
 	}
+
+	return nil
+}
+
+func (rm *ResourceMarker) process(fieldMarker interface{}) error {
+	if err := rm.validate(); err != nil {
+		return err
+	}
+
+	var fieldType string
 
 	// determine if our associated field marker is a collection or regular field marker and
 	// set appropriate variables
@@ -254,7 +276,7 @@ func (rm *ResourceMarker) process(fieldMarker interface{}) error {
 		return fmt.Errorf("%w; %T", ErrFieldMarkerInvalidType, fieldMarker)
 	}
 
-	// validate that the field types match
+	// set the sourceCodeValue to check against
 	switch value := rm.Value.(type) {
 	case string:
 		if fieldType != "string" {

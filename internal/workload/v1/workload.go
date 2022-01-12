@@ -157,7 +157,7 @@ func (ws *WorkloadSpec) postProcessManifests() error {
 	// process the child resource markers
 	for _, sourceFile := range *ws.SourceFiles {
 		for i := range sourceFile.Children {
-			if err := sourceFile.Children[i].processMarkers(*ws); err != nil {
+			if err := sourceFile.Children[i].processMarkers(ws); err != nil {
 				return err
 			}
 		}

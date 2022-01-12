@@ -71,7 +71,6 @@ func Create{{ .UniqueName }} (
 ) ([]client.Object, error) {
 
 	{{- if ne .IncludeCode "" }}{{ .IncludeCode }}{{ end }}
-	{{- if ne .ExcludeCode "" }}{{ .ExcludeCode }}{{ end }}
 
 	resourceObjs := []client.Object{}
 
