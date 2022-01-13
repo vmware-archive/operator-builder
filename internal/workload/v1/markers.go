@@ -42,12 +42,14 @@ type ResourceMarker struct {
 	sourceCodeValue string
 }
 
-var ErrMismatchedMarkerTypes = errors.New("resource marker and field marker have mismatched types")
-var ErrResourceMarkerUnknownValueType = errors.New("resource marker 'value' is of unknown type")
-var ErrResourceMarkerMissingAssociation = errors.New("resource marker cannot find an associated field marker")
-var ErrResourceMarkerMissingFieldValue = errors.New("resource marker missing 'collectionField', 'field' or 'value'")
-var ErrResourceMarkerMissingInclude = errors.New("resource marker missing 'include' value")
-var ErrFieldMarkerInvalidType = errors.New("field marker type is invalid")
+var (
+	ErrMismatchedMarkerTypes            = errors.New("resource marker and field marker have mismatched types")
+	ErrResourceMarkerUnknownValueType   = errors.New("resource marker 'value' is of unknown type")
+	ErrResourceMarkerMissingAssociation = errors.New("resource marker cannot find an associated field marker")
+	ErrResourceMarkerMissingFieldValue  = errors.New("resource marker missing 'collectionField', 'field' or 'value'")
+	ErrResourceMarkerMissingInclude     = errors.New("resource marker missing 'include' value")
+	ErrFieldMarkerInvalidType           = errors.New("field marker type is invalid")
+)
 
 func (fm FieldMarker) String() string {
 	return fmt.Sprintf("FieldMarker{Name: %s Type: %v Description: %q Default: %v}",
@@ -231,11 +233,25 @@ func (rm *ResourceMarker) setSourceCodeVar(prefix string) {
 }
 
 func (rm *ResourceMarker) hasField() bool {
-	return rm.Field != nil || rm.CollectionField != nil
+	var hasField, hasCollectionField bool
+
+	if rm.Field != nil {
+		if *rm.Field != "" {
+			hasField = true
+		}
+	}
+
+	if rm.CollectionField != nil {
+		if *rm.CollectionField != "" {
+			hasCollectionField = true
+		}
+	}
+
+	return hasField || hasCollectionField
 }
 
 func (rm *ResourceMarker) hasValue() bool {
-	return rm.Value != ""
+	return rm.Value != nil
 }
 
 func (rm *ResourceMarker) validate() error {
@@ -246,7 +262,7 @@ func (rm *ResourceMarker) validate() error {
 		return ErrResourceMarkerMissingInclude
 	}
 
-	// ensure that a field and value exist
+	// ensure that both a field and value exist
 	if !rm.hasField() || !rm.hasValue() {
 		return ErrResourceMarkerMissingFieldValue
 	}
