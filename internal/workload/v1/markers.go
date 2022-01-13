@@ -21,6 +21,15 @@ const (
 	ResourceMarkerType
 )
 
+const (
+	collectionFieldMarker = "+operator-builder:collection:field"
+	fieldMarker           = "+operator-builder:field"
+	resourceMarker        = "+operator-builder:resource"
+
+	collectionFieldSpecPrefix = "collection.Spec"
+	fieldSpecPrefix           = "parent.Spec"
+)
+
 type MarkerType int
 
 type FieldMarker struct {
@@ -40,6 +49,7 @@ type ResourceMarker struct {
 
 	sourceCodeVar   string
 	sourceCodeValue string
+	fieldMarker     interface{}
 }
 
 var (
@@ -48,6 +58,7 @@ var (
 	ErrResourceMarkerMissingAssociation = errors.New("resource marker cannot find an associated field marker")
 	ErrResourceMarkerMissingFieldValue  = errors.New("resource marker missing 'collectionField', 'field' or 'value'")
 	ErrResourceMarkerMissingInclude     = errors.New("resource marker missing 'include' value")
+	ErrResourceMarkerMissingFieldMarker = errors.New("resource marker has no associate field marker")
 	ErrFieldMarkerInvalidType           = errors.New("field marker type is invalid")
 )
 
@@ -58,6 +69,17 @@ func (fm FieldMarker) String() string {
 		*fm.Description,
 		fm.Default,
 	)
+}
+
+func defineFieldMarker(registry *marker.Registry) error {
+	fieldMarker, err := marker.Define(fieldMarker, FieldMarker{})
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	registry.Add(fieldMarker)
+
+	return nil
 }
 
 type CollectionFieldMarker FieldMarker
@@ -71,6 +93,18 @@ func (cfm CollectionFieldMarker) String() string {
 	)
 }
 
+func defineCollectionFieldMarker(registry *marker.Registry) error {
+	collectionMarker, err := marker.Define(collectionFieldMarker, CollectionFieldMarker{})
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	registry.Add(collectionMarker)
+
+	return nil
+}
+
+//nolint:gocritic //needed to implement string interface
 func (rm ResourceMarker) String() string {
 	return fmt.Sprintf("ResourceMarker{Field: %s CollectionField: %s Value: %v Include: %v}",
 		*rm.Field,
@@ -80,33 +114,35 @@ func (rm ResourceMarker) String() string {
 	)
 }
 
+func defineResourceMarker(registry *marker.Registry) error {
+	resourceMarker, err := marker.Define(resourceMarker, ResourceMarker{})
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	registry.Add(resourceMarker)
+
+	return nil
+}
+
 func InitializeMarkerInspector(markerTypes ...MarkerType) (*inspect.Inspector, error) {
 	registry := marker.NewRegistry()
 
-	fieldMarker, err := marker.Define("+operator-builder:field", FieldMarker{})
-	if err != nil {
-		return nil, fmt.Errorf("%w", err)
-	}
-
-	collectionMarker, err := marker.Define("+operator-builder:collection:field", CollectionFieldMarker{})
-	if err != nil {
-		return nil, fmt.Errorf("%w", err)
-	}
-
-	resourceMarker, err := marker.Define("+operator-builder:resource", ResourceMarker{})
-	if err != nil {
-		return nil, fmt.Errorf("%w", err)
-	}
+	var err error
 
 	for _, markerType := range markerTypes {
 		switch markerType {
 		case FieldMarkerType:
-			registry.Add(fieldMarker)
+			err = defineFieldMarker(registry)
 		case CollectionMarkerType:
-			registry.Add(collectionMarker)
+			err = defineCollectionFieldMarker(registry)
 		case ResourceMarkerType:
-			registry.Add(resourceMarker)
+			err = defineResourceMarker(registry)
 		}
+	}
+
+	if err != nil {
+		return nil, err
 	}
 
 	return inspect.NewInspector(registry), nil
@@ -158,7 +194,7 @@ func TransformYAML(results ...*inspect.YAMLResult) error {
 				value.Value = re.ReplaceAllString(value.Value, fmt.Sprintf("!!start parent.Spec.%s !!end", strings.Title((t.Name))))
 			} else {
 				value.Tag = varTag
-				value.Value = fmt.Sprintf("parent.Spec." + strings.Title(t.Name))
+				value.Value = getResourceDefinitionVar(strings.Title(t.Name), false)
 			}
 
 			r.Object = t
@@ -185,15 +221,10 @@ func TransformYAML(results ...*inspect.YAMLResult) error {
 				value.Value = re.ReplaceAllString(value.Value, fmt.Sprintf("!!start collection.Spec.%s !!end", strings.Title((t.Name))))
 			} else {
 				value.Tag = varTag
-				value.Value = fmt.Sprintf("collection.Spec." + strings.Title(t.Name))
+				value.Value = getResourceDefinitionVar(strings.Title(t.Name), true)
 			}
 
 			r.Object = t
-		case ResourceMarker:
-			// remove the marker from the resulting yaml
-			key.HeadComment = ""
-			key.FootComment = ""
-			value.LineComment = ""
 		}
 	}
 
@@ -224,11 +255,21 @@ func inspectMarkersForYAML(yamlContent []byte, markerTypes ...MarkerType) ([]*ya
 	return nodes, results, nil
 }
 
-func (rm *ResourceMarker) setSourceCodeVar(prefix string) {
+func getResourceDefinitionVar(path string, forCollectionMarker bool) string {
+	// return the collectionFieldSpecPrefix only on a non-collection child resource
+	// with a collection marker
+	if forCollectionMarker {
+		return fmt.Sprintf("%s.%s", collectionFieldSpecPrefix, strings.Title(path))
+	}
+
+	return fmt.Sprintf("%s.%s", fieldSpecPrefix, strings.Title(path))
+}
+
+func (rm *ResourceMarker) setSourceCodeVar() {
 	if rm.Field != nil {
-		rm.sourceCodeVar = fmt.Sprintf("%s.%s", prefix, strings.Title(*rm.Field))
+		rm.sourceCodeVar = getResourceDefinitionVar(*rm.Field, false)
 	} else {
-		rm.sourceCodeVar = fmt.Sprintf("%s.%s", prefix, strings.Title(*rm.CollectionField))
+		rm.sourceCodeVar = getResourceDefinitionVar(*rm.CollectionField, true)
 	}
 }
 
@@ -254,12 +295,40 @@ func (rm *ResourceMarker) hasValue() bool {
 	return rm.Value != nil
 }
 
+func (rm *ResourceMarker) associateFieldMarker(spec *WorkloadSpec) {
+	// associate first relevant field marker with this marker
+	for _, fm := range spec.FieldMarkers {
+		if rm.Field != nil {
+			if fm.Name == *rm.Field {
+				rm.fieldMarker = fm
+
+				return
+			}
+		}
+	}
+
+	// associate first relevant collection field marker with this marker
+	for _, cm := range spec.CollectionFieldMarkers {
+		if rm.CollectionField != nil {
+			if cm.Name == *rm.CollectionField {
+				rm.fieldMarker = cm
+
+				return
+			}
+		}
+	}
+}
+
 func (rm *ResourceMarker) validate() error {
 	// check include field for a provided value
 	// NOTE: this field is mandatory now, but could be optional later, so we return
 	// an error here rather than using a pointer to a bool to control the mandate.
 	if rm.Include == nil {
 		return ErrResourceMarkerMissingInclude
+	}
+
+	if rm.fieldMarker == nil {
+		return ErrResourceMarkerMissingFieldMarker
 	}
 
 	// ensure that both a field and value exist
@@ -270,7 +339,7 @@ func (rm *ResourceMarker) validate() error {
 	return nil
 }
 
-func (rm *ResourceMarker) process(fieldMarker interface{}) error {
+func (rm *ResourceMarker) process() error {
 	if err := rm.validate(); err != nil {
 		return err
 	}
@@ -279,15 +348,15 @@ func (rm *ResourceMarker) process(fieldMarker interface{}) error {
 
 	// determine if our associated field marker is a collection or regular field marker and
 	// set appropriate variables
-	switch marker := fieldMarker.(type) {
+	switch marker := rm.fieldMarker.(type) {
 	case *CollectionFieldMarker:
 		fieldType = marker.Type.String()
 
-		rm.setSourceCodeVar("collection.Spec")
+		rm.setSourceCodeVar()
 	case *FieldMarker:
 		fieldType = marker.Type.String()
 
-		rm.setSourceCodeVar("parent.Spec")
+		rm.setSourceCodeVar()
 	default:
 		return fmt.Errorf("%w; %T", ErrFieldMarkerInvalidType, fieldMarker)
 	}
