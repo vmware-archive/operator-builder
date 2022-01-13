@@ -48,13 +48,22 @@ func (r *Resource) UnmarshalYAML(node *yaml.Node) error {
 	return nil
 }
 
-func (r *Resource) loadContent() error {
+func (r *Resource) loadContent(isCollection bool) error {
 	manifestContent, err := os.ReadFile(r.FileName)
 	if err != nil {
 		return formatProcessError(r.FileName, err)
 	}
 
-	r.Content = manifestContent
+	if isCollection {
+		// replace all instances of collection markers and collection field markers with regular field markers
+		// as a collection marker on a collection is simply a field marker to itself
+		content := strings.ReplaceAll(string(manifestContent), collectionFieldMarker, fieldMarker)
+		content = strings.ReplaceAll(content, "collectionField", "field")
+
+		r.Content = []byte(content)
+	} else {
+		r.Content = manifestContent
+	}
 
 	return nil
 }
@@ -183,37 +192,22 @@ func (cr *ChildResource) processMarkers(spec *WorkloadSpec) error {
 
 	var resourceMarker *ResourceMarker
 
-	var fieldMarker interface{}
-
-MARKERS:
 	for _, markerResult := range markerResults {
 		switch marker := markerResult.Object.(type) {
 		case ResourceMarker:
-			// associate relevant field markers with this marker
-			for _, fm := range spec.FieldMarkers {
-				if fm.Name == *marker.Field {
-					resourceMarker = &marker
-					fieldMarker = fm
+			marker.associateFieldMarker(spec)
 
-					break MARKERS
-				}
-			}
+			if marker.fieldMarker != nil {
+				resourceMarker = &marker
 
-			// associate relevant collection field markers with this marker
-			for _, cm := range spec.CollectionFieldMarkers {
-				if cm.Name == *marker.Field {
-					resourceMarker = &marker
-					fieldMarker = cm
-
-					break MARKERS
-				}
+				break
 			}
 		default:
 			continue
 		}
 	}
 
-	if err := resourceMarker.process(fieldMarker); err != nil {
+	if err := resourceMarker.process(); err != nil {
 		return err
 	}
 

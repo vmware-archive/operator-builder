@@ -223,7 +223,7 @@ func (s *StandaloneWorkload) LoadManifests(workloadPath string) error {
 
 	s.Spec.Resources = resources
 	for _, r := range s.Spec.Resources {
-		if err := r.loadContent(); err != nil {
+		if err := r.loadContent(s.IsCollection()); err != nil {
 			return err
 		}
 	}
