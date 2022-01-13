@@ -58,7 +58,7 @@ func (r *Resource) loadContent(isCollection bool) error {
 		// replace all instances of collection markers and collection field markers with regular field markers
 		// as a collection marker on a collection is simply a field marker to itself
 		content := strings.ReplaceAll(string(manifestContent), collectionFieldMarker, fieldMarker)
-		content = strings.ReplaceAll(content, "collectionField", "field")
+		content = strings.ReplaceAll(content, resourceMarkerCollectionFieldName, resourceMarkerFieldName)
 
 		r.Content = []byte(content)
 	} else {

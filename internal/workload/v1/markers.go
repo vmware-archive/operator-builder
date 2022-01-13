@@ -28,6 +28,9 @@ const (
 
 	collectionFieldSpecPrefix = "collection.Spec"
 	fieldSpecPrefix           = "parent.Spec"
+
+	resourceMarkerCollectionFieldName = "collectionField"
+	resourceMarkerFieldName           = "field"
 )
 
 type MarkerType int
