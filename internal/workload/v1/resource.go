@@ -184,12 +184,6 @@ func (cr *ChildResource) processMarkers(spec *WorkloadSpec) error {
 		return nil
 	}
 
-	// error if our entire workload spec has no field markers
-	if len(spec.CollectionFieldMarkers) == 0 && len(spec.FieldMarkers) == 0 {
-		return fmt.Errorf("%w for resource kind %s and name %s",
-			ErrResourceMarkerMissingAssociation, cr.Kind, cr.Name)
-	}
-
 	var resourceMarker *ResourceMarker
 
 	for _, markerResult := range markerResults {

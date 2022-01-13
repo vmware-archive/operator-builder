@@ -55,10 +55,9 @@ type ResourceMarker struct {
 var (
 	ErrMismatchedMarkerTypes            = errors.New("resource marker and field marker have mismatched types")
 	ErrResourceMarkerUnknownValueType   = errors.New("resource marker 'value' is of unknown type")
-	ErrResourceMarkerMissingAssociation = errors.New("resource marker cannot find an associated field marker")
 	ErrResourceMarkerMissingFieldValue  = errors.New("resource marker missing 'collectionField', 'field' or 'value'")
 	ErrResourceMarkerMissingInclude     = errors.New("resource marker missing 'include' value")
-	ErrResourceMarkerMissingFieldMarker = errors.New("resource marker has no associate field marker")
+	ErrResourceMarkerMissingFieldMarker = errors.New("resource marker has no associated 'field' or 'collectionField' marker")
 	ErrFieldMarkerInvalidType           = errors.New("field marker type is invalid")
 )
 
@@ -296,6 +295,11 @@ func (rm *ResourceMarker) hasValue() bool {
 }
 
 func (rm *ResourceMarker) associateFieldMarker(spec *WorkloadSpec) {
+	// return immediately if our entire workload spec has no field markers
+	if len(spec.CollectionFieldMarkers) == 0 && len(spec.FieldMarkers) == 0 {
+		return
+	}
+
 	// associate first relevant field marker with this marker
 	for _, fm := range spec.FieldMarkers {
 		if rm.Field != nil {
@@ -324,16 +328,16 @@ func (rm *ResourceMarker) validate() error {
 	// NOTE: this field is mandatory now, but could be optional later, so we return
 	// an error here rather than using a pointer to a bool to control the mandate.
 	if rm.Include == nil {
-		return ErrResourceMarkerMissingInclude
+		return fmt.Errorf("%w for marker %s", ErrResourceMarkerMissingInclude, rm)
 	}
 
 	if rm.fieldMarker == nil {
-		return ErrResourceMarkerMissingFieldMarker
+		return fmt.Errorf("%w for marker %s", ErrResourceMarkerMissingFieldMarker, rm)
 	}
 
 	// ensure that both a field and value exist
 	if !rm.hasField() || !rm.hasValue() {
-		return ErrResourceMarkerMissingFieldValue
+		return fmt.Errorf("%w for marker %s", ErrResourceMarkerMissingFieldValue, rm)
 	}
 
 	return nil
@@ -358,26 +362,26 @@ func (rm *ResourceMarker) process() error {
 
 		rm.setSourceCodeVar()
 	default:
-		return fmt.Errorf("%w; %T", ErrFieldMarkerInvalidType, fieldMarker)
+		return fmt.Errorf("%w; type %T for marker %s", ErrFieldMarkerInvalidType, fieldMarker, rm)
 	}
 
 	// set the sourceCodeValue to check against
 	switch value := rm.Value.(type) {
 	case string:
 		if fieldType != "string" {
-			return fmt.Errorf("%w; expected: string, got: %s", ErrMismatchedMarkerTypes, fieldType)
+			return fmt.Errorf("%w; expected: string, got: %s for marker %s", ErrMismatchedMarkerTypes, fieldType, rm)
 		}
 
 		rm.sourceCodeValue = fmt.Sprintf("%q", value)
 	case int:
 		if fieldType != "int" {
-			return fmt.Errorf("%w; expected: int, got: %s", ErrMismatchedMarkerTypes, fieldType)
+			return fmt.Errorf("%w; expected: int, got: %s for marker %s", ErrMismatchedMarkerTypes, fieldType, rm)
 		}
 
 		rm.sourceCodeValue = fmt.Sprintf("%v", value)
 	case bool:
 		if fieldType != "bool" {
-			return fmt.Errorf("%w; expected: bool, got: %s", ErrMismatchedMarkerTypes, fieldType)
+			return fmt.Errorf("%w; expected: bool, got: %s for marker %s", ErrMismatchedMarkerTypes, fieldType, rm)
 		}
 
 		rm.sourceCodeValue = fmt.Sprintf("%v", value)
