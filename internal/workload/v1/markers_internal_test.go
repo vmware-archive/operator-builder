@@ -84,7 +84,7 @@ func TestResourceMarker_setSourceCodeVar(t *testing.T) {
 			},
 			want: &ResourceMarker{
 				CollectionField: &testPath,
-				sourceCodeVar:   "collection.Spec.Test",
+				sourceCodeVar:   "collection.Spec.Test.Set.Source.Code.Var",
 			},
 		},
 	}
