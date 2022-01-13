@@ -164,23 +164,24 @@ const (
 )
 
 func (cr *ChildResource) processMarkers(spec *WorkloadSpec) error {
-	// return immediately if our entire workload spec has no field markers
-	if len(spec.CollectionFieldMarkers) == 0 && len(spec.FieldMarkers) == 0 {
-		return fmt.Errorf("%w for resource kind %s and name %s",
-			ErrResourceMarkerMissingAssociation, cr.Kind, cr.Name)
-	}
-
 	// obtain the marker results from the input yaml
 	_, markerResults, err := inspectMarkersForYAML([]byte(cr.StaticContent), ResourceMarkerType)
 	if err != nil {
 		return err
 	}
 
+	// if we have no resource markers, return
 	if len(markerResults) == 0 {
 		return nil
 	}
 
-	var resourceMarker ResourceMarker
+	// error if our entire workload spec has no field markers
+	if len(spec.CollectionFieldMarkers) == 0 && len(spec.FieldMarkers) == 0 {
+		return fmt.Errorf("%w for resource kind %s and name %s",
+			ErrResourceMarkerMissingAssociation, cr.Kind, cr.Name)
+	}
+
+	var resourceMarker *ResourceMarker
 
 	var fieldMarker interface{}
 
@@ -191,7 +192,7 @@ MARKERS:
 			// associate relevant field markers with this marker
 			for _, fm := range spec.FieldMarkers {
 				if fm.Name == *marker.Field {
-					resourceMarker = marker
+					resourceMarker = &marker
 					fieldMarker = fm
 
 					break MARKERS
@@ -201,7 +202,7 @@ MARKERS:
 			// associate relevant collection field markers with this marker
 			for _, cm := range spec.CollectionFieldMarkers {
 				if cm.Name == *marker.Field {
-					resourceMarker = marker
+					resourceMarker = &marker
 					fieldMarker = cm
 
 					break MARKERS
