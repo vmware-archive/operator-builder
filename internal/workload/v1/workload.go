@@ -61,6 +61,34 @@ func (ws *WorkloadSpec) init() {
 		Type:   FieldStruct,
 		Tags:   fmt.Sprintf("`json: %q`", "spec"),
 		Sample: "spec:",
+		Children: []*APIFields{
+			{
+				Name:   "CollectionRef",
+				Type:   FieldStruct,
+				Tags:   fmt.Sprintf("`json: %q`", "collectionRef"),
+				Sample: "collectionRef:",
+				Children: []*APIFields{
+					{
+						Name:   "Kind",
+						Type:   FieldString,
+						Tags:   fmt.Sprintf("`json: %q`", "kind"),
+						Sample: "kind: \"kind\"",
+					},
+					{
+						Name:   "APIVersion",
+						Type:   FieldString,
+						Tags:   fmt.Sprintf("`json: %q`", "apiVersion"),
+						Sample: "apiVersion: \"group.acme.com/v1alpha1\"",
+					},
+					{
+						Name:   "Name",
+						Type:   FieldString,
+						Tags:   fmt.Sprintf("`json: %q`", "name"),
+						Sample: "name: \"my-collection-name\"",
+					},
+				},
+			},
+		},
 	}
 
 	ws.OwnershipRules = &OwnershipRules{}
