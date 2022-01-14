@@ -29,31 +29,25 @@ metadata:
 data:
   test: "data"
 ---
-# +operator-builder:resource:field=useHostNet,value=true,include=false
-apiVersion: apps/v1
-kind: Deployment
+# +operator-builder:resource:field=useVolumeExpansion,value=true,include=false
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
 metadata:
-  name: test-include-bool
-spec:
-  replicas: 2  # +operator-builder:field:name=webStoreReplicas,default=2,type=int
-  selector:
-    matchLabels:
-      app: webstore
-  template:
-    metadata:
-      labels:
-        app: webstore
-    spec:
-      hostNetwork: true #+operator-builder:field:name=useHostNet,type=bool,default=false
-      containers:
-      - name: webstore-container
-        image: nginx:1.17
+  name: test-exclude-bool
+provisioner: kubernetes.io/aws-ebs
+parameters:
+  type: gp2
+reclaimPolicy: Delete
+allowVolumeExpansion: true # +operator-builder:field:name=useVolumeExpansion,default=true,type=bool
+mountOptions:
+  - debug
+volumeBindingMode: Immediate
 ---
 # +operator-builder:resource:field=webStoreReplicas,value=2,include=false
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: test-include-int
+  name: test-exclude-int
 spec:
   replicas: 2  # +operator-builder:field:name=webStoreReplicas,default=2,type=int
   selector:
