@@ -48,6 +48,7 @@ type WorkloadSpec struct {
 	Resources              []*Resource              `json:"resources" yaml:"resources"`
 	FieldMarkers           []*FieldMarker           `json:",omitempty" yaml:",omitempty" validate:"omitempty"`
 	CollectionFieldMarkers []*CollectionFieldMarker `json:",omitempty" yaml:",omitempty" validate:"omitempty"`
+	ForCollection          bool                     `json:",omitempty" yaml:",omitempty" validate:"omitempty"`
 	Collection             *WorkloadCollection      `json:",omitempty" yaml:",omitempty" validate:"omitempty"`
 	APISpecFields          *APIFields               `json:",omitempty" yaml:",omitempty" validate:"omitempty"`
 	SourceFiles            *[]SourceFile            `json:",omitempty" yaml:",omitempty" validate:"omitempty"`
@@ -61,39 +62,70 @@ func (ws *WorkloadSpec) init() {
 		Type:   FieldStruct,
 		Tags:   fmt.Sprintf("`json: %q`", "spec"),
 		Sample: "spec:",
-		Children: []*APIFields{
-			{
-				Name:   "CollectionRef",
-				Type:   FieldStruct,
-				Tags:   fmt.Sprintf("`json: %q`", "collectionRef"),
-				Sample: "collectionRef:",
-				Children: []*APIFields{
-					{
-						Name:   "Kind",
-						Type:   FieldString,
-						Tags:   fmt.Sprintf("`json: %q`", "kind"),
-						Sample: "kind: \"kind\"",
-					},
-					{
-						Name:   "APIVersion",
-						Type:   FieldString,
-						Tags:   fmt.Sprintf("`json: %q`", "apiVersion"),
-						Sample: "apiVersion: \"group.acme.com/v1alpha1\"",
-					},
-					{
-						Name:   "Name",
-						Type:   FieldString,
-						Tags:   fmt.Sprintf("`json: %q`", "name"),
-						Sample: "name: \"my-collection-name\"",
-					},
-				},
-			},
-		},
+	}
+
+	// append the collection ref if we need to
+	if ws.needsCollectionRef() {
+		ws.appendCollectionRef()
 	}
 
 	ws.OwnershipRules = &OwnershipRules{}
 	ws.RBACRules = &RBACRules{}
 	ws.SourceFiles = &[]SourceFile{}
+}
+
+func (ws *WorkloadSpec) appendCollectionRef() {
+	// ensure api spec is already set
+	if ws.APISpecFields == nil {
+		return
+	}
+
+	// ensure we are adding to the spec field
+	if ws.APISpecFields.Name != "Spec" {
+		return
+	}
+
+	// append to children
+	collectionRef := &APIFields{
+		Name:       "CollectionRef",
+		Type:       FieldStruct,
+		Tags:       fmt.Sprintf("`json:%q`", "collectionRef"),
+		Sample:     "#collectionRef:",
+		StructName: "CollectionRefSpec",
+		Markers: []string{
+			"+kubebuilder:validation:Optional",
+			"Specifies a reference to the collection to use for this workload.",
+			"Requires the name and namespace input to find the collection.",
+			"If no collectionRef field is set, default to selecting the only",
+			"workload collection in the cluster, which will result in an error",
+			"if not exactly one collection is found.",
+		},
+		Children: []*APIFields{
+			{
+				Name:   "Name",
+				Type:   FieldString,
+				Tags:   fmt.Sprintf("`json:%q`", "name"),
+				Sample: "#name: \"my-collection-name\"",
+				Markers: []string{
+					"Required if specifying collectionRef.  The name of the collection",
+					"within a specific collectionRef.namespace to reference.",
+				},
+			},
+			{
+				Name:   "Namespace",
+				Type:   FieldString,
+				Tags:   fmt.Sprintf("`json:%q`", "namespace"),
+				Sample: "#namespace: \"my-collection-namespace\"",
+				Markers: []string{
+					"+kubebuilder:validation:Optional",
+					"(Default: \"\") The namespace where the collection exists.  Required only if",
+					"the collection is namespace scoped and not cluster scoped.",
+				},
+			},
+		},
+	}
+
+	ws.APISpecFields.Children = append(ws.APISpecFields.Children, collectionRef)
 }
 
 func NewSampleAPISpec() *WorkloadAPISpec {
@@ -332,6 +364,15 @@ func (ws *WorkloadSpec) deduplicateFileNames() {
 
 		fileNames[i] = sourceFile.Filename
 	}
+}
+
+// needsCollectionRef determines if the workload spec needs a collection ref as
+// part of its spec for determining which collection to use.  In this case, we
+// want to check and see if a collection is set, but also ensure that this is not
+// a workload spec that belongs to a collection, as nested collections are
+// unsupported.
+func (ws *WorkloadSpec) needsCollectionRef() bool {
+	return ws.Collection != nil && !ws.ForCollection
 }
 
 func formatProcessError(manifestFile string, err error) error {

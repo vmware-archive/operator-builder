@@ -56,6 +56,9 @@ import (
 	"github.com/nukleros/operator-builder-tools/pkg/controller/predicates"
 	"github.com/nukleros/operator-builder-tools/pkg/controller/workload"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	{{ if .Builder.IsComponent -}}
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	{{ end }}
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -148,7 +151,7 @@ func (r *{{ .Resource.Kind }}Reconciler) NewRequest(ctx context.Context, request
 		"namespace", request.Namespace,
 	)
 
-	// get and store the component
+	// get the component from the cluster
 	if err := r.Get(ctx, request.NamespacedName, component); err != nil {
 		if !apierrs.IsNotFound(err) {
 			log.Error(err, "unable to fetch workload")
@@ -159,41 +162,65 @@ func (r *{{ .Resource.Kind }}Reconciler) NewRequest(ctx context.Context, request
 		return nil, err
 	}
 
-	{{ if .Builder.IsComponent -}}
+	// create the workload request
+	workloadRequest := &workload.Request{
+		Context:  ctx,
+		Workload: component,
+		Log:      log,
+	}
+
+	{{ if .Builder.IsComponent }}
+	// store the collection and return any resulting error
+	return workloadRequest, r.SetCollection(component, workloadRequest)
+	{{- else }}
+	return workloadRequest, nil
+	{{- end }}
+}
+
+{{- if .Builder.IsComponent }}
+// SetCollection sets the collection for a particular workload request.
+func (r *{{ .Resource.Kind }}Reconciler) SetCollection(component *{{ .Resource.ImportAlias }}.{{ .Resource.Kind }}, req *workload.Request) error {
 	// get and store the collection
 	var collectionList {{ .Builder.GetCollection.Spec.API.Group }}{{ .Builder.GetCollection.Spec.API.Version }}.{{ .Builder.GetCollection.Spec.API.Kind }}List
-	
-	var collection *{{ .Builder.GetCollection.Spec.API.Group }}{{ .Builder.GetCollection.Spec.API.Version }}.{{ .Builder.GetCollection.Spec.API.Kind }}
 
-	if err := r.List(ctx, &collectionList); err != nil {
-		return nil, fmt.Errorf("unable to list collection {{ .Builder.GetCollection.Spec.API.Kind }}, %w", err)
+	var listOptions client.ListOptions
+
+	var collectionRef {{ .Resource.ImportAlias }}.{{ .Resource.Kind }}CollectionRefSpec
+
+	// set the list options appropriate if a collection reference is requested
+	if component.Spec.CollectionRef != collectionRef {
+		if component.Spec.CollectionRef.Name != "" {
+			listOptions = client.ListOptions{
+				Namespace: component.Spec.CollectionRef.Namespace,
+				Raw: &metav1.ListOptions{
+					FieldSelector: fmt.Sprintf("metadata.name=%s", component.Spec.CollectionRef.Name),
+				},
+			}
+		}
+	}
+
+	if err := r.List(req.Context, &collectionList, &listOptions); err != nil {
+		return fmt.Errorf("unable to list collection {{ .Builder.GetCollection.Spec.API.Kind }}, %w", err)
 	}
 
 	switch len(collectionList.Items) {
 	case 0:
 		if component.GetDeletionTimestamp().IsZero() {
-			log.Info("no collections available; initiating controller requeue")
+			req.Log.Info("no collections available; initiating controller requeue")
 
-			return nil, workload.ErrCollectionNotFound
+			return workload.ErrCollectionNotFound
 		}
 	case 1:
-		collection = &collectionList.Items[0]
+		req.Collection = &collectionList.Items[0]
 	default:
-		log.Info("multiple collections found; expected 1; cannot proceed")
+		req.Log.Info("multiple collections found; expected 1; cannot proceed")
 
-		return nil, nil
+		return fmt.Errorf("multiple collections found; expected 1; cannot proceed")
 	}
-	{{- end }}
 
-	return &workload.Request{
-		Context:    ctx,
-		Workload:   component,
-		{{- if .Builder.IsComponent }}
-		Collection: collection,
-		{{- end }}
-		Log:        log,
-	}, nil
+	return nil
 }
+{{- end }}
 
 // GetResources resources runs the methods to properly construct the resources in memory.
 func (r *{{ .Resource.Kind }}Reconciler) GetResources(req *workload.Request) ([]client.Object, error) {
