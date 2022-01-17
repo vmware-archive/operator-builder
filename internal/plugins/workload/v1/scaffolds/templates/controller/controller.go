@@ -56,9 +56,6 @@ import (
 	"github.com/nukleros/operator-builder-tools/pkg/controller/predicates"
 	"github.com/nukleros/operator-builder-tools/pkg/controller/workload"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	{{ if .Builder.IsComponent -}}
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	{{ end }}
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -183,23 +180,7 @@ func (r *{{ .Resource.Kind }}Reconciler) SetCollection(component *{{ .Resource.I
 	// get and store the collection
 	var collectionList {{ .Builder.GetCollection.Spec.API.Group }}{{ .Builder.GetCollection.Spec.API.Version }}.{{ .Builder.GetCollection.Spec.API.Kind }}List
 
-	var listOptions client.ListOptions
-
-	var collectionRef {{ .Resource.ImportAlias }}.{{ .Resource.Kind }}CollectionRefSpec
-
-	// set the list options appropriate if a collection reference is requested
-	if component.Spec.CollectionRef != collectionRef {
-		if component.Spec.CollectionRef.Name != "" {
-			listOptions = client.ListOptions{
-				Namespace: component.Spec.CollectionRef.Namespace,
-				Raw: &metav1.ListOptions{
-					FieldSelector: fmt.Sprintf("metadata.name=%s", component.Spec.CollectionRef.Name),
-				},
-			}
-		}
-	}
-
-	if err := r.List(req.Context, &collectionList, &listOptions); err != nil {
+	if err := r.List(req.Context, &collectionList); err != nil {
 		return fmt.Errorf("unable to list collection {{ .Builder.GetCollection.Spec.API.Kind }}, %w", err)
 	}
 
@@ -213,9 +194,22 @@ func (r *{{ .Resource.Kind }}Reconciler) SetCollection(component *{{ .Resource.I
 	case 1:
 		req.Collection = &collectionList.Items[0]
 	default:
-		req.Log.Info("multiple collections found; expected 1; cannot proceed")
+		var collectionRef {{ .Resource.ImportAlias }}.{{ .Resource.Kind }}CollectionRefSpec
 
-		return fmt.Errorf("multiple collections found; expected 1; cannot proceed")
+		// set the list options appropriate if a collection reference is requested
+		if component.Spec.CollectionRef != collectionRef && component.Spec.CollectionRef.Name != "" {
+			for _, collection := range collectionList.Items {
+				if collection.Name == component.Spec.CollectionRef.Name {
+					if collection.Namespace == component.Spec.CollectionRef.Namespace {
+						req.Collection = &collection
+
+						return nil
+					}
+				}
+			}
+		}
+
+		return fmt.Errorf("multiple valid collections found; expected 1; cannot proceed")
 	}
 
 	return nil
