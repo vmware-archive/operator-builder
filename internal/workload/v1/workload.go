@@ -75,14 +75,22 @@ func (ws *WorkloadSpec) init() {
 }
 
 func (ws *WorkloadSpec) appendCollectionRef() {
-	// ensure api spec is already set
-	if ws.APISpecFields == nil {
+	// ensure api spec and collection is already set
+	if ws.APISpecFields == nil || ws.Collection == nil {
 		return
 	}
 
 	// ensure we are adding to the spec field
 	if ws.APISpecFields.Name != "Spec" {
 		return
+	}
+
+	var sampleNamespace string
+
+	if ws.Collection.IsClusterScoped() {
+		sampleNamespace = ""
+	} else {
+		sampleNamespace = "default"
 	}
 
 	// append to children
@@ -105,7 +113,7 @@ func (ws *WorkloadSpec) appendCollectionRef() {
 				Name:   "Name",
 				Type:   FieldString,
 				Tags:   fmt.Sprintf("`json:%q`", "name"),
-				Sample: "#name: \"my-collection-name\"",
+				Sample: fmt.Sprintf("#name: \"%s-sample\"", strings.ToLower(ws.Collection.GetAPIKind())),
 				Markers: []string{
 					"Required if specifying collection.  The name of the collection",
 					"within a specific collection.namespace to reference.",
@@ -115,7 +123,7 @@ func (ws *WorkloadSpec) appendCollectionRef() {
 				Name:   "Namespace",
 				Type:   FieldString,
 				Tags:   fmt.Sprintf("`json:%q`", "namespace"),
-				Sample: "#namespace: \"my-collection-namespace\"",
+				Sample: fmt.Sprintf("#namespace: \"%s\"", sampleNamespace),
 				Markers: []string{
 					"+kubebuilder:validation:Optional",
 					"(Default: \"\") The namespace where the collection exists.  Required only if",
