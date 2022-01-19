@@ -184,6 +184,11 @@ func (r *{{ .Resource.Kind }}Reconciler) SetCollection(component *{{ .Resource.I
 		return fmt.Errorf("unable to list collection {{ .Builder.GetCollection.Spec.API.Kind }}, %w", err)
 	}
 
+	// determine if we have requested a specific collection
+	var collectionRef {{ .Resource.ImportAlias }}.{{ .Resource.Kind }}CollectionSpec
+
+	collectionRequested := component.Spec.Collection != collectionRef && component.Spec.Collection.Name != ""
+
 	switch len(collectionList.Items) {
 	case 0:
 		if component.GetDeletionTimestamp().IsZero() {
@@ -192,24 +197,43 @@ func (r *{{ .Resource.Kind }}Reconciler) SetCollection(component *{{ .Resource.I
 			return workload.ErrCollectionNotFound
 		}
 	case 1:
+		if collectionRequested {
+			if collection := r.GetCollection(component, collectionList); collection != nil {
+				req.Collection = collection
+			} else {
+				return fmt.Errorf("no valid {{ .Builder.GetCollection.Spec.API.Kind }} collections found in namespace %s with name %s",
+					component.Spec.Collection.Namespace, component.Spec.Collection.Name)
+			}
+		}
+		
 		req.Collection = &collectionList.Items[0]
 	default:
-		var collectionRef {{ .Resource.ImportAlias }}.{{ .Resource.Kind }}CollectionRefSpec
-
-		// set the list options appropriate if a collection reference is requested
-		if component.Spec.CollectionRef != collectionRef && component.Spec.CollectionRef.Name != "" {
-			for _, collection := range collectionList.Items {
-				if collection.Name == component.Spec.CollectionRef.Name {
-					if collection.Namespace == component.Spec.CollectionRef.Namespace {
-						req.Collection = &collection
-
-						return nil
-					}
-				}
+		if collectionRequested {
+			if collection := r.GetCollection(component, collectionList); collection != nil {
+				req.Collection = collection
+			} else {
+				return fmt.Errorf("no valid {{ .Builder.GetCollection.Spec.API.Kind }} collections found in namespace %s with name %s",
+					component.Spec.Collection.Namespace, component.Spec.Collection.Name)
 			}
 		}
 
 		return fmt.Errorf("multiple valid collections found; expected 1; cannot proceed")
+	}
+
+	return nil
+}
+
+// GetCollection gets a collection for a component given a list.
+func (r *{{ .Resource.Kind }}Reconciler) GetCollection(
+	component *{{ .Resource.ImportAlias }}.{{ .Resource.Kind }},
+	collectionList {{ .Builder.GetCollection.Spec.API.Group }}{{ .Builder.GetCollection.Spec.API.Version }}.{{ .Builder.GetCollection.Spec.API.Kind }}List,
+) *edgev1alpha1.EdgeCollection {
+	name, namespace := component.Spec.Collection.Name, component.Spec.Collection.Namespace
+
+	for _, collection := range collectionList.Items {
+		if collection.Name == name && collection.Namespace == namespace {
+			return &collection
+		}
 	}
 
 	return nil

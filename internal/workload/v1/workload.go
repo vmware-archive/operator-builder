@@ -86,17 +86,17 @@ func (ws *WorkloadSpec) appendCollectionRef() {
 	}
 
 	// append to children
-	collectionRef := &APIFields{
-		Name:       "CollectionRef",
+	collectionField := &APIFields{
+		Name:       "Collection",
 		Type:       FieldStruct,
-		Tags:       fmt.Sprintf("`json:%q`", "collectionRef"),
-		Sample:     "#collectionRef:",
-		StructName: "CollectionRefSpec",
+		Tags:       fmt.Sprintf("`json:%q`", "collection"),
+		Sample:     "#collection:",
+		StructName: "CollectionSpec",
 		Markers: []string{
 			"+kubebuilder:validation:Optional",
 			"Specifies a reference to the collection to use for this workload.",
 			"Requires the name and namespace input to find the collection.",
-			"If no collectionRef field is set, default to selecting the only",
+			"If no collection field is set, default to selecting the only",
 			"workload collection in the cluster, which will result in an error",
 			"if not exactly one collection is found.",
 		},
@@ -107,8 +107,8 @@ func (ws *WorkloadSpec) appendCollectionRef() {
 				Tags:   fmt.Sprintf("`json:%q`", "name"),
 				Sample: "#name: \"my-collection-name\"",
 				Markers: []string{
-					"Required if specifying collectionRef.  The name of the collection",
-					"within a specific collectionRef.namespace to reference.",
+					"Required if specifying collection.  The name of the collection",
+					"within a specific collection.namespace to reference.",
 				},
 			},
 			{
@@ -125,7 +125,7 @@ func (ws *WorkloadSpec) appendCollectionRef() {
 		},
 	}
 
-	ws.APISpecFields.Children = append(ws.APISpecFields.Children, collectionRef)
+	ws.APISpecFields.Children = append(ws.APISpecFields.Children, collectionField)
 }
 
 func NewSampleAPISpec() *WorkloadAPISpec {

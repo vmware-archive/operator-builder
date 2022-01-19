@@ -133,9 +133,9 @@ func defineResourceMarker(registry *marker.Registry) error {
 
 func reservedMarkerNames() []string {
 	return []string{
-		"collectionRef",
-		"collectionRef.Name",
-		"collectionRef.Namespace",
+		"collection",
+		"collection.Name",
+		"collection.Namespace",
 	}
 }
 
@@ -172,6 +172,7 @@ func InitializeMarkerInspector(markerTypes ...MarkerType) (*inspect.Inspector, e
 	return inspect.NewInspector(registry), nil
 }
 
+//nolint:gocognit
 func TransformYAML(results ...*inspect.YAMLResult) error {
 	const varTag = "!!var"
 
