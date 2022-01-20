@@ -227,7 +227,7 @@ func (r *{{ .Resource.Kind }}Reconciler) SetCollection(component *{{ .Resource.I
 func (r *{{ .Resource.Kind }}Reconciler) GetCollection(
 	component *{{ .Resource.ImportAlias }}.{{ .Resource.Kind }},
 	collectionList {{ .Builder.GetCollection.Spec.API.Group }}{{ .Builder.GetCollection.Spec.API.Version }}.{{ .Builder.GetCollection.Spec.API.Kind }}List,
-) *edgev1alpha1.EdgeCollection {
+) *{{ .Builder.GetCollection.Spec.API.Group }}{{ .Builder.GetCollection.Spec.API.Version }}.{{ .Builder.GetCollection.Spec.API.Kind }} {
 	name, namespace := component.Spec.Collection.Name, component.Spec.Collection.Namespace
 
 	for _, collection := range collectionList.Items {
