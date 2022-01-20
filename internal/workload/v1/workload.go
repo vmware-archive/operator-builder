@@ -113,7 +113,7 @@ func (ws *WorkloadSpec) appendCollectionRef() {
 				Name:   "Name",
 				Type:   FieldString,
 				Tags:   fmt.Sprintf("`json:%q`", "name"),
-				Sample: fmt.Sprintf("#name: \"%s-sample\"", strings.ToLower(ws.Collection.GetAPIKind())),
+				Sample: fmt.Sprintf("#name: %q", strings.ToLower(ws.Collection.GetAPIKind())+"-sample"),
 				Markers: []string{
 					"Required if specifying collection.  The name of the collection",
 					"within a specific collection.namespace to reference.",
@@ -123,7 +123,7 @@ func (ws *WorkloadSpec) appendCollectionRef() {
 				Name:   "Namespace",
 				Type:   FieldString,
 				Tags:   fmt.Sprintf("`json:%q`", "namespace"),
-				Sample: fmt.Sprintf("#namespace: \"%s\"", sampleNamespace),
+				Sample: fmt.Sprintf("#namespace: %q", sampleNamespace),
 				Markers: []string{
 					"+kubebuilder:validation:Optional",
 					"(Default: \"\") The namespace where the collection exists.  Required only if",
