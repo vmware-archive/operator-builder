@@ -210,16 +210,9 @@ func (*WorkloadCollection) GetOwnershipRules() *[]OwnershipRule {
 }
 
 func (c *WorkloadCollection) GetComponentResource(domain, repo string, clusterScoped bool) *resource.Resource {
-	var namespaced bool
-	if clusterScoped {
-		namespaced = false
-	} else {
-		namespaced = true
-	}
-
 	api := resource.API{
 		CRDVersion: "v1",
-		Namespaced: namespaced,
+		Namespaced: !clusterScoped,
 	}
 
 	return &resource.Resource{
