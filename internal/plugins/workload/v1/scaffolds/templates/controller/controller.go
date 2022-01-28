@@ -184,47 +184,22 @@ func (r *{{ .Resource.Kind }}Reconciler) NewRequest(ctx context.Context, request
 {{- if .Builder.IsComponent }}
 // SetCollection sets the collection for a particular workload request.
 func (r *{{ .Resource.Kind }}Reconciler) SetCollection(component *{{ .Resource.ImportAlias }}.{{ .Resource.Kind }}, req *workload.Request) error {
-	// get and store the collection
-	var collectionList {{ .Builder.GetCollection.Spec.API.Group }}{{ .Builder.GetCollection.Spec.API.Version }}.{{ .Builder.GetCollection.Spec.API.Kind }}List
-
-	if err := r.List(req.Context, &collectionList); err != nil {
-		return fmt.Errorf("unable to list collection {{ .Builder.GetCollection.Spec.API.Kind }}, %w", err)
+	collection, err := r.GetCollection(component, req)
+	if err != nil || collection == nil {
+		return fmt.Errorf("unable to set collection, %w", err)
 	}
 
-	// determine if we have requested a specific collection
-	var collectionRef {{ .Resource.ImportAlias }}.{{ .Resource.Kind }}CollectionSpec
+	req.Collection = collection
 
-	collectionRequested := component.Spec.Collection != collectionRef && component.Spec.Collection.Name != ""
+	// set the owner reference so that we can reconcile this workload on changes to the collection
+	if err := ctrl.SetControllerReference(collection, req.Workload, r.Scheme()); err != nil {
+		req.Log.Error(
+			err, "unable to set owner reference on resource",
+			"resourceName", req.Workload.GetName(),
+			"resourceNamespace", req.Workload.GetNamespace(),
+		)
 
-	switch len(collectionList.Items) {
-	case 0:
-		if component.GetDeletionTimestamp().IsZero() {
-			req.Log.Info("no collections available; initiating controller requeue")
-
-			return workload.ErrCollectionNotFound
-		}
-	case 1:
-		if collectionRequested {
-			if collection := r.GetCollection(component, collectionList); collection != nil {
-				req.Collection = collection
-			} else {
-				return fmt.Errorf("no valid {{ .Builder.GetCollection.Spec.API.Kind }} collections found in namespace %s with name %s",
-					component.Spec.Collection.Namespace, component.Spec.Collection.Name)
-			}
-		}
-		
-		req.Collection = &collectionList.Items[0]
-	default:
-		if collectionRequested {
-			if collection := r.GetCollection(component, collectionList); collection != nil {
-				req.Collection = collection
-			} else {
-				return fmt.Errorf("no valid {{ .Builder.GetCollection.Spec.API.Kind }} collections found in namespace %s with name %s",
-					component.Spec.Collection.Namespace, component.Spec.Collection.Name)
-			}
-		}
-
-		return fmt.Errorf("multiple valid collections found; expected 1; cannot proceed")
+		return fmt.Errorf("unable to set owner reference on %s, %w", req.Workload.GetName(), err)
 	}
 
 	return nil
@@ -233,17 +208,38 @@ func (r *{{ .Resource.Kind }}Reconciler) SetCollection(component *{{ .Resource.I
 // GetCollection gets a collection for a component given a list.
 func (r *{{ .Resource.Kind }}Reconciler) GetCollection(
 	component *{{ .Resource.ImportAlias }}.{{ .Resource.Kind }},
-	collectionList {{ .Builder.GetCollection.Spec.API.Group }}{{ .Builder.GetCollection.Spec.API.Version }}.{{ .Builder.GetCollection.Spec.API.Kind }}List,
-) *{{ .Builder.GetCollection.Spec.API.Group }}{{ .Builder.GetCollection.Spec.API.Version }}.{{ .Builder.GetCollection.Spec.API.Kind }} {
+	req *workload.Request,
+) (*{{ .Builder.GetCollection.Spec.API.Group }}{{ .Builder.GetCollection.Spec.API.Version }}.{{ .Builder.GetCollection.Spec.API.Kind }}, error) {
+	var collectionList {{ .Builder.GetCollection.Spec.API.Group }}{{ .Builder.GetCollection.Spec.API.Version }}.{{ .Builder.GetCollection.Spec.API.Kind }}List
+
+	if err := r.List(req.Context, &collectionList); err != nil {
+		return nil, fmt.Errorf("unable to list collection {{ .Builder.GetCollection.Spec.API.Kind }}, %w", err)
+	}
+
+	// determine if we have requested a specific collection
 	name, namespace := component.Spec.Collection.Name, component.Spec.Collection.Namespace
 
+	var collectionRef {{ .Resource.ImportAlias }}.{{ .Resource.Kind }}CollectionSpec
+
+	hasSpecificCollection := component.Spec.Collection != collectionRef && component.Spec.Collection.Name != ""
+
+	// if a specific collection has not been requested, we ensure only one exists
+	if !hasSpecificCollection {
+		if len(collectionList.Items) != 1 {
+			return nil, fmt.Errorf("expected only 1 {{ .Builder.GetCollection.Spec.API.Kind }} collection, found %v", len(collectionList.Items))
+		}
+
+		return &collectionList.Items[0], nil
+	}
+
+	// find the collection that was requested and return it
 	for _, collection := range collectionList.Items {
 		if collection.Name == name && collection.Namespace == namespace {
-			return &collection
+			return &collection, nil
 		}
 	}
 
-	return nil
+	return nil, workload.ErrCollectionNotFound
 }
 {{- end }}
 
