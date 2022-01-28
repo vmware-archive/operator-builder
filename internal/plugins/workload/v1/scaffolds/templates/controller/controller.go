@@ -70,6 +70,13 @@ import (
 	{{ end -}}
 	"{{ .Repo }}/internal/dependencies"
 	"{{ .Repo }}/internal/mutate"
+
+	{{ if .Builder.IsCollection -}}
+	// import components so we can reconcile on changes
+	{{ range .Builder.GetComponents -}}
+	{{ .Spec.API.Group }}{{ .Spec.API.Version }} "{{ $.Repo }}/apis/{{ .Spec.API.Group }}/{{ .Spec.API.Version }}"
+	{{ end }}
+	{{ end -}}
 )
 
 // {{ .Resource.Kind }}Reconciler reconciles a {{ .Resource.Kind }} object.
@@ -330,6 +337,11 @@ func (r *{{ .Resource.Kind }}Reconciler) SetupWithManager(mgr ctrl.Manager) erro
 	baseController, err := ctrl.NewControllerManagedBy(mgr).
 		WithEventFilter(predicates.WorkloadPredicates()).
 		For(&{{ .Resource.ImportAlias }}.{{ .Resource.Kind }}{}).
+		{{ if .Builder.IsCollection -}}
+		{{ range .Builder.GetComponents -}}
+		Owns(&{{ .Spec.API.Group }}{{ .Spec.API.Version }}.{{ .Spec.API.Kind }}{}).
+		{{ end -}}
+		{{ end -}}
 		Build(r)
 	if err != nil {
 		return fmt.Errorf("unable to setup controller, %w", err)
