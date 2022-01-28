@@ -48,6 +48,7 @@ import (
 	"context"
 	{{- if .Builder.IsComponent }}
 	"errors"
+	"reflect"
 	{{- end }}
 	"fmt"
 
@@ -60,6 +61,14 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	{{- if .Builder.IsComponent }}
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
+	{{- end }}
 
 	{{ .Resource.ImportAlias }} "{{ .Resource.Path }}"
 	{{ if .Builder.IsComponent -}}
@@ -194,15 +203,17 @@ func (r *{{ .Resource.Kind }}Reconciler) SetCollection(component *{{ .Resource.I
 	// set the owner reference so that we can reconcile this workload on changes to the collection
 	if err := ctrl.SetControllerReference(collection, req.Workload, r.Scheme()); err != nil {
 		req.Log.Error(
-			err, "unable to set owner reference on resource",
-			"resourceName", req.Workload.GetName(),
-			"resourceNamespace", req.Workload.GetNamespace(),
+			err, "unable to set collection owner reference on component workload",
+			"Name", req.Workload.GetName(),
+			"Namespace", req.Workload.GetNamespace(),
+			"collection.Name", collection.GetName(),
+			"collection.Namespace", collection.GetNamespace(),
 		)
 
 		return fmt.Errorf("unable to set owner reference on %s, %w", req.Workload.GetName(), err)
 	}
 
-	return nil
+	return r.EnqueueRequestOnCollectionChange(req)
 }
 
 // GetCollection gets a collection for a component given a list.
@@ -240,6 +251,52 @@ func (r *{{ .Resource.Kind }}Reconciler) GetCollection(
 	}
 
 	return nil, workload.ErrCollectionNotFound
+}
+
+// EnqueueRequestOnCollectionChange enqueues a reconcile request when an associated collection object changes.
+func (r *{{ .Resource.Kind }}Reconciler) EnqueueRequestOnCollectionChange(req *workload.Request) error {
+	if len(r.Watches) > 0 {
+		for _, watched := range r.Watches {
+			if reflect.DeepEqual(
+				req.Collection.GetObjectKind().GroupVersionKind(),
+				watched.GetObjectKind().GroupVersionKind(),
+			) {
+				return nil
+			}
+		}
+	}
+
+	// create a function which maps this specific reconcile request
+	mapFn := func(collection client.Object) []reconcile.Request {
+		return []reconcile.Request{
+			{
+				NamespacedName: types.NamespacedName{
+					Name:      req.Workload.GetName(),
+					Namespace: req.Workload.GetNamespace(),
+				},
+			},
+		}
+	}
+
+	// watch the collection and use our map function to enqueue the request
+	return r.Controller.Watch(
+		&source.Kind{Type: req.Collection},
+		handler.EnqueueRequestsFromMapFunc(mapFn),
+		predicate.Funcs{
+			UpdateFunc: func(e event.UpdateEvent) bool {
+				return e.ObjectNew != e.ObjectOld
+			},
+			CreateFunc: func(e event.CreateEvent) bool {
+				return false
+			},
+			GenericFunc: func(e event.GenericEvent) bool {
+				return false
+			},
+			DeleteFunc: func(e event.DeleteEvent) bool {
+				return false
+			},
+		},
+	)
 }
 {{- end }}
 
