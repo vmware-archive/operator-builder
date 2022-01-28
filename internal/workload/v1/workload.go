@@ -97,7 +97,7 @@ func (ws *WorkloadSpec) appendCollectionRef() {
 	collectionField := &APIFields{
 		Name:       "Collection",
 		Type:       FieldStruct,
-		Tags:       fmt.Sprintf("`json:%q`", "collection"),
+		Tags:       fmt.Sprintf("`json:%q`", "collection,omitempty"),
 		Sample:     "#collection:",
 		StructName: "CollectionSpec",
 		Markers: []string{
@@ -112,7 +112,7 @@ func (ws *WorkloadSpec) appendCollectionRef() {
 			{
 				Name:   "Name",
 				Type:   FieldString,
-				Tags:   fmt.Sprintf("`json:%q`", "name"),
+				Tags:   fmt.Sprintf("`json:%q`", "name,omitempty"),
 				Sample: fmt.Sprintf("#name: %q", strings.ToLower(ws.Collection.GetAPIKind())+"-sample"),
 				Markers: []string{
 					"Required if specifying collection.  The name of the collection",
@@ -122,7 +122,7 @@ func (ws *WorkloadSpec) appendCollectionRef() {
 			{
 				Name:   "Namespace",
 				Type:   FieldString,
-				Tags:   fmt.Sprintf("`json:%q`", "namespace"),
+				Tags:   fmt.Sprintf("`json:%q`", "namespace,omitempty"),
 				Sample: fmt.Sprintf("#namespace: %q", sampleNamespace),
 				Markers: []string{
 					"+kubebuilder:validation:Optional",
