@@ -1,0 +1,9 @@
+---
+# +operator-builder:resource:collectionField=provider,value="aws",include
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: contour-config-test-collection-field
+  namespace: ingress-system  # +operator-builder:field:name=namespace,default=ingress-system,type=string
+data:
+  this: "serves no purpose other than to test resource markers on collection fields"
