@@ -305,6 +305,7 @@ func (ws *WorkloadSpec) processMarkerResults(markerResults []*inspect.YAMLResult
 				return err
 			}
 
+			r.forCollection = ws.ForCollection
 			ws.FieldMarkers = append(ws.FieldMarkers, &r)
 
 		case CollectionFieldMarker:
@@ -331,6 +332,7 @@ func (ws *WorkloadSpec) processMarkerResults(markerResults []*inspect.YAMLResult
 				return err
 			}
 
+			r.forCollection = ws.ForCollection
 			ws.CollectionFieldMarkers = append(ws.CollectionFieldMarkers, &r)
 
 		default:

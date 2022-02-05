@@ -16,7 +16,9 @@ import (
 )
 
 var (
-	ErrReservedFieldMarker = errors.New("field marker cannot be used and is reserved for internal purposes")
+	ErrReservedFieldMarker     = errors.New("field marker cannot be used and is reserved for internal purposes")
+	ErrNumberResourceMarkers   = errors.New("expected only 1 resource marker")
+	ErrAssociateResourceMarker = errors.New("unable to associate resource marker with field marker")
 )
 
 const (
@@ -40,11 +42,13 @@ const (
 type MarkerType int
 
 type FieldMarker struct {
-	Name          string
-	Type          FieldType
-	Description   *string
-	Default       interface{} `marker:",optional"`
-	Replace       *string
+	Name        string
+	Type        FieldType
+	Description *string
+	Default     interface{} `marker:",optional"`
+	Replace     *string
+
+	forCollection bool
 	originalValue interface{}
 }
 
@@ -73,6 +77,7 @@ var (
 	ErrFieldMarkerInvalidType           = errors.New("field marker type is invalid")
 )
 
+//nolint:gocritic //needed to implement string interface
 func (fm FieldMarker) String() string {
 	return fmt.Sprintf("FieldMarker{Name: %s Type: %v Description: %q Default: %v}",
 		fm.Name,
@@ -95,6 +100,7 @@ func defineFieldMarker(registry *marker.Registry) error {
 
 type CollectionFieldMarker FieldMarker
 
+//nolint:gocritic //needed to implement string interface
 func (cfm CollectionFieldMarker) String() string {
 	return fmt.Sprintf("CollectionFieldMarker{Name: %s Type: %v Description: %q Default: %v}",
 		cfm.Name,
@@ -346,6 +352,16 @@ func (rm *ResourceMarker) associateFieldMarker(markers *markerCollection) {
 				rm.fieldMarker = fm
 
 				return
+			}
+		}
+
+		if fm.forCollection {
+			if rm.CollectionField != nil {
+				if fm.Name == *rm.CollectionField {
+					rm.fieldMarker = fm
+
+					return
+				}
 			}
 		}
 	}

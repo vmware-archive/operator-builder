@@ -58,6 +58,7 @@ func ProcessInitConfig(workloadConfig string) (WorkloadInitializer, error) {
 	return workload, nil
 }
 
+//nolint:gocyclo //needs refactor
 func ProcessAPIConfig(workloadConfig string) (WorkloadAPIBuilder, error) {
 	workloads, err := parseConfig(workloadConfig)
 	if err != nil {
