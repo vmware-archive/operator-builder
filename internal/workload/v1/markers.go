@@ -59,6 +59,11 @@ type ResourceMarker struct {
 	fieldMarker     interface{}
 }
 
+type markerCollection struct {
+	fieldMarkers           []*FieldMarker
+	collectionFieldMarkers []*CollectionFieldMarker
+}
+
 var (
 	ErrMismatchedMarkerTypes            = errors.New("resource marker and field marker have mismatched types")
 	ErrResourceMarkerUnknownValueType   = errors.New("resource marker 'value' is of unknown type")
@@ -328,14 +333,14 @@ func (rm *ResourceMarker) hasValue() bool {
 	return rm.Value != nil
 }
 
-func (rm *ResourceMarker) associateFieldMarker(spec *WorkloadSpec) {
+func (rm *ResourceMarker) associateFieldMarker(markers *markerCollection) {
 	// return immediately if our entire workload spec has no field markers
-	if len(spec.CollectionFieldMarkers) == 0 && len(spec.FieldMarkers) == 0 {
+	if len(markers.collectionFieldMarkers) == 0 && len(markers.fieldMarkers) == 0 {
 		return
 	}
 
 	// associate first relevant field marker with this marker
-	for _, fm := range spec.FieldMarkers {
+	for _, fm := range markers.fieldMarkers {
 		if rm.Field != nil {
 			if fm.Name == *rm.Field {
 				rm.fieldMarker = fm
@@ -346,7 +351,7 @@ func (rm *ResourceMarker) associateFieldMarker(spec *WorkloadSpec) {
 	}
 
 	// associate first relevant collection field marker with this marker
-	for _, cm := range spec.CollectionFieldMarkers {
+	for _, cm := range markers.collectionFieldMarkers {
 		if rm.CollectionField != nil {
 			if cm.Name == *rm.CollectionField {
 				rm.fieldMarker = cm

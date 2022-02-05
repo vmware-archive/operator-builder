@@ -218,21 +218,8 @@ func (ws *WorkloadSpec) processManifests(markerTypes ...MarkerType) error {
 		*ws.SourceFiles = append(*ws.SourceFiles, sourceFile)
 	}
 
-	return ws.postProcessManifests()
-}
-
-func (ws *WorkloadSpec) postProcessManifests() error {
 	// ensure no duplicate file names exist within the source files
 	ws.deduplicateFileNames()
-
-	// process the child resource markers
-	for _, sourceFile := range *ws.SourceFiles {
-		for i := range sourceFile.Children {
-			if err := sourceFile.Children[i].processMarkers(ws); err != nil {
-				return err
-			}
-		}
-	}
 
 	return nil
 }
@@ -270,6 +257,18 @@ func (ws *WorkloadSpec) processMarkers(manifestFile *Resource, markerTypes ...Ma
 		// find & replace collection markers with field markers
 		manifestFile.Content = []byte(strings.ReplaceAll(string(manifestFile.Content), "!!var collection", "!!var parent"))
 		manifestFile.Content = []byte(strings.ReplaceAll(string(manifestFile.Content), "!!start collection", "!!start parent"))
+	}
+
+	return nil
+}
+
+func (ws *WorkloadSpec) processResourceMarkers(markers *markerCollection) error {
+	for _, sourceFile := range *ws.SourceFiles {
+		for i := range sourceFile.Children {
+			if err := sourceFile.Children[i].processResourceMarkers(markers); err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil

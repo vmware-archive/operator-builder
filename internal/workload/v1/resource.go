@@ -181,7 +181,7 @@ const (
 	}`
 )
 
-func (cr *ChildResource) processMarkers(spec *WorkloadSpec) error {
+func (cr *ChildResource) processResourceMarkers(markers *markerCollection) error {
 	// obtain the marker results from the input yaml
 	_, markerResults, err := inspectMarkersForYAML([]byte(cr.StaticContent), ResourceMarkerType)
 	if err != nil {
@@ -198,7 +198,7 @@ func (cr *ChildResource) processMarkers(spec *WorkloadSpec) error {
 	for _, markerResult := range markerResults {
 		switch marker := markerResult.Object.(type) {
 		case ResourceMarker:
-			marker.associateFieldMarker(spec)
+			marker.associateFieldMarker(markers)
 
 			if marker.fieldMarker != nil {
 				resourceMarker = &marker
@@ -208,6 +208,10 @@ func (cr *ChildResource) processMarkers(spec *WorkloadSpec) error {
 		default:
 			continue
 		}
+	}
+
+	if resourceMarker == nil {
+		return nil
 	}
 
 	if err := resourceMarker.process(); err != nil {
