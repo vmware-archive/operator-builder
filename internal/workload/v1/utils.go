@@ -40,6 +40,13 @@ func CloseFile(file io.ReadCloser) {
 // It's useful when your globs might have double-stars, but you're not sure.
 func Glob(pattern string) ([]string, error) {
 	if !strings.Contains(pattern, "**") {
+		// ensure the actual path exists if a glob pattern is not found
+		if !strings.Contains(pattern, "*") {
+			if _, err := os.Stat(pattern); errors.Is(err, os.ErrNotExist) {
+				return nil, fmt.Errorf("%w; file %s defined in spec.resources cannot be found", err, pattern)
+			}
+		}
+
 		// passthru to core package if no double-star
 		matches, err := filepath.Glob(pattern)
 		if err != nil {
