@@ -39,6 +39,7 @@ func CloseFile(file io.ReadCloser) {
 // Glob adds double-star support to the core path/filepath Glob function.
 // It's useful when your globs might have double-stars, but you're not sure.
 func Glob(pattern string) ([]string, error) {
+	//nolint:nestif //refactor
 	if !strings.Contains(pattern, "**") {
 		// ensure the actual path exists if a glob pattern is not found
 		if !strings.Contains(pattern, "*") {
@@ -51,6 +52,10 @@ func Glob(pattern string) ([]string, error) {
 		matches, err := filepath.Glob(pattern)
 		if err != nil {
 			return matches, fmt.Errorf("unable to expand glob, %w", err)
+		}
+
+		if len(matches) == 0 {
+			return nil, fmt.Errorf("%w; unable to find any files from glob pattern %s", os.ErrNotExist, pattern)
 		}
 
 		return matches, nil
