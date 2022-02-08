@@ -446,3 +446,20 @@ func (rm *ResourceMarker) process() error {
 
 	return nil
 }
+
+// filterResourceMarkers removes all comments from the results as resource markers
+// are required to exist on the same line.
+func filterResourceMarkers(results []*inspect.YAMLResult) []*ResourceMarker {
+	var markers []*ResourceMarker
+
+	for _, marker := range results {
+		switch marker := marker.Object.(type) {
+		case ResourceMarker:
+			markers = append(markers, &marker)
+		default:
+			continue
+		}
+	}
+
+	return markers
+}

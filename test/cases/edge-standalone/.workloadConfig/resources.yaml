@@ -1,5 +1,7 @@
 ---
 # +operator-builder:resource:field=provider,value="aws",include=false
+# Source: from-file.yaml
+# This is used to test comments with resource markers.
 kind: ConfigMap
 apiVersion: v1
 metadata:

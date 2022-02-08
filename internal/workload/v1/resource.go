@@ -188,34 +188,31 @@ func (cr *ChildResource) processResourceMarkers(markers *markerCollection) error
 		return err
 	}
 
-	var resourceMarker *ResourceMarker
-
 	// ensure we have the expected number of resource markers
 	//   - 0: return immediately as resource markers are not required
 	//   - 1: continue processing normally
 	//   - 2: return an error notifying the user that we only expect 1
 	//        resource marker
-	switch len(markerResults) {
-	case 0:
+	if len(markerResults) == 0 {
 		return nil
-	case 1:
-		result := markerResults[0]
+	}
 
-		switch marker := result.Object.(type) {
-		case ResourceMarker:
-			// associate the marker with a field marker
-			marker.associateFieldMarker(markers)
+	filtered := filterResourceMarkers(markerResults)
 
-			if marker.fieldMarker != nil {
-				resourceMarker = &marker
-			} else {
-				return fmt.Errorf("%w; %v", ErrAssociateResourceMarker, marker)
-			}
-		default:
-			return fmt.Errorf("%w; %v", ErrAssociateResourceMarker, marker)
-		}
-	default:
-		return fmt.Errorf("%w, found %d", ErrNumberResourceMarkers, len(markerResults))
+	var resourceMarker *ResourceMarker
+
+	// TODO: we need to ensure only one marker is found and return an error if we find more than one.
+	// this becomes difficult as the results are returned as yaml nodes.  for now, we just focus on the
+	// first result and all others are ignored but we should notify the user.
+	marker := filtered[0]
+
+	// associate the marker with a field marker
+	marker.associateFieldMarker(markers)
+
+	if marker.fieldMarker != nil {
+		resourceMarker = marker
+	} else {
+		return fmt.Errorf("%w; %v", ErrAssociateResourceMarker, marker)
 	}
 
 	// process the marker and set the code snippet
