@@ -118,6 +118,10 @@ func (c *WorkloadCollection) GetPackageName() string {
 	return c.PackageName
 }
 
+func (c *WorkloadCollection) GetAPISpec() WorkloadAPISpec {
+	return c.Spec.API
+}
+
 func (c *WorkloadCollection) GetAPIGroup() string {
 	return c.Spec.API.Group
 }
@@ -144,6 +148,10 @@ func (c *WorkloadCollection) IsComponent() bool {
 
 func (c *WorkloadCollection) IsCollection() bool {
 	return true
+}
+
+func (c *WorkloadCollection) SetRBAC() {
+	c.Spec.RBACRules.addRulesForWorkload(c)
 }
 
 func (c *WorkloadCollection) SetResources(workloadPath string) error {
@@ -203,10 +211,6 @@ func (c *WorkloadCollection) GetRBACRules() *[]RBACRule {
 	var rules []RBACRule = *c.Spec.RBACRules
 
 	return &rules
-}
-
-func (*WorkloadCollection) GetOwnershipRules() *[]OwnershipRule {
-	return &[]OwnershipRule{}
 }
 
 func (c *WorkloadCollection) GetComponentResource(domain, repo string, clusterScoped bool) *resource.Resource {

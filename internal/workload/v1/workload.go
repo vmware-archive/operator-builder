@@ -53,7 +53,6 @@ type WorkloadSpec struct {
 	APISpecFields          *APIFields               `json:",omitempty" yaml:",omitempty" validate:"omitempty"`
 	SourceFiles            *[]SourceFile            `json:",omitempty" yaml:",omitempty" validate:"omitempty"`
 	RBACRules              *RBACRules               `json:",omitempty" yaml:",omitempty" validate:"omitempty"`
-	OwnershipRules         *OwnershipRules          `json:",omitempty" yaml:",omitempty" validate:"omitempty"`
 }
 
 func (ws *WorkloadSpec) init() {
@@ -69,7 +68,6 @@ func (ws *WorkloadSpec) init() {
 		ws.appendCollectionRef()
 	}
 
-	ws.OwnershipRules = &OwnershipRules{}
 	ws.RBACRules = &RBACRules{}
 	ws.SourceFiles = &[]SourceFile{}
 }
@@ -177,6 +175,7 @@ func (ws *WorkloadSpec) processManifests(markerTypes ...MarkerType) error {
 
 			// generate a unique name for the resource using the kind and name
 			resourceUniqueName := generateUniqueResourceName(manifestObject)
+
 			// determine resource group and version
 			resourceVersion, resourceGroup := versionGroupFromAPIVersion(manifestObject.GetAPIVersion())
 
@@ -185,12 +184,6 @@ func (ws *WorkloadSpec) processManifests(markerTypes ...MarkerType) error {
 			if err != nil {
 				return err
 			}
-
-			ws.OwnershipRules.addOrUpdateOwnership(
-				manifestObject.GetAPIVersion(),
-				manifestObject.GetKind(),
-				resourceGroup,
-			)
 
 			resource := ChildResource{
 				Name:       manifestObject.GetName(),

@@ -35,7 +35,7 @@ type RBACRoleRule struct {
 
 type RBACRules []RBACRule
 
-func (r *RBACRule) AddVerb(verb string) {
+func (r *RBACRule) addVerb(verb string) {
 	var found bool
 
 	for _, existingVerb := range r.Verbs {
@@ -87,16 +87,18 @@ func (rs *RBACRules) groupResourceRecorded(newRBACRule *RBACRule) bool {
 	return false
 }
 
-func (rs *RBACRules) AddOrUpdateRules(newRule *RBACRule) {
-	if !rs.groupResourceRecorded(newRule) {
-		newRule.VerbString = rbacVerbsToString(newRule.Verbs)
-		*rs = append(*rs, *newRule)
-	} else {
-		rules := *rs
-		for i := range rules {
-			if rules[i].groupResourceEqual(newRule) {
-				for _, verb := range newRule.Verbs {
-					rules[i].AddVerb(verb)
+func (rs *RBACRules) AddOrUpdateRules(newRules ...*RBACRule) {
+	for _, newRule := range newRules {
+		if !rs.groupResourceRecorded(newRule) {
+			newRule.VerbString = rbacVerbsToString(newRule.Verbs)
+			*rs = append(*rs, *newRule)
+		} else {
+			rules := *rs
+			for i := range rules {
+				if rules[i].groupResourceEqual(newRule) {
+					for _, verb := range newRule.Verbs {
+						rules[i].addVerb(verb)
+					}
 				}
 			}
 		}
@@ -170,6 +172,40 @@ func valueFromInterface(in interface{}, key string) (out interface{}) {
 	}
 
 	return out
+}
+
+func (rs *RBACRules) addRuleForWorkload(workload WorkloadAPIBuilder, forCollection bool) {
+	var verbs, statusVerbs []string
+
+	if forCollection {
+		verbs = []string{"get", "list", "watch"}
+		statusVerbs = verbs
+	} else {
+		verbs = defaultResourceVerbs()
+		statusVerbs = []string{"get", "update", "patch"}
+	}
+
+	rs.AddOrUpdateRules(
+		// add all permissions so that thi
+		&RBACRule{
+			Group:    fmt.Sprintf("%s/%s", workload.GetAPIGroup(), workload.GetAPIVersion()),
+			Resource: getResourceForRBAC(workload.GetAPIKind()),
+			Verbs:    verbs,
+		},
+		&RBACRule{
+			Group:    fmt.Sprintf("%s/%s", workload.GetAPIGroup(), workload.GetAPIVersion()),
+			Resource: fmt.Sprintf("%s/status", getResourceForRBAC(workload.GetAPIKind())),
+			Verbs:    statusVerbs,
+		},
+	)
+}
+
+func (rs *RBACRules) addRulesForWorkload(workload WorkloadAPIBuilder) {
+	rs.addRuleForWorkload(workload, false)
+
+	if workload.IsComponent() {
+		rs.addRuleForWorkload(workload.GetCollection(), true)
+	}
 }
 
 func (rs *RBACRules) addRulesForManifest(kind, group string, rawContent interface{}) error {
