@@ -201,6 +201,7 @@ func (cr *ChildResource) processResourceMarkers(markers *markerCollection) error
 
 	var resourceMarker *ResourceMarker
 
+	//nolint:godox // reminder to fix this at some point
 	// TODO: we need to ensure only one marker is found and return an error if we find more than one.
 	// this becomes difficult as the results are returned as yaml nodes.  for now, we just focus on the
 	// first result and all others are ignored but we should notify the user.
