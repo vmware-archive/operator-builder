@@ -53,21 +53,22 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/nukleros/operator-builder-tools/pkg/controller/phases"
-	"github.com/nukleros/operator-builder-tools/pkg/controller/predicates"
-	"github.com/nukleros/operator-builder-tools/pkg/controller/workload"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"github.com/nukleros/operator-builder-tools/pkg/controller/phases"
+	"github.com/nukleros/operator-builder-tools/pkg/controller/predicates"
+	"github.com/nukleros/operator-builder-tools/pkg/controller/workload"
 	{{- if .Builder.IsComponent }}
-	"k8s.io/apimachinery/pkg/types"
+	"github.com/nukleros/operator-builder-tools/pkg/resources"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+	"k8s.io/apimachinery/pkg/types"
 	{{- end }}
 
 	{{ .Resource.ImportAlias }} "{{ .Resource.Path }}"
@@ -279,11 +280,15 @@ func (r *{{ .Resource.Kind }}Reconciler) EnqueueRequestOnCollectionChange(req *w
 	}
 
 	// watch the collection and use our map function to enqueue the request
-	return r.Controller.Watch(
+	if err := r.Controller.Watch(
 		&source.Kind{Type: req.Collection},
 		handler.EnqueueRequestsFromMapFunc(mapFn),
 		predicate.Funcs{
 			UpdateFunc: func(e event.UpdateEvent) bool {
+				if !resources.EqualNamespaceName(e.ObjectNew, req.Collection) {
+					return false
+				}
+
 				return e.ObjectNew != e.ObjectOld
 			},
 			CreateFunc: func(e event.CreateEvent) bool {
@@ -296,7 +301,13 @@ func (r *{{ .Resource.Kind }}Reconciler) EnqueueRequestOnCollectionChange(req *w
 				return false
 			},
 		},
-	)
+	); err != nil {
+		return err
+	}
+
+	r.Watches = append(r.Watches, req.Collection)
+
+	return nil
 }
 {{- end }}
 
