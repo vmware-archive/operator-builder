@@ -76,6 +76,7 @@ package e2e_test
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/stretchr/testify/require"
 
