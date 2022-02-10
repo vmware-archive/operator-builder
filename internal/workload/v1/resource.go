@@ -201,10 +201,11 @@ func (cr *ChildResource) processResourceMarkers(markers *markerCollection) error
 
 	var resourceMarker *ResourceMarker
 
-	//nolint:godox // reminder to fix this at some point
+	//nolint: godox // depends on https://github.com/vmware-tanzu-labs/operator-builder/issues/271
 	// TODO: we need to ensure only one marker is found and return an error if we find more than one.
 	// this becomes difficult as the results are returned as yaml nodes.  for now, we just focus on the
 	// first result and all others are ignored but we should notify the user.
+	// if len(filtered) == 1 {
 	marker := filtered[0]
 
 	// associate the marker with a field marker
@@ -215,6 +216,9 @@ func (cr *ChildResource) processResourceMarkers(markers *markerCollection) error
 	} else {
 		return fmt.Errorf("%w; %v", ErrAssociateResourceMarker, marker)
 	}
+	// } else {
+	// 	return fmt.Errorf("%w, found %d; markers: %v", ErrNumberResourceMarkers, len(filtered), filtered[1].Value)
+	// }
 
 	// process the marker and set the code snippet
 	if err := resourceMarker.process(); err != nil {
