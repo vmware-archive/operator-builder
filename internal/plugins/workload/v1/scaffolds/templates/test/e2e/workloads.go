@@ -147,7 +147,9 @@ func (tester *E2ETest) {{ .TesterName }}Test(testSuite *E2EComponentTestSuite) {
 	// see https://github.com/vmware-tanzu-labs/operator-builder/issues/67
 
 	// test that controller logs do not contain errors
-	require.NoErrorf(testSuite.T(), testControllerLogsNoErrors(tester.suiteConfig, tester.logSyntax), "found errors in controller logs")
+	if os.Getenv("DEPLOY_IN_CLUSTER") == "true" {
+		require.NoErrorf(testSuite.T(), testControllerLogsNoErrors(tester.suiteConfig, tester.logSyntax), "found errors in controller logs")
+	}
 }
 
 {{ if .Builder.IsCollection -}}
