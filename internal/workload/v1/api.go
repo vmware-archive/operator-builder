@@ -10,6 +10,8 @@ import (
 	"io"
 	"reflect"
 	"strings"
+
+	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/markers"
 )
 
 var ErrOverwriteExistingValue = errors.New("an attempt to overwrite existing value was made")
@@ -18,7 +20,7 @@ type APIFields struct {
 	Name         string
 	StructName   string
 	manifestName string
-	Type         FieldType
+	Type         markers.FieldType
 	Tags         string
 	Comments     []string
 	Markers      []string
@@ -28,7 +30,7 @@ type APIFields struct {
 	Last         bool
 }
 
-func (api *APIFields) AddField(path string, fieldType FieldType, comments []string, sample interface{}, hasDefault bool) error {
+func (api *APIFields) AddField(path string, fieldType markers.FieldType, comments []string, sample interface{}, hasDefault bool) error {
 	obj := api
 
 	parts := strings.Split(path, ".")
@@ -41,7 +43,7 @@ func (api *APIFields) AddField(path string, fieldType FieldType, comments []stri
 		if obj.Children != nil {
 			for i := range obj.Children {
 				if obj.Children[i].manifestName == part {
-					if obj.Children[i].Type != FieldStruct {
+					if obj.Children[i].Type != markers.FieldStruct {
 						return fmt.Errorf("%w for api field %s", ErrOverwriteExistingValue, path)
 					}
 
@@ -54,7 +56,7 @@ func (api *APIFields) AddField(path string, fieldType FieldType, comments []stri
 		}
 
 		if !foundMatch {
-			child := obj.newChild(part, FieldStruct, sample)
+			child := obj.newChild(part, markers.FieldStruct, sample)
 
 			child.Markers = append(child.Markers, "+kubebuilder:validation:Optional")
 
@@ -159,7 +161,7 @@ func (api *APIFields) hasRequiredField() bool {
 
 func (api *APIFields) generateAPISpecField(b io.StringWriter, kind string) {
 	typeName := api.Type.String()
-	if api.Type == FieldStruct {
+	if api.Type == markers.FieldStruct {
 		typeName = kind + api.StructName
 	}
 
@@ -175,7 +177,7 @@ func (api *APIFields) generateAPISpecField(b io.StringWriter, kind string) {
 }
 
 func (api *APIFields) generateAPIStruct(b io.StringWriter, kind string) {
-	if api.Type == FieldStruct {
+	if api.Type == markers.FieldStruct {
 		mustWrite(b.WriteString(fmt.Sprintf("type %s %s{\n", kind+api.StructName, api.Type.String())))
 
 		for _, child := range api.Children {
@@ -226,9 +228,9 @@ func (api *APIFields) isEqual(input *APIFields) bool {
 
 func (api *APIFields) setSample(sampleVal interface{}) {
 	switch api.Type {
-	case FieldString:
+	case markers.FieldString:
 		api.Sample = fmt.Sprintf("%s: %q", api.manifestName, sampleVal)
-	case FieldStruct:
+	case markers.FieldStruct:
 		api.Sample = fmt.Sprintf("%s:", api.manifestName)
 	default:
 		api.Sample = fmt.Sprintf("%s: %v", api.manifestName, sampleVal)
@@ -236,7 +238,7 @@ func (api *APIFields) setSample(sampleVal interface{}) {
 }
 
 func (api *APIFields) setDefault(sampleVal interface{}) {
-	if api.Type == FieldString {
+	if api.Type == markers.FieldString {
 		api.Default = fmt.Sprintf("%q", sampleVal)
 	} else {
 		api.Default = fmt.Sprintf("%v", sampleVal)
@@ -264,7 +266,7 @@ func (api *APIFields) setCommentsAndDefault(comments []string, sampleVal interfa
 	}
 }
 
-func (api *APIFields) newChild(name string, fieldType FieldType, sample interface{}) *APIFields {
+func (api *APIFields) newChild(name string, fieldType markers.FieldType, sample interface{}) *APIFields {
 	child := &APIFields{
 		Name:         strings.Title(name),
 		manifestName: name,

@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/markers"
 )
 
 func TestAPIFields_GenerateSampleSpec(t *testing.T) {
@@ -16,7 +18,7 @@ func TestAPIFields_GenerateSampleSpec(t *testing.T) {
 	type fields struct {
 		Name         string
 		manifestName string
-		Type         FieldType
+		Type         markers.FieldType
 		Tags         string
 		Comments     []string
 		Markers      []string
@@ -324,7 +326,7 @@ func TestAPIFields_setSample(t *testing.T) {
 
 	type fields struct {
 		manifestName string
-		Type         FieldType
+		Type         markers.FieldType
 		Sample       string
 	}
 
@@ -345,11 +347,11 @@ func TestAPIFields_setSample(t *testing.T) {
 			},
 			fields: fields{
 				manifestName: "string",
-				Type:         FieldString,
+				Type:         markers.FieldString,
 			},
 			expect: &APIFields{
 				manifestName: "string",
-				Type:         FieldString,
+				Type:         markers.FieldString,
 				Sample:       "string: \"string\"",
 			},
 		},
@@ -360,11 +362,11 @@ func TestAPIFields_setSample(t *testing.T) {
 			},
 			fields: fields{
 				manifestName: "struct",
-				Type:         FieldStruct,
+				Type:         markers.FieldStruct,
 			},
 			expect: &APIFields{
 				manifestName: "struct",
-				Type:         FieldStruct,
+				Type:         markers.FieldStruct,
 				Sample:       "struct:",
 			},
 		},
@@ -378,7 +380,7 @@ func TestAPIFields_setSample(t *testing.T) {
 			},
 			expect: &APIFields{
 				manifestName: "other",
-				Type:         FieldUnknownType,
+				Type:         markers.FieldUnknownType,
 				Sample:       "other: other",
 			},
 		},
@@ -404,7 +406,7 @@ func TestAPIFields_setDefault(t *testing.T) {
 
 	type fields struct {
 		manifestName string
-		Type         FieldType
+		Type         markers.FieldType
 		Markers      []string
 		Default      string
 		Sample       string
@@ -427,7 +429,7 @@ func TestAPIFields_setDefault(t *testing.T) {
 			},
 			fields: fields{
 				manifestName: "string",
-				Type:         FieldString,
+				Type:         markers.FieldString,
 				Markers: []string{
 					"marker1",
 					"marker2",
@@ -435,7 +437,7 @@ func TestAPIFields_setDefault(t *testing.T) {
 			},
 			expect: &APIFields{
 				manifestName: "string",
-				Type:         FieldString,
+				Type:         markers.FieldString,
 				Sample:       "string: \"string\"",
 				Default:      "\"string\"",
 				Markers: []string{
@@ -454,7 +456,7 @@ func TestAPIFields_setDefault(t *testing.T) {
 			},
 			expect: &APIFields{
 				manifestName: "other",
-				Type:         FieldUnknownType,
+				Type:         markers.FieldUnknownType,
 				Sample:       "other: other",
 				Default:      "other",
 				Markers: []string{
@@ -488,7 +490,7 @@ func TestAPIFields_setCommentsAndDefault(t *testing.T) {
 
 	type fields struct {
 		manifestName string
-		Type         FieldType
+		Type         markers.FieldType
 		Comments     []string
 		Markers      []string
 		Default      string
@@ -519,7 +521,7 @@ func TestAPIFields_setCommentsAndDefault(t *testing.T) {
 			},
 			fields: fields{
 				manifestName: "string",
-				Type:         FieldString,
+				Type:         markers.FieldString,
 				Comments: []string{
 					"comment1",
 					"comment2",
@@ -527,7 +529,7 @@ func TestAPIFields_setCommentsAndDefault(t *testing.T) {
 			},
 			expect: &APIFields{
 				manifestName: "string",
-				Type:         FieldString,
+				Type:         markers.FieldString,
 				Sample:       "string: \"string\"",
 				Default:      "\"string\"",
 				Markers: []string{
@@ -582,7 +584,7 @@ func TestAPIFields_newChild(t *testing.T) {
 		Name         string
 		StructName   string
 		manifestName string
-		Type         FieldType
+		Type         markers.FieldType
 		Tags         string
 		Comments     []string
 		Markers      []string
@@ -593,7 +595,7 @@ func TestAPIFields_newChild(t *testing.T) {
 
 	type args struct {
 		name      string
-		fieldType FieldType
+		fieldType markers.FieldType
 		sample    interface{}
 	}
 
@@ -607,14 +609,14 @@ func TestAPIFields_newChild(t *testing.T) {
 			name: "new child for string",
 			args: args{
 				name:      "string",
-				fieldType: FieldString,
+				fieldType: markers.FieldString,
 				sample:    "string",
 			},
 			fields: fields{},
 			want: &APIFields{
 				Name:         "String",
 				manifestName: "string",
-				Type:         FieldString,
+				Type:         markers.FieldString,
 				Sample:       "string: \"string\"",
 				Tags:         "`json:\"string,omitempty\"`",
 				Comments:     []string{},
@@ -625,14 +627,14 @@ func TestAPIFields_newChild(t *testing.T) {
 			name: "new child for unknown",
 			args: args{
 				name:      "unknown",
-				fieldType: FieldUnknownType,
+				fieldType: markers.FieldUnknownType,
 				sample:    "unknown",
 			},
 			fields: fields{},
 			want: &APIFields{
 				Name:         "Unknown",
 				manifestName: "unknown",
-				Type:         FieldUnknownType,
+				Type:         markers.FieldUnknownType,
 				Sample:       "unknown: unknown",
 				Tags:         "`json:\"unknown,omitempty\"`",
 				Comments:     []string{},
@@ -643,14 +645,14 @@ func TestAPIFields_newChild(t *testing.T) {
 			name: "new child for int",
 			args: args{
 				name:      "int",
-				fieldType: FieldInt,
+				fieldType: markers.FieldInt,
 				sample:    "int",
 			},
 			fields: fields{},
 			want: &APIFields{
 				Name:         "Int",
 				manifestName: "int",
-				Type:         FieldInt,
+				Type:         markers.FieldInt,
 				Sample:       "int: int",
 				Tags:         "`json:\"int,omitempty\"`",
 				Comments:     []string{},
@@ -661,14 +663,14 @@ func TestAPIFields_newChild(t *testing.T) {
 			name: "new child for bool",
 			args: args{
 				name:      "bool",
-				fieldType: FieldBool,
+				fieldType: markers.FieldBool,
 				sample:    "bool",
 			},
 			fields: fields{},
 			want: &APIFields{
 				Name:         "Bool",
 				manifestName: "bool",
-				Type:         FieldBool,
+				Type:         markers.FieldBool,
 				Sample:       "bool: bool",
 				Tags:         "`json:\"bool,omitempty\"`",
 				Comments:     []string{},
@@ -679,14 +681,14 @@ func TestAPIFields_newChild(t *testing.T) {
 			name: "new child for struct",
 			args: args{
 				name:      "struct",
-				fieldType: FieldStruct,
+				fieldType: markers.FieldStruct,
 				sample:    "struct",
 			},
 			fields: fields{},
 			want: &APIFields{
 				Name:         "Struct",
 				manifestName: "struct",
-				Type:         FieldStruct,
+				Type:         markers.FieldStruct,
 				Sample:       "struct:",
 				Tags:         "`json:\"struct,omitempty\"`",
 				Comments:     []string{},
@@ -724,7 +726,7 @@ func TestAPIFields_isEqual(t *testing.T) {
 		Name         string
 		StructName   string
 		manifestName string
-		Type         FieldType
+		Type         markers.FieldType
 		Tags         string
 		Comments     []string
 		Markers      []string
@@ -747,11 +749,11 @@ func TestAPIFields_isEqual(t *testing.T) {
 			name: "different field types are not equal",
 			args: args{
 				input: &APIFields{
-					Type: FieldString,
+					Type: markers.FieldString,
 				},
 			},
 			fields: fields{
-				Type: FieldStruct,
+				Type: markers.FieldStruct,
 			},
 			want: false,
 		},
@@ -854,7 +856,7 @@ func TestAPIFields_AddField(t *testing.T) {
 		Name         string
 		StructName   string
 		manifestName string
-		Type         FieldType
+		Type         markers.FieldType
 		Tags         string
 		Comments     []string
 		Markers      []string
@@ -865,7 +867,7 @@ func TestAPIFields_AddField(t *testing.T) {
 
 	type args struct {
 		path       string
-		fieldType  FieldType
+		fieldType  markers.FieldType
 		comments   []string
 		sample     interface{}
 		hasDefault bool
@@ -881,7 +883,7 @@ func TestAPIFields_AddField(t *testing.T) {
 			name: "valid nested",
 			args: args{
 				path:       "nested.path",
-				fieldType:  FieldString,
+				fieldType:  markers.FieldString,
 				comments:   []string{"test"},
 				sample:     "test",
 				hasDefault: true,
@@ -890,11 +892,11 @@ func TestAPIFields_AddField(t *testing.T) {
 				Comments: []string{"test1", "test2"},
 				Children: []*APIFields{
 					{
-						Type:         FieldStruct,
+						Type:         markers.FieldStruct,
 						manifestName: "nested",
 						Children: []*APIFields{
 							{
-								Type:         FieldString,
+								Type:         markers.FieldString,
 								manifestName: "path",
 							},
 						},
@@ -907,7 +909,7 @@ func TestAPIFields_AddField(t *testing.T) {
 			name: "valid flat",
 			args: args{
 				path:       "path",
-				fieldType:  FieldString,
+				fieldType:  markers.FieldString,
 				comments:   []string{"test"},
 				sample:     "test",
 				hasDefault: true,
@@ -916,7 +918,7 @@ func TestAPIFields_AddField(t *testing.T) {
 				Comments: []string{"test1", "test2"},
 				Children: []*APIFields{
 					{
-						Type:         FieldString,
+						Type:         markers.FieldString,
 						manifestName: "path",
 					},
 				},
@@ -927,7 +929,7 @@ func TestAPIFields_AddField(t *testing.T) {
 			name: "valid missing",
 			args: args{
 				path:       "path",
-				fieldType:  FieldString,
+				fieldType:  markers.FieldString,
 				comments:   []string{"test"},
 				sample:     "test",
 				hasDefault: true,
@@ -941,7 +943,7 @@ func TestAPIFields_AddField(t *testing.T) {
 			name: "valid missing nested",
 			args: args{
 				path:       "nested.path",
-				fieldType:  FieldString,
+				fieldType:  markers.FieldString,
 				comments:   []string{"test"},
 				sample:     "test",
 				hasDefault: true,
@@ -955,7 +957,7 @@ func TestAPIFields_AddField(t *testing.T) {
 			name: "ovveride flat value results in an error",
 			args: args{
 				path:       "nested.path",
-				fieldType:  FieldString,
+				fieldType:  markers.FieldString,
 				comments:   []string{"test"},
 				sample:     "test",
 				hasDefault: true,
@@ -974,7 +976,7 @@ func TestAPIFields_AddField(t *testing.T) {
 			name: "invalid nested inequal child",
 			args: args{
 				path:       "nested.path",
-				fieldType:  FieldString,
+				fieldType:  markers.FieldString,
 				comments:   []string{"test"},
 				sample:     "test",
 				hasDefault: true,
@@ -983,11 +985,11 @@ func TestAPIFields_AddField(t *testing.T) {
 				Comments: []string{"test1", "test2"},
 				Children: []*APIFields{
 					{
-						Type:         FieldStruct,
+						Type:         markers.FieldStruct,
 						manifestName: "nested",
 						Children: []*APIFields{
 							{
-								Type:         FieldString,
+								Type:         markers.FieldString,
 								manifestName: "path",
 								Default:      "value",
 							},

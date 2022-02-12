@@ -1,108 +1,13 @@
 // Copyright 2021 VMware, Inc.
 // SPDX-License-Identifier: MIT
 
-package v1
+package markers
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
-
-func Test_getResourceDefinitionVar(t *testing.T) {
-	t.Parallel()
-
-	type args struct {
-		path                string
-		forCollectionMarker bool
-	}
-
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		{
-			name: "child resource with collection field should refer to collection",
-			args: args{
-				path:                "test.path",
-				forCollectionMarker: true,
-			},
-			want: "collection.Spec.Test.Path",
-		},
-		{
-			name: "child resource with non-collection field should refer to parent",
-			args: args{
-				path:                "test.path",
-				forCollectionMarker: false,
-			},
-			want: "parent.Spec.Test.Path",
-		},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			if got := getResourceDefinitionVar(tt.args.path, tt.args.forCollectionMarker); got != tt.want {
-				t.Errorf("getResourceDefinitionVar() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestResourceMarker_setSourceCodeVar(t *testing.T) {
-	t.Parallel()
-
-	testPath := "test.set.source.code.var"
-
-	type fields struct {
-		Field           *string
-		CollectionField *string
-		sourceCodeVar   string
-	}
-
-	tests := []struct {
-		name   string
-		fields fields
-		want   *ResourceMarker
-	}{
-		{
-			name: "resource marker referencing non-collection field",
-			fields: fields{
-				Field: &testPath,
-			},
-			want: &ResourceMarker{
-				Field:         &testPath,
-				sourceCodeVar: "parent.Spec.Test.Set.Source.Code.Var",
-			},
-		},
-		{
-			name: "resource marker referencing collection field",
-			fields: fields{
-				CollectionField: &testPath,
-			},
-			want: &ResourceMarker{
-				CollectionField: &testPath,
-				sourceCodeVar:   "collection.Spec.Test.Set.Source.Code.Var",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			rm := &ResourceMarker{
-				Field:           tt.fields.Field,
-				CollectionField: tt.fields.CollectionField,
-				sourceCodeVar:   tt.fields.sourceCodeVar,
-			}
-			rm.setSourceCodeVar()
-			assert.Equal(t, tt.want, rm)
-		})
-	}
-}
 
 func TestResourceMarker_hasField(t *testing.T) {
 	t.Parallel()
@@ -222,7 +127,7 @@ func TestResourceMarker_validate(t *testing.T) {
 		Include         *bool
 		sourceCodeVar   string
 		sourceCodeValue string
-		fieldMarker     interface{}
+		fieldMarker     FieldMarkerProcessor
 	}
 
 	tests := []struct {
@@ -235,7 +140,7 @@ func TestResourceMarker_validate(t *testing.T) {
 			fields: fields{
 				Field:       &testField,
 				Value:       &testValue,
-				fieldMarker: "",
+				fieldMarker: nil,
 			},
 			wantErr: true,
 		},
@@ -244,7 +149,7 @@ func TestResourceMarker_validate(t *testing.T) {
 			fields: fields{
 				Value:       &testValue,
 				Include:     &testInclude,
-				fieldMarker: "",
+				fieldMarker: nil,
 			},
 			wantErr: true,
 		},
@@ -253,7 +158,7 @@ func TestResourceMarker_validate(t *testing.T) {
 			fields: fields{
 				Field:       &testField,
 				Include:     &testInclude,
-				fieldMarker: "",
+				fieldMarker: nil,
 			},
 			wantErr: true,
 		},
@@ -272,7 +177,7 @@ func TestResourceMarker_validate(t *testing.T) {
 				Field:       &testField,
 				Value:       &testValue,
 				Include:     &testInclude,
-				fieldMarker: "",
+				fieldMarker: nil,
 			},
 			wantErr: false,
 		},
@@ -307,8 +212,8 @@ func TestResourceMarker_associateFieldMarker(t *testing.T) {
 	fieldOne := "fieldOne"
 	fieldTwo := "fieldTwo"
 
-	testMarkers := &markerCollection{
-		collectionFieldMarkers: []*CollectionFieldMarker{
+	testMarkers := &MarkerCollection{
+		CollectionFieldMarkers: []*CollectionFieldMarker{
 			{
 				Name: collectionFieldOne,
 				Type: FieldString,
@@ -318,7 +223,7 @@ func TestResourceMarker_associateFieldMarker(t *testing.T) {
 				Type: FieldString,
 			},
 		},
-		fieldMarkers: []*FieldMarker{
+		FieldMarkers: []*FieldMarker{
 			{
 				Name: fieldOne,
 				Type: FieldString,
@@ -337,11 +242,11 @@ func TestResourceMarker_associateFieldMarker(t *testing.T) {
 		Include         *bool
 		sourceCodeVar   string
 		sourceCodeValue string
-		fieldMarker     interface{}
+		fieldMarker     FieldMarkerProcessor
 	}
 
 	type args struct {
-		markers *markerCollection
+		markers *MarkerCollection
 	}
 
 	tests := []struct {
