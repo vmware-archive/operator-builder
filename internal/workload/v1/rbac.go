@@ -188,12 +188,12 @@ func (rs *RBACRules) addRuleForWorkload(workload WorkloadAPIBuilder, forCollecti
 	rs.AddOrUpdateRules(
 		// add all permissions so that thi
 		&RBACRule{
-			Group:    fmt.Sprintf("%s/%s", workload.GetAPIGroup(), workload.GetAPIVersion()),
+			Group:    fmt.Sprintf("%s/%s", workload.GetAPIGroup(), workload.GetDomain()),
 			Resource: getResourceForRBAC(workload.GetAPIKind()),
 			Verbs:    verbs,
 		},
 		&RBACRule{
-			Group:    fmt.Sprintf("%s/%s", workload.GetAPIGroup(), workload.GetAPIVersion()),
+			Group:    fmt.Sprintf("%s/%s", workload.GetAPIGroup(), workload.GetDomain()),
 			Resource: fmt.Sprintf("%s/status", getResourceForRBAC(workload.GetAPIKind())),
 			Verbs:    statusVerbs,
 		},
