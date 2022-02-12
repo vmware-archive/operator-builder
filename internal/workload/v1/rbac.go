@@ -106,21 +106,14 @@ func (rs *RBACRules) AddOrUpdateRules(newRules ...*RBACRule) {
 }
 
 func (rs *RBACRules) AddOrUpdateRoleRules(newRule *RBACRoleRule) {
-	// assign a new rule for each group and kind match
-	if len(newRule.Groups) == 0 {
+	// ensure that we have our necessary fields
+	if len(newRule.Groups) == 0 || len(newRule.Resources) == 0 || len(newRule.Verbs) == 0 {
 		return
 	}
 
+	// assign a new rule for each group and kind match
 	for _, rbacGroup := range newRule.Groups {
-		if len(newRule.Resources) == 0 {
-			return
-		}
-
 		for _, rbacKind := range newRule.Resources {
-			if len(newRule.Verbs) == 0 {
-				return
-			}
-
 			rs.AddOrUpdateRules(
 				&RBACRule{
 					Group:    rbacGroupFromGroup(rbacGroup),
@@ -185,15 +178,15 @@ func (rs *RBACRules) addRuleForWorkload(workload WorkloadAPIBuilder, forCollecti
 		statusVerbs = []string{"get", "update", "patch"}
 	}
 
+	// add permissions for the controller to be able to watch itself and update its own status
 	rs.AddOrUpdateRules(
-		// add all permissions so that thi
 		&RBACRule{
-			Group:    fmt.Sprintf("%s/%s", workload.GetAPIGroup(), workload.GetDomain()),
+			Group:    fmt.Sprintf("%s.%s", workload.GetAPIGroup(), workload.GetDomain()),
 			Resource: getResourceForRBAC(workload.GetAPIKind()),
 			Verbs:    verbs,
 		},
 		&RBACRule{
-			Group:    fmt.Sprintf("%s/%s", workload.GetAPIGroup(), workload.GetDomain()),
+			Group:    fmt.Sprintf("%s.%s", workload.GetAPIGroup(), workload.GetDomain()),
 			Resource: fmt.Sprintf("%s/status", getResourceForRBAC(workload.GetAPIKind())),
 			Verbs:    statusVerbs,
 		},
