@@ -168,14 +168,12 @@ func valueFromInterface(in interface{}, key string) (out interface{}) {
 }
 
 func (rs *RBACRules) addRuleForWorkload(workload WorkloadAPIBuilder, forCollection bool) {
-	var verbs, statusVerbs []string
+	var verbs []string
 
 	if forCollection {
 		verbs = []string{"get", "list", "watch"}
-		statusVerbs = verbs
 	} else {
 		verbs = defaultResourceVerbs()
-		statusVerbs = []string{"get", "update", "patch"}
 	}
 
 	// add permissions for the controller to be able to watch itself and update its own status
@@ -188,7 +186,7 @@ func (rs *RBACRules) addRuleForWorkload(workload WorkloadAPIBuilder, forCollecti
 		&RBACRule{
 			Group:    fmt.Sprintf("%s.%s", workload.GetAPIGroup(), workload.GetDomain()),
 			Resource: fmt.Sprintf("%s/status", getResourceForRBAC(workload.GetAPIKind())),
-			Verbs:    statusVerbs,
+			Verbs:    defaultStatusVerbs(),
 		},
 	)
 }
@@ -257,6 +255,12 @@ func (roleRule *RBACRoleRule) processRawRule(rule interface{}) error {
 	roleRule.Verbs = rbacVerbs
 
 	return nil
+}
+
+func defaultStatusVerbs() []string {
+	return []string{
+		"get", "update", "patch",
+	}
 }
 
 func defaultResourceVerbs() []string {
