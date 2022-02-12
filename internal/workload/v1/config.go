@@ -122,6 +122,7 @@ func ProcessAPIConfig(workloadConfig string) (WorkloadAPIBuilder, error) {
 	for _, component := range components {
 		// assign values related to the collection
 		component.Spec.Collection = collection
+		component.Spec.API.Domain = collection.Spec.API.Domain
 
 		if err := component.SetResources(component.Spec.ConfigPath); err != nil {
 			return nil, err
