@@ -21,6 +21,7 @@ const (
 	FieldMarkerType MarkerType = iota
 	CollectionMarkerType
 	ResourceMarkerType
+	UnknownMarkerType
 )
 
 // FieldMarkerProcessor is an interface that requires specific methods that are
@@ -29,11 +30,17 @@ type FieldMarkerProcessor interface {
 	GetName() string
 	GetDescription() string
 	GetFieldType() FieldType
+	GetOriginalValue() interface{}
 	GetReplaceText() string
 	GetSpecPrefix() string
 
-	SetDescription(description string)
-	SetOriginalValue(value string)
+	IsCollectionFieldMarker() bool
+	IsFieldMarker() bool
+	IsForCollection() bool
+
+	SetDescription(string)
+	SetOriginalValue(string)
+	SetForCollection(bool)
 }
 
 // MarkerCollection is an object that stores a set of markers.
@@ -101,8 +108,14 @@ func initializeMarkerInspector(markerTypes ...MarkerType) (*inspect.Inspector, e
 func transformYAML(results ...*inspect.YAMLResult) error {
 	for _, result := range results {
 		// convert to interface
-		marker, ok := result.Object.(FieldMarkerProcessor)
-		if !ok {
+		var marker FieldMarkerProcessor
+
+		switch t := result.Object.(type) {
+		case FieldMarker:
+			marker = &t
+		case CollectionFieldMarker:
+			marker = &t
+		default:
 			continue
 		}
 
@@ -131,8 +144,8 @@ func transformYAML(results ...*inspect.YAMLResult) error {
 func reservedMarkers() []string {
 	return []string{
 		"collection",
-		"collection.Name",
-		"collection.Namespace",
+		"collection.name",
+		"collection.namespace",
 	}
 }
 
@@ -140,7 +153,7 @@ func reservedMarkers() []string {
 // the fieldName as a string, is reserved for internal purposes.
 func isReserved(fieldName string) bool {
 	for _, reserved := range reservedMarkers() {
-		if fieldName == reserved {
+		if strings.Title(fieldName) == strings.Title(reserved) {
 			return true
 		}
 	}
@@ -170,25 +183,30 @@ func getKeyValue(result *inspect.YAMLResult) (key, value *yaml.Node) {
 }
 
 // setComments sets the comments for use by the resultant code.
-func setComments(
-	marker FieldMarkerProcessor,
-	result *inspect.YAMLResult,
-	key, value *yaml.Node,
-) {
+func setComments(marker FieldMarkerProcessor, result *inspect.YAMLResult, key, value *yaml.Node) {
 	// update the description to ensure new lines are commented
 	if marker.GetDescription() != "" {
 		marker.SetDescription(strings.TrimPrefix(marker.GetDescription(), "\n"))
-		key.HeadComment = "# " + marker.GetDescription()
+		key.HeadComment = key.HeadComment + "\n# " + marker.GetDescription()
 	}
 
 	// set replace text to ensure that our markers are commented
 	replaceText := strings.TrimSuffix(result.MarkerText, "\n")
 	replaceText = strings.ReplaceAll(replaceText, "\n", "\n#")
 
+	// set the append text to notify the user where a marker was originated from in their source code
+	var appendText string
+	switch t := marker.(type) {
+	case *FieldMarker:
+		appendText = "controlled by field: " + t.Name
+	case *CollectionFieldMarker:
+		appendText = "controlled by collection field: " + t.Name
+	}
+
 	// set the comments on the yaml nodes
 	key.FootComment = ""
-	key.HeadComment = strings.ReplaceAll(key.HeadComment, replaceText, "controlled by collection field: "+marker.GetName())
-	value.LineComment = strings.ReplaceAll(value.LineComment, replaceText, "controlled by collection field: "+marker.GetName())
+	key.HeadComment = strings.ReplaceAll(key.HeadComment, replaceText, appendText)
+	value.LineComment = strings.ReplaceAll(value.LineComment, replaceText, appendText)
 }
 
 // setValue will set the value appropriately.  This is based on whether the marker has
@@ -213,7 +231,7 @@ func setValue(marker FieldMarkerProcessor, value *yaml.Node) error {
 		value.Value = re.ReplaceAllString(value.Value, getSourceCodeFieldVariable(marker))
 	} else {
 		value.Tag = varTag
-		value.Value = getSourceCodeFieldVariable(marker)
+		value.Value = getSourceCodeVariable(marker)
 	}
 
 	return nil

@@ -32,8 +32,8 @@ type FieldMarker struct {
 	Replace     *string
 
 	// other values which we use to pass information
-	ForCollection bool
-	OriginalValue interface{}
+	forCollection bool
+	originalValue interface{}
 }
 
 //nolint:gocritic //needed to implement string interface
@@ -41,7 +41,7 @@ func (fm FieldMarker) String() string {
 	return fmt.Sprintf("FieldMarker{Name: %s Type: %v Description: %q Default: %v}",
 		fm.Name,
 		fm.Type,
-		*fm.Description,
+		fm.GetDescription(),
 		fm.Default,
 	)
 }
@@ -66,6 +66,10 @@ func (fm *FieldMarker) GetName() string {
 }
 
 func (fm *FieldMarker) GetDescription() string {
+	if fm.Description == nil {
+		return ""
+	}
+
 	return *fm.Description
 }
 
@@ -74,17 +78,41 @@ func (fm *FieldMarker) GetFieldType() FieldType {
 }
 
 func (fm *FieldMarker) GetReplaceText() string {
+	if fm.Replace == nil {
+		return ""
+	}
+
 	return *fm.Replace
 }
 
 func (fm *FieldMarker) GetSpecPrefix() string {
-	return CollectionFieldSpecPrefix
+	return FieldSpecPrefix
+}
+
+func (fm *FieldMarker) GetOriginalValue() interface{} {
+	return fm.originalValue
+}
+
+func (fm *FieldMarker) IsCollectionFieldMarker() bool {
+	return false
+}
+
+func (fm *FieldMarker) IsFieldMarker() bool {
+	return true
+}
+
+func (fm *FieldMarker) IsForCollection() bool {
+	return fm.forCollection
 }
 
 func (fm *FieldMarker) SetOriginalValue(value string) {
-	fm.OriginalValue = &value
+	fm.originalValue = &value
 }
 
 func (fm *FieldMarker) SetDescription(description string) {
 	fm.Description = &description
+}
+
+func (fm *FieldMarker) SetForCollection(forCollection bool) {
+	fm.forCollection = forCollection
 }

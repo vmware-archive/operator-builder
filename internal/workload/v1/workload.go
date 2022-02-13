@@ -278,7 +278,7 @@ func (ws *WorkloadSpec) processMarkerResults(markerResults []*inspect.YAMLResult
 		var sampleVal interface{}
 
 		switch r := markerResult.Object.(type) {
-		case markers.FieldMarker:
+		case *markers.FieldMarker:
 			comments := []string{}
 
 			if r.Description != nil {
@@ -289,7 +289,7 @@ func (ws *WorkloadSpec) processMarkerResults(markerResults []*inspect.YAMLResult
 				defaultFound = true
 				sampleVal = r.Default
 			} else {
-				sampleVal = r.OriginalValue
+				sampleVal = r.GetOriginalValue()
 			}
 
 			if err := ws.APISpecFields.AddField(
@@ -302,10 +302,10 @@ func (ws *WorkloadSpec) processMarkerResults(markerResults []*inspect.YAMLResult
 				return err
 			}
 
-			r.ForCollection = ws.ForCollection
-			ws.FieldMarkers = append(ws.FieldMarkers, &r)
+			r.SetForCollection(ws.ForCollection)
+			ws.FieldMarkers = append(ws.FieldMarkers, r)
 
-		case markers.CollectionFieldMarker:
+		case *markers.CollectionFieldMarker:
 			comments := []string{}
 
 			if r.Description != nil {
@@ -316,7 +316,7 @@ func (ws *WorkloadSpec) processMarkerResults(markerResults []*inspect.YAMLResult
 				defaultFound = true
 				sampleVal = r.Default
 			} else {
-				sampleVal = r.OriginalValue
+				sampleVal = r.GetOriginalValue()
 			}
 
 			if err := ws.APISpecFields.AddField(
@@ -329,8 +329,8 @@ func (ws *WorkloadSpec) processMarkerResults(markerResults []*inspect.YAMLResult
 				return err
 			}
 
-			r.ForCollection = ws.ForCollection
-			ws.CollectionFieldMarkers = append(ws.CollectionFieldMarkers, &r)
+			r.SetForCollection(ws.ForCollection)
+			ws.CollectionFieldMarkers = append(ws.CollectionFieldMarkers, r)
 
 		default:
 			continue

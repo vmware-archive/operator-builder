@@ -11,15 +11,14 @@ import (
 )
 
 var (
-	ErrResourceMarkerInvalid            = errors.New("resource marker is invalid")
-	ErrResourceMarkerCount              = errors.New("expected only 1 resource marker")
-	ErrResourceMarkerAssociation        = errors.New("unable to associate resource marker with field marker")
-	ErrResourceMarkerTypeMismatch       = errors.New("resource marker and field marker have mismatched types")
-	ErrResourceMarkerInvalidType        = errors.New("expected resource marker type")
-	ErrResourceMarkerUnknownValueType   = errors.New("resource marker 'value' is of unknown type")
-	ErrResourceMarkerMissingFieldValue  = errors.New("resource marker missing 'collectionField', 'field' or 'value'")
-	ErrResourceMarkerMissingInclude     = errors.New("resource marker missing 'include' value")
-	ErrResourceMarkerMissingFieldMarker = errors.New("resource marker has no associated 'field' or 'collectionField' marker")
+	ErrResourceMarkerInvalid           = errors.New("resource marker is invalid")
+	ErrResourceMarkerCount             = errors.New("expected only 1 resource marker")
+	ErrResourceMarkerAssociation       = errors.New("unable to associate resource marker with 'field' or 'collectionField' marker")
+	ErrResourceMarkerTypeMismatch      = errors.New("resource marker and field marker have mismatched types")
+	ErrResourceMarkerInvalidType       = errors.New("expected resource marker type")
+	ErrResourceMarkerUnknownValueType  = errors.New("resource marker 'value' is of unknown type")
+	ErrResourceMarkerMissingFieldValue = errors.New("resource marker missing 'collectionField', 'field' or 'value'")
+	ErrResourceMarkerMissingInclude    = errors.New("resource marker missing 'include' value")
 )
 
 const (
@@ -53,7 +52,7 @@ type ResourceMarker struct {
 	Include         *bool
 
 	// other field which we use to pass information
-	IncludeCode     string
+	includeCode     string
 	sourceCodeVar   string
 	sourceCodeValue string
 	fieldMarker     FieldMarkerProcessor
@@ -61,11 +60,28 @@ type ResourceMarker struct {
 
 //nolint:gocritic //needed to implement string interface
 func (rm ResourceMarker) String() string {
+	var fieldString, collectionFieldString string
+
+	var includeBool bool
+
+	// set the values if they have been provided otherwise take the zero values
+	if rm.Field != nil {
+		fieldString = *rm.Field
+	}
+
+	if rm.CollectionField != nil {
+		collectionFieldString = *rm.CollectionField
+	}
+
+	if rm.Include != nil {
+		includeBool = *rm.Include
+	}
+
 	return fmt.Sprintf("ResourceMarker{Field: %s CollectionField: %s Value: %v Include: %v}",
-		*rm.Field,
-		*rm.CollectionField,
+		fieldString,
+		collectionFieldString,
 		rm.Value,
-		*rm.Include,
+		includeBool,
 	)
 }
 
@@ -81,19 +97,65 @@ func defineResourceMarker(registry *marker.Registry) error {
 	return nil
 }
 
+// GetIncludeCode is a convenience function to return the include code of the resource marker.
+func (rm *ResourceMarker) GetIncludeCode() string {
+	return rm.includeCode
+}
+
+// GetCollectionField is a convenience function to return the collection field as a string.
+func (rm *ResourceMarker) GetCollectionField() string {
+	if rm.CollectionField == nil {
+		return ""
+	}
+
+	return *rm.CollectionField
+}
+
+// GetField is a convenience function to return the field as a string.
+func (rm *ResourceMarker) GetField() string {
+	if rm.Field == nil {
+		return ""
+	}
+
+	return *rm.Field
+}
+
 // Process will process a resource marker from a collection of collection field markers
 // and field markers, associate them together and set the appropriate fields.
 func (rm *ResourceMarker) Process(markers *MarkerCollection) error {
-	// associate field markers from a collection of markers to this resource marker
-	rm.associateFieldMarker(markers)
-
+	// ensure we have a valid field marker before continuing to process
 	if err := rm.validate(); err != nil {
 		return fmt.Errorf("%w; %s", err, ErrResourceMarkerInvalid)
+	}
+
+	// associate field markers from a collection of markers to this resource marker
+	if fieldMarker := rm.getFieldMarker(markers); fieldMarker != nil {
+		rm.fieldMarker = fieldMarker
+	} else {
+		return fmt.Errorf("%w; %s", ErrResourceMarkerAssociation, rm)
 	}
 
 	// set the source code and return
 	if err := rm.setSourceCode(); err != nil {
 		return fmt.Errorf("%w; error setting source code for resource marker: %v", err, rm)
+	}
+
+	return nil
+}
+
+// validate checks for a valid resource marker and returns an error if the
+// resource marker is invalid.
+func (rm *ResourceMarker) validate() error {
+	// check include field for a provided value
+	// NOTE: this field is mandatory now, but could be optional later, so we return
+	// an error here rather than using a pointer to a bool to control the mandate.
+	if rm.Include == nil {
+		return fmt.Errorf("%w for marker %s", ErrResourceMarkerMissingInclude, rm)
+	}
+
+	// ensure that both a field and value exist
+	if !rm.hasField() || !rm.hasValue() {
+		return fmt.Errorf("%w for marker %s", ErrResourceMarkerMissingFieldValue, rm)
 	}
 
 	return nil
@@ -126,64 +188,43 @@ func (rm *ResourceMarker) hasValue() bool {
 	return rm.Value != nil
 }
 
-// associateFieldMarker will associate a resource marker with one of a field
-// marker or collection marker.
-func (rm *ResourceMarker) associateFieldMarker(markers *MarkerCollection) {
-	// return immediately if the marker collection we are trying to associate is empty
-	if len(markers.CollectionFieldMarkers) == 0 && len(markers.FieldMarkers) == 0 {
-		return
+// getFieldMarker gets the associated field marker from the resource marker input
+// field value.
+func (rm *ResourceMarker) isAssociated(fromMarker FieldMarkerProcessor) bool {
+	var field string
+
+	switch {
+	case fromMarker.IsCollectionFieldMarker():
+		field = rm.GetCollectionField()
+	case fromMarker.IsFieldMarker() && fromMarker.IsForCollection():
+		field = rm.GetCollectionField()
+	default:
+		field = rm.GetField()
 	}
 
-	// associate first relevant field marker with this marker
-	for _, fm := range markers.FieldMarkers {
-		if rm.Field != nil {
-			if fm.Name == *rm.Field {
-				rm.fieldMarker = fm
-
-				return
-			}
-		}
-
-		if fm.ForCollection {
-			if rm.CollectionField != nil {
-				if fm.Name == *rm.CollectionField {
-					rm.fieldMarker = fm
-
-					return
-				}
-			}
-		}
-	}
-
-	// associate first relevant collection field marker with this marker
-	for _, cm := range markers.CollectionFieldMarkers {
-		if rm.CollectionField != nil {
-			if cm.Name == *rm.CollectionField {
-				rm.fieldMarker = cm
-
-				return
-			}
-		}
-	}
+	return field == fromMarker.GetName()
 }
 
-// validate checks for a valid resource marker and returns an error if the
-// resource marker is invalid.
-func (rm *ResourceMarker) validate() error {
-	// check include field for a provided value
-	// NOTE: this field is mandatory now, but could be optional later, so we return
-	// an error here rather than using a pointer to a bool to control the mandate.
-	if rm.Include == nil {
-		return fmt.Errorf("%w for marker %s", ErrResourceMarkerMissingInclude, rm)
+// getFieldMarker will return the associated collection marker or field marker
+// with a particular resource marker given a collection of markers.
+func (rm *ResourceMarker) getFieldMarker(markers *MarkerCollection) FieldMarkerProcessor {
+	// return immediately if the marker collection we are trying to associate is empty
+	if len(markers.CollectionFieldMarkers) == 0 && len(markers.FieldMarkers) == 0 {
+		return nil
 	}
 
-	if rm.fieldMarker == nil {
-		return fmt.Errorf("%w for marker %s", ErrResourceMarkerMissingFieldMarker, rm)
+	// attempt to associate the field marker first
+	for _, fm := range markers.FieldMarkers {
+		if associatedWith := rm.isAssociated(fm); associatedWith {
+			return fm
+		}
 	}
 
-	// ensure that both a field and value exist
-	if !rm.hasField() || !rm.hasValue() {
-		return fmt.Errorf("%w for marker %s", ErrResourceMarkerMissingFieldValue, rm)
+	// attempt to associate a field marker from a collection field if the marker
+	for _, cfm := range markers.CollectionFieldMarkers {
+		if associatedWith := rm.isAssociated(cfm); associatedWith {
+			return cfm
+		}
 	}
 
 	return nil
@@ -215,9 +256,9 @@ func (rm *ResourceMarker) setSourceCode() error {
 
 	// set the include code for this marker
 	if *rm.Include {
-		rm.IncludeCode = fmt.Sprintf(includeCode, rm.sourceCodeVar, rm.sourceCodeValue)
+		rm.includeCode = fmt.Sprintf(includeCode, rm.sourceCodeVar, rm.sourceCodeValue)
 	} else {
-		rm.IncludeCode = fmt.Sprintf(excludeCode, rm.sourceCodeVar, rm.sourceCodeValue)
+		rm.includeCode = fmt.Sprintf(excludeCode, rm.sourceCodeVar, rm.sourceCodeValue)
 	}
 
 	return nil

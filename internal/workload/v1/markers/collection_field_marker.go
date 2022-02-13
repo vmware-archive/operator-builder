@@ -26,7 +26,7 @@ func (cfm CollectionFieldMarker) String() string {
 	return fmt.Sprintf("CollectionFieldMarker{Name: %s Type: %v Description: %q Default: %v}",
 		cfm.Name,
 		cfm.Type,
-		*cfm.Description,
+		cfm.GetDescription(),
 		cfm.Default,
 	)
 }
@@ -51,6 +51,10 @@ func (cfm *CollectionFieldMarker) GetName() string {
 }
 
 func (cfm *CollectionFieldMarker) GetDescription() string {
+	if cfm.Description == nil {
+		return ""
+	}
+
 	return *cfm.Description
 }
 
@@ -59,6 +63,10 @@ func (cfm *CollectionFieldMarker) GetFieldType() FieldType {
 }
 
 func (cfm *CollectionFieldMarker) GetReplaceText() string {
+	if cfm.Replace == nil {
+		return ""
+	}
+
 	return *cfm.Replace
 }
 
@@ -66,10 +74,30 @@ func (cfm *CollectionFieldMarker) GetSpecPrefix() string {
 	return CollectionFieldSpecPrefix
 }
 
+func (cfm *CollectionFieldMarker) GetOriginalValue() interface{} {
+	return cfm.originalValue
+}
+
+func (cfm *CollectionFieldMarker) IsCollectionFieldMarker() bool {
+	return true
+}
+
+func (cfm *CollectionFieldMarker) IsFieldMarker() bool {
+	return false
+}
+
+func (cfm *CollectionFieldMarker) IsForCollection() bool {
+	return cfm.forCollection
+}
+
 func (cfm *CollectionFieldMarker) SetOriginalValue(value string) {
-	cfm.OriginalValue = &value
+	cfm.originalValue = &value
 }
 
 func (cfm *CollectionFieldMarker) SetDescription(description string) {
 	cfm.Description = &description
+}
+
+func (cfm *CollectionFieldMarker) SetForCollection(forCollection bool) {
+	cfm.forCollection = forCollection
 }
