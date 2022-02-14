@@ -17,10 +17,10 @@ const (
 // RBACRule contains the info needed to create the kubebuilder:rbac markers in
 // the controller.
 type RBACRule struct {
-	Group      string
-	Resource   string
-	Verbs      []string
-	VerbString string
+	Group    string
+	Resource string
+	Verbs    []string
+	URLs     []string
 }
 
 // RBACRoleRule contains the info needed to create the kubebuilder:rbac markers
@@ -28,10 +28,13 @@ type RBACRule struct {
 // found.  This is because the underlying controller needs the same permissions
 // for the role or clusterrole that it is attempting to manage.
 type RBACRoleRule struct {
-	Groups    []string
-	Resources []string
-	Verbs     []string
+	Groups    RBACRoleRuleField
+	Resources RBACRoleRuleField
+	Verbs     RBACRoleRuleField
+	URLs      RBACRoleRuleField
 }
+
+type RBACRoleRuleField []string
 
 type RBACRules []RBACRule
 
@@ -48,7 +51,6 @@ func (r *RBACRule) addVerb(verb string) {
 
 	if !found {
 		r.Verbs = append(r.Verbs, verb)
-		r.VerbString = rbacVerbsToString(r.Verbs)
 	}
 }
 
@@ -60,7 +62,7 @@ func rbacGroupFromGroup(group string) string {
 	return group
 }
 
-func rbacVerbsToString(verbs []string) string {
+func rbacFieldsToString(verbs []string) string {
 	return strings.Join(verbs, ";")
 }
 
@@ -87,28 +89,105 @@ func (rs *RBACRules) groupResourceRecorded(newRBACRule *RBACRule) bool {
 	return false
 }
 
+func (rs *RBACRules) hasURL(url string) bool {
+	for _, rule := range *rs {
+		if len(rule.URLs) == 0 {
+			continue
+		}
+
+		for i := range rule.URLs {
+			if rule.URLs[i] == url {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+func (r *RBACRule) ToMarker() string {
+	const kubebuilderPrefix = "// +kubebuilder:rbac"
+
+	if len(r.URLs) > 0 {
+		return fmt.Sprintf("%s:verbs=%s,urls=%s",
+			kubebuilderPrefix,
+			rbacFieldsToString(r.Verbs),
+			rbacFieldsToString(r.URLs),
+		)
+	}
+
+	return fmt.Sprintf("%s:groups=%s,resources=%s,verbs=%s",
+		kubebuilderPrefix,
+		r.Group,
+		r.Resource,
+		rbacFieldsToString(r.Verbs),
+	)
+}
+
 func (rs *RBACRules) AddOrUpdateRules(newRules ...*RBACRule) {
-	for _, newRule := range newRules {
-		if !rs.groupResourceRecorded(newRule) {
-			newRule.VerbString = rbacVerbsToString(newRule.Verbs)
-			*rs = append(*rs, *newRule)
-		} else {
-			rules := *rs
-			for i := range rules {
-				if rules[i].groupResourceEqual(newRule) {
-					for _, verb := range newRule.Verbs {
-						rules[i].addVerb(verb)
-					}
+	for i := range newRules {
+		switch {
+		case newRules[i].hasGroupResource():
+			rs.addForGroupResource(newRules[i])
+		case newRules[i].hasURLs():
+			rs.addForURLs(newRules[i])
+		default:
+			continue
+		}
+	}
+}
+
+func (rs *RBACRules) addForGroupResource(newRule *RBACRule) {
+	rules := *rs
+
+	if !rules.groupResourceRecorded(newRule) {
+		*rs = append(*rs, *newRule)
+	} else {
+		for i := range rules {
+			if rules[i].groupResourceEqual(newRule) {
+				for _, verb := range newRule.Verbs {
+					rules[i].addVerb(verb)
 				}
 			}
 		}
 	}
 }
 
+func (rs *RBACRules) addForURLs(newRule *RBACRule) {
+	rules := *rs
+
+	for _, url := range newRule.URLs {
+		for i := range rules {
+			if rs.hasURL(url) {
+				for _, verb := range newRule.Verbs {
+					rules[i].addVerb(verb)
+				}
+			} else {
+				*rs = append(*rs, *newRule)
+			}
+		}
+	}
+}
+
+func (r *RBACRule) hasGroupResource() bool {
+	return r.Group != "" && r.Resource != ""
+}
+
+func (r *RBACRule) hasURLs() bool {
+	return len(r.URLs) > 0
+}
+
 func (rs *RBACRules) AddOrUpdateRoleRules(newRule *RBACRoleRule) {
-	// ensure that we have our necessary fields
-	if len(newRule.Groups) == 0 || len(newRule.Resources) == 0 || len(newRule.Verbs) == 0 {
+	// we must have verbs to create our rbac
+	if len(newRule.Verbs) == 0 {
 		return
+	}
+
+	// we either need to have groups/resources or urls
+	if len(newRule.Groups) == 0 || len(newRule.Resources) == 0 {
+		if len(newRule.URLs) == 0 {
+			return
+		}
 	}
 
 	// assign a new rule for each group and kind match
@@ -119,6 +198,7 @@ func (rs *RBACRules) AddOrUpdateRoleRules(newRule *RBACRoleRule) {
 					Group:    rbacGroupFromGroup(rbacGroup),
 					Resource: getResourceForRBAC(rbacKind),
 					Verbs:    newRule.Verbs,
+					URLs:     newRule.URLs,
 				},
 			)
 		}
@@ -161,6 +241,10 @@ func valueFromInterface(in interface{}, key string) (out interface{}) {
 	case map[interface{}]interface{}:
 		out = asType[key]
 	case map[string]interface{}:
+		out = asType[key]
+	case map[interface{}][]interface{}:
+		out = asType[key]
+	case map[string][]interface{}:
 		out = asType[key]
 	}
 
@@ -223,8 +307,8 @@ func (rs *RBACRules) addRulesForManifest(kind, group string, rawContent interfac
 
 		for _, rbacRoleRule := range rbacRoleRules {
 			rule := &RBACRoleRule{}
-			if err := rule.processRawRule(rbacRoleRule); err != nil {
-				return fmt.Errorf("%w; error processing rbac role rule %v", err, rules)
+			if err := rule.processRawRoleRule(rbacRoleRule); err != nil {
+				return fmt.Errorf("%w; error processing rbac role rule %v", err, rbacRoleRule)
 			}
 
 			rs.AddOrUpdateRoleRules(rule)
@@ -234,25 +318,35 @@ func (rs *RBACRules) addRulesForManifest(kind, group string, rawContent interfac
 	return nil
 }
 
-func (roleRule *RBACRoleRule) processRawRule(rule interface{}) error {
-	rbacGroups, err := toArrayString(valueFromInterface(rule, "apiGroups"))
-	if err != nil {
-		return fmt.Errorf("%w; error converting rbac groups for rule %v", err, rule)
+func (roleRule *RBACRoleRule) processRawRoleRule(rule interface{}) error {
+	fields := map[*RBACRoleRuleField]string{
+		&roleRule.Groups:    "apiGroups",
+		&roleRule.Resources: "resources",
+		&roleRule.Verbs:     "verbs",
+		&roleRule.URLs:      "nonResourceURLs",
 	}
 
-	rbacKinds, err := toArrayString(valueFromInterface(rule, "resources"))
-	if err != nil {
-		return fmt.Errorf("%w; error converting rbac kinds for rule %v", err, rule)
+	for objectField, fieldKey := range fields {
+		if err := objectField.setRbacRoleRuleField(rule, fieldKey); err != nil {
+			return fmt.Errorf("%w; error processing raw fule %v", err, rule)
+		}
 	}
 
-	rbacVerbs, err := toArrayString(valueFromInterface(rule, "verbs"))
-	if err != nil {
-		return fmt.Errorf("%w; error converting rbac verbs for rule %v", err, rule)
+	return nil
+}
+
+func (field *RBACRoleRuleField) setRbacRoleRuleField(rule interface{}, fieldKey string) error {
+	fieldValue := valueFromInterface(rule, fieldKey)
+	if fieldValue == nil {
+		return nil
 	}
 
-	roleRule.Groups = rbacGroups
-	roleRule.Resources = rbacKinds
-	roleRule.Verbs = rbacVerbs
+	fieldValues, err := toArrayString(fieldValue)
+	if err != nil {
+		return fmt.Errorf("%w; error converting rbac field key %s for rule %v", err, fieldKey, rule)
+	}
+
+	*field = fieldValues
 
 	return nil
 }
