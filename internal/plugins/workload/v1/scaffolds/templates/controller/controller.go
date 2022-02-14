@@ -24,6 +24,12 @@ type Controller struct {
 
 	// input fields
 	Builder workloadv1.WorkloadAPIBuilder
+
+	// template fields
+	BaseImports       []string
+	OtherImports      []string
+	InternalImports   []string
+	CollectionImports []string
 }
 
 func (f *Controller) SetTemplateDefaults() error {
@@ -36,7 +42,121 @@ func (f *Controller) SetTemplateDefaults() error {
 	f.TemplateBody = controllerTemplate
 	f.IfExistsAction = machinery.OverwriteFile
 
+	f.setBaseImports()
+	f.setOtherImports()
+	f.setInternalImports()
+
+	if f.Builder.IsCollection() {
+		f.setCollectionImports()
+	}
+
 	return nil
+}
+
+func (f *Controller) setBaseImports() {
+	f.BaseImports = []string{`"context"`, `"fmt"`}
+
+	if f.Builder.IsComponent() {
+		f.BaseImports = append(f.BaseImports, `"errors"`, `"reflect"`)
+	}
+}
+
+func (f *Controller) setOtherImports() {
+	f.OtherImports = []string{
+		`"github.com/go-logr/logr"`,
+		`apierrs "k8s.io/apimachinery/pkg/api/errors"`,
+		`"k8s.io/client-go/tools/record"`,
+		`ctrl "sigs.k8s.io/controller-runtime"`,
+		`"sigs.k8s.io/controller-runtime/pkg/client"`,
+		`"sigs.k8s.io/controller-runtime/pkg/controller"`,
+		`"github.com/nukleros/operator-builder-tools/pkg/controller/phases"`,
+		`"github.com/nukleros/operator-builder-tools/pkg/controller/predicates"`,
+		`"github.com/nukleros/operator-builder-tools/pkg/controller/workload"`,
+	}
+
+	if f.Builder.IsComponent() {
+		f.OtherImports = append(f.OtherImports,
+			`"github.com/nukleros/operator-builder-tools/pkg/resources"`,
+			`"sigs.k8s.io/controller-runtime/pkg/event"`,
+			`"sigs.k8s.io/controller-runtime/pkg/handler"`,
+			`"sigs.k8s.io/controller-runtime/pkg/predicate"`,
+			`"sigs.k8s.io/controller-runtime/pkg/reconcile"`,
+			`"sigs.k8s.io/controller-runtime/pkg/source"`,
+			`"k8s.io/apimachinery/pkg/types"`,
+		)
+	}
+}
+
+func (f *Controller) setInternalImports() {
+	f.InternalImports = []string{
+		fmt.Sprintf(`"%s/internal/dependencies"`, f.Repo),
+		fmt.Sprintf(`"%s/internal/mutate"`, f.Repo),
+		fmt.Sprintf(`%s %q`, f.Resource.ImportAlias(), f.Resource.Path),
+	}
+
+	if f.Builder.IsComponent() {
+		f.InternalImports = append(f.InternalImports, f.getAPITypesPath(f.Builder.GetCollection()))
+	}
+
+	if f.Builder.HasChildResources() {
+		f.InternalImports = append(f.InternalImports,
+			fmt.Sprintf(`"%s/%s"`,
+				f.Resource.Path,
+				f.Builder.GetPackageName(),
+			),
+		)
+	}
+}
+
+func (f *Controller) setCollectionImports() {
+	for _, component := range f.Builder.GetComponents() {
+		if !f.importIsDefined(f.getAPITypesPath(component)) {
+			f.CollectionImports = append(f.CollectionImports, f.getAPITypesPath(component))
+		}
+	}
+
+	f.deduplicateCollectionImports()
+}
+
+func (f *Controller) importIsDefined(importCheck string) bool {
+	existingImports := []string{}
+	existingImports = append(existingImports, f.BaseImports...)
+	existingImports = append(existingImports, f.OtherImports...)
+	existingImports = append(existingImports, f.InternalImports...)
+
+	for _, existing := range existingImports {
+		if importCheck == existing {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (f *Controller) deduplicateCollectionImports() {
+	keys := make(map[string]bool)
+
+	collectionImports := []string{}
+
+	for _, existing := range f.CollectionImports {
+		if _, value := keys[existing]; !value {
+			keys[existing] = true
+
+			collectionImports = append(collectionImports, existing)
+		}
+	}
+
+	f.CollectionImports = collectionImports
+}
+
+func (f *Controller) getAPITypesPath(builder workloadv1.WorkloadAPIBuilder) string {
+	return fmt.Sprintf(`%s%s "%s/apis/%s/%s"`,
+		builder.GetAPIGroup(),
+		builder.GetAPIVersion(),
+		f.Repo,
+		builder.GetAPIGroup(),
+		builder.GetAPIVersion(),
+	)
 }
 
 //nolint: lll
@@ -45,48 +165,23 @@ const controllerTemplate = `{{ .Boilerplate }}
 package {{ .Resource.Group }}
 
 import (
-	"context"
-	{{- if .Builder.IsComponent }}
-	"errors"
-	"reflect"
-	{{- end }}
-	"fmt"
-
-	"github.com/go-logr/logr"
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/client-go/tools/record"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"github.com/nukleros/operator-builder-tools/pkg/controller/phases"
-	"github.com/nukleros/operator-builder-tools/pkg/controller/predicates"
-	"github.com/nukleros/operator-builder-tools/pkg/controller/workload"
-	{{- if .Builder.IsComponent }}
-	"github.com/nukleros/operator-builder-tools/pkg/resources"
-	"sigs.k8s.io/controller-runtime/pkg/event"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/source"
-	"k8s.io/apimachinery/pkg/types"
-	{{- end }}
-
-	{{ .Resource.ImportAlias }} "{{ .Resource.Path }}"
-	{{ if .Builder.IsComponent -}}
-	{{ .Builder.GetCollection.Spec.API.Group }}{{ .Builder.GetCollection.Spec.API.Version }} "{{ .Repo }}/apis/{{ .Builder.GetCollection.Spec.API.Group }}/{{ .Builder.GetCollection.Spec.API.Version }}"
+	{{ range .BaseImports -}}
+	{{ . }}
 	{{ end }}
-	{{- if .Builder.HasChildResources -}}
-	"{{ .Resource.Path }}/{{ .Builder.GetPackageName }}"
-	{{ end -}}
-	"{{ .Repo }}/internal/dependencies"
-	"{{ .Repo }}/internal/mutate"
+
+	{{ range .OtherImports -}}
+	{{ . }}
+	{{ end }}
+
+	{{ range .InternalImports -}}
+	{{ . }}
+	{{ end }}
 
 	{{ if .Builder.IsCollection -}}
-	// import components so we can reconcile on changes
-	{{ range .Builder.GetComponents -}}
-	{{ .Spec.API.Group }}{{ .Spec.API.Version }} "{{ $.Repo }}/apis/{{ .Spec.API.Group }}/{{ .Spec.API.Version }}"
+	{{ range .CollectionImports -}}
+	{{ . }}
 	{{ end }}
-	{{ end -}}
+	{{ end }}
 )
 
 // {{ .Resource.Kind }}Reconciler reconciles a {{ .Resource.Kind }} object.
@@ -114,7 +209,7 @@ func New{{ .Resource.Kind }}Reconciler(mgr ctrl.Manager) *{{ .Resource.Kind }}Re
 }
 
 {{ range .Builder.GetRBACRules -}}
-// +kubebuilder:rbac:groups={{ .Group }},resources={{ .Resource }},verbs={{ .VerbString }}
+{{ .ToMarker }}
 {{ end }}
 
 // Until Webhooks are implemented we need to list and watch namespaces to ensure
