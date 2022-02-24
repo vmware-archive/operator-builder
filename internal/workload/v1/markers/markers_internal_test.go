@@ -373,8 +373,9 @@ func Test_getKeyValue(t *testing.T) {
 func Test_setValue(t *testing.T) {
 	t.Parallel()
 
-	testReplaceText := "<replace me>"
+	//nolint: goconst
 	testInvalidReplaceText := "*&^%"
+	testReplaceText := "<replace me>"
 
 	type args struct {
 		marker FieldMarkerProcessor
