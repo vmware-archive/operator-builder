@@ -165,21 +165,7 @@ func (rm *ResourceMarker) validate() error {
 // or a collection field.  One or the other is needed for processing a resource
 // marker.
 func (rm *ResourceMarker) hasField() bool {
-	var hasField, hasCollectionField bool
-
-	if rm.Field != nil {
-		if *rm.Field != "" {
-			hasField = true
-		}
-	}
-
-	if rm.CollectionField != nil {
-		if *rm.CollectionField != "" {
-			hasCollectionField = true
-		}
-	}
-
-	return hasField || hasCollectionField
+	return rm.GetField() != "" || rm.GetCollectionField() != ""
 }
 
 // hasValue determines whether or not a parsed resource marker has a value
@@ -188,8 +174,8 @@ func (rm *ResourceMarker) hasValue() bool {
 	return rm.Value != nil
 }
 
-// getFieldMarker gets the associated field marker from the resource marker input
-// field value.
+// isAssociated returns whether a given marker is associated with a given resource
+// marker.
 func (rm *ResourceMarker) isAssociated(fromMarker FieldMarkerProcessor) bool {
 	var field string
 
@@ -197,7 +183,11 @@ func (rm *ResourceMarker) isAssociated(fromMarker FieldMarkerProcessor) bool {
 	case fromMarker.IsCollectionFieldMarker():
 		field = rm.GetCollectionField()
 	case fromMarker.IsFieldMarker() && fromMarker.IsForCollection():
-		field = rm.GetCollectionField()
+		if rm.GetCollectionField() != "" {
+			field = rm.GetCollectionField()
+		} else {
+			field = rm.GetField()
+		}
 	default:
 		field = rm.GetField()
 	}

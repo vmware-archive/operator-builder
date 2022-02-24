@@ -210,5 +210,9 @@ func (cr *ChildResource) processResourceMarkers(markerCollection *markers.Marker
 		return fmt.Errorf("%w; %s", err, ErrChildResourceResourceMarkerProcess)
 	}
 
+	if marker.GetIncludeCode() != "" {
+		cr.IncludeCode = marker.GetIncludeCode()
+	}
+
 	return nil
 }
