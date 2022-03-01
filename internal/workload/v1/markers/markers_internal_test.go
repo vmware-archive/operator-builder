@@ -217,11 +217,13 @@ func Test_getSourceCodeFieldVariable(t *testing.T) {
 	t.Parallel()
 
 	fieldMarkerTest := &FieldMarker{
-		Name: "field.marker",
+		Name:          "field.marker",
+		sourceCodeVar: "parent.Spec.Field.Marker",
 	}
 
 	collectionFieldMarkerTest := &CollectionFieldMarker{
-		Name: "collection",
+		Name:          "collection",
+		sourceCodeVar: "collection.Spec.Collection",
 	}
 
 	type args struct {
@@ -271,8 +273,19 @@ func Test_getSourceCodeVariable(t *testing.T) {
 		Name: "flat",
 	}
 
+	fieldMarkerField := "test.field.marker.field"
+	collectionFieldMarkerField := "test.collection.field.marker.field"
+
+	resourceMarkerFieldTest := &ResourceMarker{
+		Field: &fieldMarkerField,
+	}
+
+	resourceMarkerCollectionFieldTest := &ResourceMarker{
+		CollectionField: &collectionFieldMarkerField,
+	}
+
 	type args struct {
-		marker FieldMarkerProcessor
+		marker MarkerProcessor
 	}
 
 	tests := []struct {
@@ -293,6 +306,20 @@ func Test_getSourceCodeVariable(t *testing.T) {
 				marker: collectionFieldMarkerTest,
 			},
 			want: "collection.Spec.Flat",
+		},
+		{
+			name: "ensure resource marker with field marker field returns a correct source code variable",
+			args: args{
+				marker: resourceMarkerFieldTest,
+			},
+			want: "parent.Spec.Test.Field.Marker.Field",
+		},
+		{
+			name: "ensure resource marker with collection field marker field returns a correct source code variable",
+			args: args{
+				marker: resourceMarkerCollectionFieldTest,
+			},
+			want: "collection.Spec.Test.Collection.Field.Marker.Field",
 		},
 	}
 
@@ -392,7 +419,8 @@ func Test_setValue(t *testing.T) {
 			name: "ensure value is set appropriately when replace text is not requested",
 			args: args{
 				marker: &FieldMarker{
-					Name: "test.field",
+					Name:          "test.field",
+					sourceCodeVar: "parent.Spec.Test.Field",
 				},
 				value: &yaml.Node{
 					Tag:   "testTag",
@@ -409,8 +437,9 @@ func Test_setValue(t *testing.T) {
 			name: "ensure value is set appropriately when replace text is requested",
 			args: args{
 				marker: &FieldMarker{
-					Name:    "test.field",
-					Replace: &testReplaceText,
+					Name:          "test.field",
+					Replace:       &testReplaceText,
+					sourceCodeVar: "parent.Spec.Test.Field",
 				},
 				value: &yaml.Node{
 					Tag:   "testTag",
@@ -427,8 +456,9 @@ func Test_setValue(t *testing.T) {
 			name: "ensure invalid replace text returns an error",
 			args: args{
 				marker: &FieldMarker{
-					Name:    "test.field",
-					Replace: &testInvalidReplaceText,
+					Name:          "test.field",
+					Replace:       &testInvalidReplaceText,
+					sourceCodeVar: "parent.Spec.Test.Field",
 				},
 				value: &yaml.Node{
 					Tag:   "testTag",

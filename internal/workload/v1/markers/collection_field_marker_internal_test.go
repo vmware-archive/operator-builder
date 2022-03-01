@@ -352,6 +352,41 @@ func TestCollectionFieldMarker_GetOriginalValue(t *testing.T) {
 	}
 }
 
+func TestCollectionFieldMarker_GetSourceCodeVariable(t *testing.T) {
+	t.Parallel()
+
+	type fields struct {
+		sourceCodeVar string
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+		want   string
+	}{
+		{
+			name: "source code variable for field marker returns correctly",
+			fields: fields{
+				sourceCodeVar: "this.Is.A.Test",
+			},
+			want: "this.Is.A.Test",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			cfm := &CollectionFieldMarker{
+				sourceCodeVar: tt.fields.sourceCodeVar,
+			}
+			if got := cfm.GetSourceCodeVariable(); got != tt.want {
+				t.Errorf("CollectionFieldMarker.GetSourceCodeVariable() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestCollectionFieldMarker_IsCollectionFieldMarker(t *testing.T) {
 	t.Parallel()
 

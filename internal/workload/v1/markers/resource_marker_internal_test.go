@@ -30,13 +30,22 @@ func TestResourceMarker_String(t *testing.T) {
 		want   string
 	}{
 		{
-			name: "ensure resource marker with set values output matches expected",
+			name: "ensure resource marker with set field values output matches expected",
 			fields: fields{
 				Field:   &testField,
 				Value:   "test",
 				Include: &testIncludeTrue,
 			},
 			want: "ResourceMarker{Field: test CollectionField:  Value: test Include: true}",
+		},
+		{
+			name: "ensure resource marker with set collection field values output matches expected",
+			fields: fields{
+				CollectionField: &testField,
+				Value:           "test",
+				Include:         &testIncludeTrue,
+			},
+			want: "ResourceMarker{Field:  CollectionField: test Value: test Include: true}",
 		},
 		{
 			name: "ensure resource marker with nil values output matches expected",
@@ -141,6 +150,203 @@ func TestResourceMarker_GetIncludeCode(t *testing.T) {
 	}
 }
 
+func TestResourceMarker_GetSpecPrefix(t *testing.T) {
+	t.Parallel()
+
+	field := "this.is.a.spec.test.prefix"
+
+	type fields struct {
+		Field           *string
+		CollectionField *string
+		Value           interface{}
+		Include         *bool
+		includeCode     string
+		fieldMarker     FieldMarkerProcessor
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+		want   string
+	}{
+		{
+			name: "ensure a resource marker with field marker returns field marker prefix",
+			fields: fields{
+				Field: &field,
+			},
+			want: FieldSpecPrefix,
+		},
+		{
+			name: "ensure a resource marker with collection field marker returns collection field marker prefix",
+			fields: fields{
+				CollectionField: &field,
+			},
+			want: CollectionFieldSpecPrefix,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			rm := &ResourceMarker{
+				Field:           tt.fields.Field,
+				CollectionField: tt.fields.CollectionField,
+				Value:           tt.fields.Value,
+				Include:         tt.fields.Include,
+				includeCode:     tt.fields.includeCode,
+				fieldMarker:     tt.fields.fieldMarker,
+			}
+			if got := rm.GetSpecPrefix(); got != tt.want {
+				t.Errorf("ResourceMarker.GetSpecPrefix() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestResourceMarker_GetField(t *testing.T) {
+	t.Parallel()
+
+	rm := "test.field"
+
+	type fields struct {
+		Field *string
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+		want   string
+	}{
+		{
+			name: "ensure field with value returns as expected",
+			fields: fields{
+				Field: &rm,
+			},
+			want: rm,
+		},
+		{
+			name: "ensure field with nil value returns as expected",
+			fields: fields{
+				Field: nil,
+			},
+			want: "",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			rm := &ResourceMarker{
+				Field: tt.fields.Field,
+			}
+			if got := rm.GetField(); got != tt.want {
+				t.Errorf("ResourceMarker.GetField() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestResourceMarker_GetCollectionField(t *testing.T) {
+	t.Parallel()
+
+	rm := "test.collection.field"
+
+	type fields struct {
+		CollectionField *string
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+		want   string
+	}{
+		{
+			name: "ensure collection field with value returns as expected",
+			fields: fields{
+				CollectionField: &rm,
+			},
+			want: rm,
+		},
+		{
+			name: "ensure collection field with nil value returns as expected",
+			fields: fields{
+				CollectionField: nil,
+			},
+			want: "",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			rm := &ResourceMarker{
+				CollectionField: tt.fields.CollectionField,
+			}
+			if got := rm.GetCollectionField(); got != tt.want {
+				t.Errorf("ResourceMarker.GetCollectionField() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestResourceMarker_GetName(t *testing.T) {
+	t.Parallel()
+
+	field := "test.get.name.field"
+	collectionField := "test.get.name.collection.field"
+
+	type fields struct {
+		Field           *string
+		CollectionField *string
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+		want   string
+	}{
+		{
+			name: "ensure field with value returns as field value",
+			fields: fields{
+				Field: &field,
+			},
+			want: field,
+		},
+		{
+			name: "ensure collection field with value returns collection field value",
+			fields: fields{
+				CollectionField: &collectionField,
+			},
+			want: collectionField,
+		},
+		{
+			name: "ensure marker with both values returns field value",
+			fields: fields{
+				Field:           &field,
+				CollectionField: &collectionField,
+			},
+			want: field,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			rm := &ResourceMarker{
+				Field:           tt.fields.Field,
+				CollectionField: tt.fields.CollectionField,
+			}
+			if got := rm.GetName(); got != tt.want {
+				t.Errorf("ResourceMarker.GetName() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestResourceMarker_validate(t *testing.T) {
 	t.Parallel()
 
@@ -153,8 +359,6 @@ func TestResourceMarker_validate(t *testing.T) {
 		CollectionField *string
 		Value           interface{}
 		Include         *bool
-		sourceCodeVar   string
-		sourceCodeValue string
 		fieldMarker     FieldMarkerProcessor
 	}
 
@@ -211,8 +415,6 @@ func TestResourceMarker_validate(t *testing.T) {
 				CollectionField: tt.fields.CollectionField,
 				Value:           tt.fields.Value,
 				Include:         tt.fields.Include,
-				sourceCodeVar:   tt.fields.sourceCodeVar,
-				sourceCodeValue: tt.fields.sourceCodeValue,
 				fieldMarker:     tt.fields.fieldMarker,
 			}
 			if err := rm.validate(); (err != nil) != tt.wantErr {
@@ -260,8 +462,6 @@ func TestResourceMarker_isAssociated(t *testing.T) {
 		Value           interface{}
 		Include         *bool
 		includeCode     string
-		sourceCodeVar   string
-		sourceCodeValue string
 		fieldMarker     FieldMarkerProcessor
 	}
 
@@ -367,8 +567,6 @@ func TestResourceMarker_isAssociated(t *testing.T) {
 				Value:           tt.fields.Value,
 				Include:         tt.fields.Include,
 				includeCode:     tt.fields.includeCode,
-				sourceCodeVar:   tt.fields.sourceCodeVar,
-				sourceCodeValue: tt.fields.sourceCodeValue,
 				fieldMarker:     tt.fields.fieldMarker,
 			}
 			if got := rm.isAssociated(tt.args.fromMarker); got != tt.want {
@@ -420,8 +618,6 @@ func TestResourceMarker_getFieldMarker(t *testing.T) {
 		CollectionField *string
 		Value           interface{}
 		Include         *bool
-		sourceCodeVar   string
-		sourceCodeValue string
 		fieldMarker     FieldMarkerProcessor
 	}
 
@@ -527,8 +723,6 @@ func TestResourceMarker_getFieldMarker(t *testing.T) {
 				CollectionField: tt.fields.CollectionField,
 				Value:           tt.fields.Value,
 				Include:         tt.fields.Include,
-				sourceCodeVar:   tt.fields.sourceCodeVar,
-				sourceCodeValue: tt.fields.sourceCodeValue,
 				fieldMarker:     tt.fields.fieldMarker,
 			}
 			got := rm.getFieldMarker(tt.args.markers)
@@ -577,8 +771,6 @@ func TestResourceMarker_Process(t *testing.T) {
 		Value           interface{}
 		Include         *bool
 		includeCode     string
-		sourceCodeVar   string
-		sourceCodeValue string
 		fieldMarker     FieldMarkerProcessor
 	}
 
@@ -661,8 +853,6 @@ func TestResourceMarker_Process(t *testing.T) {
 				Value:           tt.fields.Value,
 				Include:         tt.fields.Include,
 				includeCode:     tt.fields.includeCode,
-				sourceCodeVar:   tt.fields.sourceCodeVar,
-				sourceCodeValue: tt.fields.sourceCodeValue,
 				fieldMarker:     tt.fields.fieldMarker,
 			}
 			if err := rm.Process(tt.args.markers); (err != nil) != tt.wantErr {
@@ -703,8 +893,6 @@ func TestResourceMarker_setSourceCode(t *testing.T) {
 		Value           interface{}
 		Include         *bool
 		includeCode     string
-		sourceCodeVar   string
-		sourceCodeValue string
 		fieldMarker     FieldMarkerProcessor
 	}
 
@@ -788,8 +976,6 @@ func TestResourceMarker_setSourceCode(t *testing.T) {
 				Value:           tt.fields.Value,
 				Include:         tt.fields.Include,
 				includeCode:     tt.fields.includeCode,
-				sourceCodeVar:   tt.fields.sourceCodeVar,
-				sourceCodeValue: tt.fields.sourceCodeValue,
 				fieldMarker:     tt.fields.fieldMarker,
 			}
 			if err := rm.setSourceCode(); (err != nil) != tt.wantErr {

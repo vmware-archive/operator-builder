@@ -74,6 +74,10 @@ func (cfm *CollectionFieldMarker) GetSpecPrefix() string {
 	return CollectionFieldSpecPrefix
 }
 
+func (cfm *CollectionFieldMarker) GetSourceCodeVariable() string {
+	return cfm.sourceCodeVar
+}
+
 func (cfm *CollectionFieldMarker) GetOriginalValue() interface{} {
 	return cfm.originalValue
 }

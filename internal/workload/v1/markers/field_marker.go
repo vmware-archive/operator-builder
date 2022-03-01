@@ -33,6 +33,7 @@ type FieldMarker struct {
 
 	// other values which we use to pass information
 	forCollection bool
+	sourceCodeVar string
 	originalValue interface{}
 }
 
@@ -91,6 +92,10 @@ func (fm *FieldMarker) GetSpecPrefix() string {
 
 func (fm *FieldMarker) GetOriginalValue() interface{} {
 	return fm.originalValue
+}
+
+func (fm *FieldMarker) GetSourceCodeVariable() string {
+	return fm.sourceCodeVar
 }
 
 func (fm *FieldMarker) IsCollectionFieldMarker() bool {

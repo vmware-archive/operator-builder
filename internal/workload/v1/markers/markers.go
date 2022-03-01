@@ -33,6 +33,7 @@ type FieldMarkerProcessor interface {
 	GetOriginalValue() interface{}
 	GetReplaceText() string
 	GetSpecPrefix() string
+	GetSourceCodeVariable() string
 
 	IsCollectionFieldMarker() bool
 	IsFieldMarker() bool
@@ -41,6 +42,13 @@ type FieldMarkerProcessor interface {
 	SetDescription(string)
 	SetOriginalValue(string)
 	SetForCollection(bool)
+}
+
+// MarkerProcessor is a more generic interface that requires specific methods that are
+// necessary for parsing any type of marker.
+type MarkerProcessor interface {
+	GetName() string
+	GetSpecPrefix() string
 }
 
 // MarkerCollection is an object that stores a set of markers.
@@ -112,8 +120,10 @@ func transformYAML(results ...*inspect.YAMLResult) error {
 
 		switch t := result.Object.(type) {
 		case FieldMarker:
+			t.sourceCodeVar = getSourceCodeVariable(&t)
 			marker = &t
 		case CollectionFieldMarker:
+			t.sourceCodeVar = getSourceCodeVariable(&t)
 			marker = &t
 		default:
 			continue
@@ -162,14 +172,15 @@ func isReserved(fieldName string) bool {
 }
 
 // getSourceCodeFieldVariable gets a full variable name for a marker as it is intended to be
-// scaffolded in the source code while associated with a particular field.
+// passed into the generate package to generate the source code.  This includes particular
+// tags that are needed by the generator to properly identify when a variable starts and ends.
 func getSourceCodeFieldVariable(marker FieldMarkerProcessor) string {
-	return fmt.Sprintf("!!start %s !!end", getSourceCodeVariable(marker))
+	return fmt.Sprintf("!!start %s !!end", marker.GetSourceCodeVariable())
 }
 
-// getSourceCodeFieldVariable gets a full variable name for a marker as it is intended to be
+// getSourceCodeVariable gets a full variable name for a marker as it is intended to be
 // scaffolded in the source code.
-func getSourceCodeVariable(marker FieldMarkerProcessor) string {
+func getSourceCodeVariable(marker MarkerProcessor) string {
 	return fmt.Sprintf("%s.%s", marker.GetSpecPrefix(), strings.Title((marker.GetName())))
 }
 
@@ -231,7 +242,7 @@ func setValue(marker FieldMarkerProcessor, value *yaml.Node) error {
 		value.Value = re.ReplaceAllString(value.Value, getSourceCodeFieldVariable(marker))
 	} else {
 		value.Tag = varTag
-		value.Value = getSourceCodeVariable(marker)
+		value.Value = marker.GetSourceCodeVariable()
 	}
 
 	return nil
