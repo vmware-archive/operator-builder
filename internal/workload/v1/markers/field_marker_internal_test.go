@@ -99,6 +99,50 @@ func Test_defineFieldMarker(t *testing.T) {
 	}
 }
 
+func TestFieldMarker_GetDefault(t *testing.T) {
+	t.Parallel()
+
+	fmDefault := "this is a field default value"
+
+	type fields struct {
+		Default interface{}
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+		want   interface{}
+	}{
+		{
+			name: "ensure field default returns as expected",
+			fields: fields{
+				Default: fmDefault,
+			},
+			want: fmDefault,
+		},
+		{
+			name: "ensure field default with nil value returns as expected",
+			fields: fields{
+				Default: nil,
+			},
+			want: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			fm := &FieldMarker{
+				Default: tt.fields.Default,
+			}
+			if got := fm.GetDefault(); got != tt.want {
+				t.Errorf("FieldMarker.GetDefault() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestFieldMarker_GetDescription(t *testing.T) {
 	t.Parallel()
 

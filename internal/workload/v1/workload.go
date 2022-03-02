@@ -277,64 +277,47 @@ func (ws *WorkloadSpec) processMarkerResults(markerResults []*inspect.YAMLResult
 
 		var sampleVal interface{}
 
-		switch r := markerResult.Object.(type) {
+		// convert to interface
+		var marker markers.FieldMarkerProcessor
+
+		switch t := markerResult.Object.(type) {
 		case *markers.FieldMarker:
-			comments := []string{}
-
-			if r.Description != nil {
-				comments = append(comments, strings.Split(*r.Description, "\n")...)
-			}
-
-			if r.Default != nil {
-				defaultFound = true
-				sampleVal = r.Default
-			} else {
-				sampleVal = r.GetOriginalValue()
-			}
-
-			if err := ws.APISpecFields.AddField(
-				r.Name,
-				r.Type,
-				comments,
-				sampleVal,
-				defaultFound,
-			); err != nil {
-				return err
-			}
-
-			r.SetForCollection(ws.ForCollection)
-			ws.FieldMarkers = append(ws.FieldMarkers, r)
-
+			marker = t
+			ws.FieldMarkers = append(ws.FieldMarkers, t)
 		case *markers.CollectionFieldMarker:
-			comments := []string{}
-
-			if r.Description != nil {
-				comments = append(comments, strings.Split(*r.Description, "\n")...)
-			}
-
-			if r.Default != nil {
-				defaultFound = true
-				sampleVal = r.Default
-			} else {
-				sampleVal = r.GetOriginalValue()
-			}
-
-			if err := ws.APISpecFields.AddField(
-				r.Name,
-				r.Type,
-				comments,
-				sampleVal,
-				defaultFound,
-			); err != nil {
-				return err
-			}
-
-			r.SetForCollection(ws.ForCollection)
-			ws.CollectionFieldMarkers = append(ws.CollectionFieldMarkers, r)
-
+			marker = t
+			ws.CollectionFieldMarkers = append(ws.CollectionFieldMarkers, t)
 		default:
 			continue
 		}
+
+		// set the comments based on the description field of a field marker
+		comments := []string{}
+
+		if marker.GetDescription() != "" {
+			comments = append(comments, strings.Split(marker.GetDescription(), "\n")...)
+		}
+
+		// set the sample value based on if a default was specified in the marker or not
+		if marker.GetDefault() != nil {
+			defaultFound = true
+			sampleVal = marker.GetDefault()
+		} else {
+			sampleVal = marker.GetOriginalValue()
+		}
+
+		// add the field to the api specification
+		if err := ws.APISpecFields.AddField(
+			marker.GetName(),
+			marker.GetFieldType(),
+			comments,
+			sampleVal,
+			defaultFound,
+		); err != nil {
+			return err
+		}
+
+		marker.SetForCollection(ws.ForCollection)
 	}
 
 	return nil

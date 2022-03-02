@@ -50,6 +50,10 @@ func (cfm *CollectionFieldMarker) GetName() string {
 	return cfm.Name
 }
 
+func (cfm *CollectionFieldMarker) GetDefault() interface{} {
+	return cfm.Default
+}
+
 func (cfm *CollectionFieldMarker) GetDescription() string {
 	if cfm.Description == nil {
 		return ""

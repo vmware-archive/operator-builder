@@ -226,23 +226,35 @@ func (api *APIFields) isEqual(input *APIFields) bool {
 	return false
 }
 
+// getSampleValue exists to solve the problem of the sample value being a brittle, generic interface
+// which can change when we move from proper typed objects to pointers.  This function serves to
+// solve both use cases.
+func getSampleValue(sampleVal interface{}) string {
+	switch t := sampleVal.(type) {
+	case *string:
+		return fmt.Sprintf("%q", *t)
+	case *int:
+		return fmt.Sprintf("%v", *t)
+	case *bool:
+		return fmt.Sprintf("%v", *t)
+	case string:
+		return fmt.Sprintf("%q", t)
+	default:
+		return fmt.Sprintf("%v", t)
+	}
+}
+
 func (api *APIFields) setSample(sampleVal interface{}) {
 	switch api.Type {
-	case markers.FieldString:
-		api.Sample = fmt.Sprintf("%s: %q", api.manifestName, sampleVal)
 	case markers.FieldStruct:
 		api.Sample = fmt.Sprintf("%s:", api.manifestName)
 	default:
-		api.Sample = fmt.Sprintf("%s: %v", api.manifestName, sampleVal)
+		api.Sample = fmt.Sprintf("%s: %v", api.manifestName, getSampleValue(sampleVal))
 	}
 }
 
 func (api *APIFields) setDefault(sampleVal interface{}) {
-	if api.Type == markers.FieldString {
-		api.Default = fmt.Sprintf("%q", sampleVal)
-	} else {
-		api.Default = fmt.Sprintf("%v", sampleVal)
-	}
+	api.Default = getSampleValue(sampleVal)
 
 	if len(api.Markers) == 0 {
 		api.Markers = append(

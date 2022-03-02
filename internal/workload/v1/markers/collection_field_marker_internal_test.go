@@ -99,6 +99,50 @@ func Test_defineCollectionFieldMarker(t *testing.T) {
 	}
 }
 
+func TestCollectionFieldMarker_GetDefault(t *testing.T) {
+	t.Parallel()
+
+	cfmDefault := "this is a collection default value"
+
+	type fields struct {
+		Default interface{}
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+		want   interface{}
+	}{
+		{
+			name: "ensure collection field default returns as expected",
+			fields: fields{
+				Default: cfmDefault,
+			},
+			want: cfmDefault,
+		},
+		{
+			name: "ensure collection field default with nil value returns as expected",
+			fields: fields{
+				Default: nil,
+			},
+			want: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			cfm := &CollectionFieldMarker{
+				Default: tt.fields.Default,
+			}
+			if got := cfm.GetDefault(); got != tt.want {
+				t.Errorf("CollectionFieldMarker.GetDefault() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestCollectionFieldMarker_GetDescription(t *testing.T) {
 	t.Parallel()
 

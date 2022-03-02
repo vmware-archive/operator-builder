@@ -66,6 +66,10 @@ func (fm *FieldMarker) GetName() string {
 	return fm.Name
 }
 
+func (fm *FieldMarker) GetDefault() interface{} {
+	return fm.Default
+}
+
 func (fm *FieldMarker) GetDescription() string {
 	if fm.Description == nil {
 		return ""
