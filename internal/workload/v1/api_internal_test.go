@@ -5,7 +5,6 @@ package v1
 
 import (
 	"fmt"
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -322,26 +321,44 @@ func Test_mustWrite(t *testing.T) {
 	}
 }
 
-func Test_getSampleValue(t *testing.T) {
+func TestAPIFields_getSampleValue(t *testing.T) {
 	t.Parallel()
 
 	testString := "testString"
 	testInt := 1
 	testBool := true
 
+	type fields struct {
+		Name         string
+		StructName   string
+		manifestName string
+		Type         markers.FieldType
+		Tags         string
+		Comments     []string
+		Markers      []string
+		Children     []*APIFields
+		Default      string
+		Sample       string
+		Last         bool
+	}
+
 	type args struct {
 		sampleVal interface{}
 	}
 
 	tests := []struct {
-		name string
-		args args
-		want interface{}
+		name   string
+		fields fields
+		args   args
+		want   string
 	}{
 		{
 			name: "test string value",
 			args: args{
 				sampleVal: testString,
+			},
+			fields: fields{
+				Type: markers.FieldString,
 			},
 			want: fmt.Sprintf("%q", testString),
 		},
@@ -350,6 +367,9 @@ func Test_getSampleValue(t *testing.T) {
 			args: args{
 				sampleVal: &testString,
 			},
+			fields: fields{
+				Type: markers.FieldString,
+			},
 			want: fmt.Sprintf("%q", testString),
 		},
 		{
@@ -357,35 +377,50 @@ func Test_getSampleValue(t *testing.T) {
 			args: args{
 				sampleVal: testInt,
 			},
-			want: testInt,
+			fields: fields{
+				Type: markers.FieldInt,
+			},
+			want: fmt.Sprintf("%v", testInt),
 		},
 		{
 			name: "test pointer to int value",
 			args: args{
 				sampleVal: &testInt,
 			},
-			want: testInt,
+			fields: fields{
+				Type: markers.FieldInt,
+			},
+			want: fmt.Sprintf("%v", testInt),
 		},
 		{
 			name: "test bool value",
 			args: args{
 				sampleVal: testBool,
 			},
-			want: testBool,
+			fields: fields{
+				Type: markers.FieldBool,
+			},
+			want: fmt.Sprintf("%v", testBool),
 		},
 		{
 			name: "test pointer to bool value",
 			args: args{
 				sampleVal: &testBool,
 			},
-			want: testBool,
+			fields: fields{
+				Type: markers.FieldBool,
+			},
+			want: fmt.Sprintf("%v", testBool),
 		},
 		{
 			name: "test other value",
 			args: args{
 				sampleVal: []string{"test", "get", "sample"},
 			},
-			want: []string{"test", "get", "sample"},
+			fields: fields{
+				Type: markers.FieldUnknownType,
+			},
+			want: "[test get sample]",
 		},
 	}
 
@@ -393,8 +428,21 @@ func Test_getSampleValue(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if got := getSampleValue(tt.args.sampleVal); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getSampleValue() = %v, want %v", got, tt.want)
+			api := &APIFields{
+				Name:         tt.fields.Name,
+				StructName:   tt.fields.StructName,
+				manifestName: tt.fields.manifestName,
+				Type:         tt.fields.Type,
+				Tags:         tt.fields.Tags,
+				Comments:     tt.fields.Comments,
+				Markers:      tt.fields.Markers,
+				Children:     tt.fields.Children,
+				Default:      tt.fields.Default,
+				Sample:       tt.fields.Sample,
+				Last:         tt.fields.Last,
+			}
+			if got := api.getSampleValue(tt.args.sampleVal); got != tt.want {
+				t.Errorf("APIFields.getSampleValue() = %v, want %v", got, tt.want)
 			}
 		})
 	}
