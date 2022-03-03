@@ -5,6 +5,7 @@ package v1
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -321,6 +322,84 @@ func Test_mustWrite(t *testing.T) {
 	}
 }
 
+func Test_getSampleValue(t *testing.T) {
+	t.Parallel()
+
+	testString := "testString"
+	testInt := 1
+	testBool := true
+
+	type args struct {
+		sampleVal interface{}
+	}
+
+	tests := []struct {
+		name string
+		args args
+		want interface{}
+	}{
+		{
+			name: "test string value",
+			args: args{
+				sampleVal: testString,
+			},
+			want: fmt.Sprintf("%q", testString),
+		},
+		{
+			name: "test pointer to string value",
+			args: args{
+				sampleVal: &testString,
+			},
+			want: fmt.Sprintf("%q", testString),
+		},
+		{
+			name: "test int value",
+			args: args{
+				sampleVal: testInt,
+			},
+			want: testInt,
+		},
+		{
+			name: "test pointer to int value",
+			args: args{
+				sampleVal: &testInt,
+			},
+			want: testInt,
+		},
+		{
+			name: "test bool value",
+			args: args{
+				sampleVal: testBool,
+			},
+			want: testBool,
+		},
+		{
+			name: "test pointer to bool value",
+			args: args{
+				sampleVal: &testBool,
+			},
+			want: testBool,
+		},
+		{
+			name: "test other value",
+			args: args{
+				sampleVal: []string{"test", "get", "sample"},
+			},
+			want: []string{"test", "get", "sample"},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := getSampleValue(tt.args.sampleVal); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getSampleValue() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestAPIFields_setSample(t *testing.T) {
 	t.Parallel()
 
@@ -373,7 +452,7 @@ func TestAPIFields_setSample(t *testing.T) {
 		{
 			name: "set other sample",
 			args: args{
-				sampleVal: "other",
+				sampleVal: []string{"test", "sample"},
 			},
 			fields: fields{
 				manifestName: "other",
@@ -381,7 +460,7 @@ func TestAPIFields_setSample(t *testing.T) {
 			expect: &APIFields{
 				manifestName: "other",
 				Type:         markers.FieldUnknownType,
-				Sample:       "other: other",
+				Sample:       "other: [test sample]",
 			},
 		},
 	}
@@ -449,7 +528,7 @@ func TestAPIFields_setDefault(t *testing.T) {
 		{
 			name: "set default for other",
 			args: args{
-				sampleVal: "other",
+				sampleVal: []string{"other"},
 			},
 			fields: fields{
 				manifestName: "other",
@@ -457,12 +536,12 @@ func TestAPIFields_setDefault(t *testing.T) {
 			expect: &APIFields{
 				manifestName: "other",
 				Type:         markers.FieldUnknownType,
-				Sample:       "other: other",
-				Default:      "other",
+				Sample:       "other: [other]",
+				Default:      "[other]",
 				Markers: []string{
-					"+kubebuilder:default=other",
+					"+kubebuilder:default=[other]",
 					"+kubebuilder:validation:Optional",
-					"(Default: other)",
+					"(Default: [other])",
 				},
 			},
 		},
@@ -580,6 +659,10 @@ func TestAPIFields_setCommentsAndDefault(t *testing.T) {
 func TestAPIFields_newChild(t *testing.T) {
 	t.Parallel()
 
+	testString := "string"
+	testInt := 1
+	testBool := true
+
 	type fields struct {
 		Name         string
 		StructName   string
@@ -624,18 +707,36 @@ func TestAPIFields_newChild(t *testing.T) {
 			},
 		},
 		{
+			name: "new child for string pointer",
+			args: args{
+				name:      "string",
+				fieldType: markers.FieldString,
+				sample:    &testString,
+			},
+			fields: fields{},
+			want: &APIFields{
+				Name:         "String",
+				manifestName: "string",
+				Type:         markers.FieldString,
+				Sample:       "string: \"string\"",
+				Tags:         "`json:\"string,omitempty\"`",
+				Comments:     []string{},
+				Markers:      []string{},
+			},
+		},
+		{
 			name: "new child for unknown",
 			args: args{
 				name:      "unknown",
 				fieldType: markers.FieldUnknownType,
-				sample:    "unknown",
+				sample:    []string{"test", "unknown"},
 			},
 			fields: fields{},
 			want: &APIFields{
 				Name:         "Unknown",
 				manifestName: "unknown",
 				Type:         markers.FieldUnknownType,
-				Sample:       "unknown: unknown",
+				Sample:       "unknown: [test unknown]",
 				Tags:         "`json:\"unknown,omitempty\"`",
 				Comments:     []string{},
 				Markers:      []string{},
@@ -646,14 +747,32 @@ func TestAPIFields_newChild(t *testing.T) {
 			args: args{
 				name:      "int",
 				fieldType: markers.FieldInt,
-				sample:    "int",
+				sample:    1,
 			},
 			fields: fields{},
 			want: &APIFields{
 				Name:         "Int",
 				manifestName: "int",
 				Type:         markers.FieldInt,
-				Sample:       "int: int",
+				Sample:       "int: 1",
+				Tags:         "`json:\"int,omitempty\"`",
+				Comments:     []string{},
+				Markers:      []string{},
+			},
+		},
+		{
+			name: "new child for int",
+			args: args{
+				name:      "int",
+				fieldType: markers.FieldInt,
+				sample:    &testInt,
+			},
+			fields: fields{},
+			want: &APIFields{
+				Name:         "Int",
+				manifestName: "int",
+				Type:         markers.FieldInt,
+				Sample:       "int: 1",
 				Tags:         "`json:\"int,omitempty\"`",
 				Comments:     []string{},
 				Markers:      []string{},
@@ -664,14 +783,32 @@ func TestAPIFields_newChild(t *testing.T) {
 			args: args{
 				name:      "bool",
 				fieldType: markers.FieldBool,
-				sample:    "bool",
+				sample:    true,
 			},
 			fields: fields{},
 			want: &APIFields{
 				Name:         "Bool",
 				manifestName: "bool",
 				Type:         markers.FieldBool,
-				Sample:       "bool: bool",
+				Sample:       "bool: true",
+				Tags:         "`json:\"bool,omitempty\"`",
+				Comments:     []string{},
+				Markers:      []string{},
+			},
+		},
+		{
+			name: "new child for bool pointer",
+			args: args{
+				name:      "bool",
+				fieldType: markers.FieldBool,
+				sample:    &testBool,
+			},
+			fields: fields{},
+			want: &APIFields{
+				Name:         "Bool",
+				manifestName: "bool",
+				Type:         markers.FieldBool,
+				Sample:       "bool: true",
 				Tags:         "`json:\"bool,omitempty\"`",
 				Comments:     []string{},
 				Markers:      []string{},
