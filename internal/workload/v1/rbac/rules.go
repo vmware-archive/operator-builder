@@ -92,30 +92,13 @@ func (rules *Rules) addForManifest(manifest *unstructured.Unstructured) error {
 	return nil
 }
 
-// hasRule determines if a set of rules has a rule which contains
+// hasResourceRule determines if a set of rules has a rule which contains
 // a specific group/resource combination.  A specific group/resource combination
 // is used to guarantee uniqueness on a set of rules.
-func (rules *Rules) hasRule(rule *Rule) bool {
+func (rules *Rules) hasResourceRule(rule *Rule) bool {
 	for _, r := range *rules {
 		if r.groupResourceEqual(rule) {
 			return true
-		}
-	}
-
-	return false
-}
-
-// hasURL determines if a set of rules contains a url.
-func (rules *Rules) hasURL(url string) bool {
-	for _, rule := range *rules {
-		if len(rule.URLs) == 0 {
-			continue
-		}
-
-		for i := range rule.URLs {
-			if rule.URLs[i] == url {
-				return true
-			}
 		}
 	}
 

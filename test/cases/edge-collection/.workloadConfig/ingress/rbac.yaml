@@ -1,0 +1,21 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: this-is-a-dummy-clusterrole
+rules:
+  - nonResourceURLs:
+      - /metrics
+    verbs:
+      - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: this-is-a-dummy-role
+  namespace: ingress-system  # +operator-builder:field:name=namespace,default=ingress-system,type=string
+rules:
+  - nonResourceURLs:
+      - /metrics
+    verbs:
+      - get

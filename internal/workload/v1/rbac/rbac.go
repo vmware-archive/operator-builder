@@ -87,22 +87,6 @@ func ForWorkloads(workloads ...rbacWorkloadProcessor) *Rules {
 	return rules
 }
 
-// GetVersionGroup is a helper function that returns a version and group given
-// an apiVersion as a string.
-func GetVersionGroup(apiVersion string) (version, group string) {
-	apiVersionElements := strings.Split(apiVersion, "/")
-
-	if len(apiVersionElements) == 1 {
-		version = apiVersionElements[0]
-		group = coreGroup
-	} else {
-		version = apiVersionElements[1]
-		group = getGroup(apiVersionElements[0])
-	}
-
-	return version, group
-}
-
 // getGroup returns the group in the proper format as expected by rbac markers.
 func getGroup(group string) string {
 	if group == "" {
@@ -136,7 +120,7 @@ func getResource(kind string) string {
 	return kind
 }
 
-// getPluralRBAC will transform known irregulars into a proper type for rbac
+// getPlural will transform known irregulars into a proper type for rbac
 // rules.
 func getPlural(kind string) string {
 	plural := resource.RegularPlural(kind)

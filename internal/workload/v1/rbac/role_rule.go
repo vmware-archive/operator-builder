@@ -31,23 +31,11 @@ type RoleRuleField []string
 // addTo satisfies the rbacRuleProcessor interface by defining the logic that adds a
 // role rule into an existing set of rules.
 func (roleRule *RoleRule) addTo(rules *Rules) {
-	rs := *rules
-
 	// convert the role rule into a set of rules
 	newRules := roleRule.toRules()
 
-	for _, rule := range newRules {
-		for _, url := range rule.URLs {
-			for i := range rs {
-				if rs.hasURL(url) {
-					for _, verb := range rule.Verbs {
-						rs[i].addVerb(verb)
-					}
-				} else {
-					*rules = append(*rules, *rule)
-				}
-			}
-		}
+	for _, rule := range *newRules {
+		rule.addTo(rules)
 	}
 }
 
@@ -87,10 +75,10 @@ func (field *RoleRuleField) setValues(rule interface{}, fieldKey string) error {
 }
 
 // toRules will convert a role rule into a set of regular rules.
-func (roleRule *RoleRule) toRules() (rules []*Rule) {
+func (roleRule *RoleRule) toRules() *Rules {
 	// we must have verbs to create our rbac
 	if len(roleRule.Verbs) == 0 {
-		return rules
+		return &Rules{}
 	}
 
 	// we either need to have groups/resources or urls
@@ -100,23 +88,25 @@ func (roleRule *RoleRule) toRules() (rules []*Rule) {
 		return roleRule.nonResourceRules()
 	}
 
-	return rules
+	return &Rules{}
 }
 
 // groupResourceRules will return a set of rules given a role rule which contains
 // both a group and a resource.
-func (roleRule *RoleRule) groupResourceRules() (rules []*Rule) {
+func (roleRule *RoleRule) groupResourceRules() *Rules {
+	rules := &Rules{}
+
 	// assign a new rule for each group and kind match
 	for _, rbacGroup := range roleRule.Groups {
 		for _, rbacKind := range roleRule.Resources {
-			rules = append(rules,
-				&Rule{
-					Group:    getGroup(rbacGroup),
-					Resource: getResource(rbacKind),
-					Verbs:    roleRule.Verbs,
-					URLs:     roleRule.URLs,
-				},
-			)
+			rule := &Rule{
+				Group:    getGroup(rbacGroup),
+				Resource: getResource(rbacKind),
+				Verbs:    roleRule.Verbs,
+				URLs:     roleRule.URLs,
+			}
+
+			rule.addResourceRuleTo(rules)
 		}
 	}
 
@@ -125,8 +115,8 @@ func (roleRule *RoleRule) groupResourceRules() (rules []*Rule) {
 
 // nonResourceRules will return a set of rules given a role rule which does not
 // contain a group and a resource and instead contains non resource urls.
-func (roleRule *RoleRule) nonResourceRules() []*Rule {
-	return []*Rule{
+func (roleRule *RoleRule) nonResourceRules() *Rules {
+	return &Rules{
 		{
 			Verbs: roleRule.Verbs,
 			URLs:  roleRule.URLs,

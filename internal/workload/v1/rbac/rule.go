@@ -37,19 +37,53 @@ func (rule *Rule) ToMarker() string {
 // addTo satisfies the rbacRuleProcessor interface by defining the logic that adds a rule into an
 // existing set of rules.
 func (rule *Rule) addTo(rules *Rules) {
+	if len(*rules) == 0 {
+		*rules = append(*rules, *rule)
+
+		return
+	}
+
+	if rule.isResourceRule() {
+		rule.addResourceRuleTo(rules)
+	} else {
+		rule.addNonResourceRuleTo(rules)
+	}
+}
+
+// addResourceRuleTo will add a resource rule to a set of rules.
+func (rule *Rule) addResourceRuleTo(rules *Rules) {
 	rs := *rules
 
-	if !rs.hasRule(rule) {
+	if !rules.hasResourceRule(rule) {
 		*rules = append(*rules, *rule)
 	} else {
 		for i := range rs {
-			if rs[i].groupResourceEqual(rule) {
+			existingRule := &rs[i]
+
+			if rule.groupResourceEqual(existingRule) {
 				for _, verb := range rule.Verbs {
 					rs[i].addVerb(verb)
 				}
 			}
 		}
 	}
+}
+
+// addNonResourceRuleTo will add a non-resource rule to a set of rules.
+func (rule *Rule) addNonResourceRuleTo(rules *Rules) {
+	for _, url := range rule.URLs {
+		for _, existingRule := range *rules {
+			if existingRule.hasURL(url) {
+				for _, verb := range rule.Verbs {
+					existingRule.addVerb(verb)
+				}
+
+				return
+			}
+		}
+	}
+
+	*rules = append(*rules, *rule)
 }
 
 // addVerb adds a verb to an existing rule.  The verb is only added if it is not
@@ -75,6 +109,26 @@ func (rule *Rule) addVerb(verb string) {
 func (rule *Rule) groupResourceEqual(compared *Rule) bool {
 	if rule.Group == compared.Group && rule.Resource == compared.Resource {
 		return true
+	}
+
+	return false
+}
+
+// isResourceRule determines if a rule is a resource rule or not.
+func (rule *Rule) isResourceRule() bool {
+	if rule.Group != "" && rule.Resource != "" {
+		return true
+	}
+
+	return false
+}
+
+// hasURL determines if a set of rules contains a url.
+func (rule *Rule) hasURL(url string) bool {
+	for i := range rule.URLs {
+		if rule.URLs[i] == url {
+			return true
+		}
 	}
 
 	return false
