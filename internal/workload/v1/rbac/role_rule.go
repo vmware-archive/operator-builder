@@ -1,0 +1,114 @@
+// Copyright 2021 VMware, Inc.
+// SPDX-License-Identifier: MIT
+
+package rbac
+
+import (
+	"fmt"
+
+	"github.com/vmware-tanzu-labs/operator-builder/internal/utils"
+)
+
+// RoleRule contains the info needed to create the kubebuilder:rbac markers
+// in the controller when a resource that is of a role or clusterrole type is
+// found.  This is because the underlying controller needs the same permissions
+// for the role or clusterrole that it is attempting to manage.
+type RoleRule struct {
+	Groups    RoleRuleField
+	Resources RoleRuleField
+	Verbs     RoleRuleField
+	URLs      RoleRuleField
+}
+
+type RoleRuleField []string
+
+// addTo satisfies the rbacRuleProcessor interface by defining the logic that adds a
+// role rule into an existing set of rules.
+func (roleRule *RoleRule) addTo(rules *Rules) {
+	rs := *rules
+
+	// convert the role rule into a set of rules
+	newRules := roleRule.toRules()
+
+	for _, rule := range newRules {
+		for _, url := range rule.URLs {
+			for i := range rs {
+				if rs.hasURL(url) {
+					for _, verb := range rule.Verbs {
+						rs[i].addVerb(verb)
+					}
+				} else {
+					*rules = append(*rules, *rule)
+				}
+			}
+		}
+	}
+}
+
+// processRaw will take in a raw interface and convert it into a role rule.
+func (roleRule *RoleRule) processRaw(rule interface{}) error {
+	fields := map[*RoleRuleField]string{
+		&roleRule.Groups:    "apiGroups",
+		&roleRule.Resources: "resources",
+		&roleRule.Verbs:     "verbs",
+		&roleRule.URLs:      "nonResourceURLs",
+	}
+
+	for objectField, fieldKey := range fields {
+		if err := objectField.setValues(rule, fieldKey); err != nil {
+			return fmt.Errorf("%w; error processing raw fule %v", err, rule)
+		}
+	}
+
+	return nil
+}
+
+// setValues of a field for a particular role rule.
+func (field *RoleRuleField) setValues(rule interface{}, fieldKey string) error {
+	fieldValue := valueFromInterface(rule, fieldKey)
+	if fieldValue == nil {
+		return nil
+	}
+
+	fieldValues, err := utils.ToArrayString(fieldValue)
+	if err != nil {
+		return fmt.Errorf("%w; error converting rbac field key %s for rule %v", err, fieldKey, rule)
+	}
+
+	*field = fieldValues
+
+	return nil
+}
+
+// toRules will convert a role rule into a set of regular rules.
+func (roleRule *RoleRule) toRules() []*Rule {
+	rules := []*Rule{}
+
+	// we must have verbs to create our rbac
+	if len(roleRule.Verbs) == 0 {
+		return rules
+	}
+
+	// we either need to have groups/resources or urls
+	if len(roleRule.Groups) == 0 || len(roleRule.Resources) == 0 {
+		if len(roleRule.URLs) == 0 {
+			return rules
+		}
+	}
+
+	// assign a new rule for each group and kind match
+	for _, rbacGroup := range roleRule.Groups {
+		for _, rbacKind := range roleRule.Resources {
+			rules = append(rules,
+				&Rule{
+					Group:    rbacGroupFromGroup(rbacGroup),
+					Resource: getResourceForRBAC(rbacKind),
+					Verbs:    roleRule.Verbs,
+					URLs:     roleRule.URLs,
+				},
+			)
+		}
+	}
+
+	return rules
+}

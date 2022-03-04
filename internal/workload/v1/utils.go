@@ -13,13 +13,6 @@ import (
 	"strings"
 )
 
-var (
-	ErrConvertArrayInterface     = errors.New("unable to convert to []interface{}")
-	ErrConvertArrayString        = errors.New("unable to convert to []string")
-	ErrConvertMapStringInterface = errors.New("unable to convert to map[string]interface{}")
-	ErrConvertString             = errors.New("unable to convert to string")
-)
-
 func ReadStream(fileName string) (io.ReadCloser, error) {
 	file, err := os.Open(fileName)
 	if err != nil {
@@ -108,58 +101,4 @@ func expand(g []string) ([]string, error) {
 	}
 
 	return matches, nil
-}
-
-func toArrayInterface(in interface{}) ([]interface{}, error) {
-	out, ok := in.([]interface{})
-	if !ok {
-		return nil, ErrConvertArrayInterface
-	}
-
-	return out, nil
-}
-
-func toArrayString(in interface{}) ([]string, error) {
-	// attempt direct conversion
-	out, ok := in.([]string)
-	if !ok {
-		// attempt conversion for each item
-		outInterfaces, err := toArrayInterface(in)
-		if err != nil {
-			return nil, fmt.Errorf("%w; %s", err, ErrConvertArrayString)
-		}
-
-		outStrings := make([]string, len(outInterfaces))
-
-		for i := range outInterfaces {
-			outString, err := toString(outInterfaces[i])
-			if err != nil {
-				return nil, fmt.Errorf("%w; %s", err, ErrConvertArrayString)
-			}
-
-			outStrings[i] = outString
-		}
-
-		return outStrings, nil
-	}
-
-	return out, nil
-}
-
-func toMapStringInterface(in interface{}) (map[string]interface{}, error) {
-	out, ok := in.(map[string]interface{})
-	if !ok {
-		return nil, ErrConvertMapStringInterface
-	}
-
-	return out, nil
-}
-
-func toString(in interface{}) (string, error) {
-	out, ok := in.(string)
-	if !ok {
-		return "", ErrConvertString
-	}
-
-	return out, nil
 }
