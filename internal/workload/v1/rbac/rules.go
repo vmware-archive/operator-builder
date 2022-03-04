@@ -39,7 +39,7 @@ func (rules *Rules) addForWorkload(workload rbacWorkloadProcessor) {
 	// workload type in which it is responsible for reconciling
 	workloadRule := &Rule{
 		Group:    fmt.Sprintf("%s.%s", workload.GetAPIGroup(), workload.GetDomain()),
-		Resource: getResourceForRBAC(workload.GetAPIKind()),
+		Resource: getResource(workload.GetAPIKind()),
 		Verbs:    defaultResourceVerbs(),
 	}
 
@@ -47,7 +47,7 @@ func (rules *Rules) addForWorkload(workload rbacWorkloadProcessor) {
 	// status updates for the workload that it is responsible for reconciling
 	statusRule := &Rule{
 		Group:    fmt.Sprintf("%s.%s", workload.GetAPIGroup(), workload.GetDomain()),
-		Resource: fmt.Sprintf("%s/status", getResourceForRBAC(workload.GetAPIKind())),
+		Resource: fmt.Sprintf("%s/status", getResource(workload.GetAPIKind())),
 		Verbs:    defaultStatusVerbs(),
 	}
 
@@ -60,8 +60,8 @@ func (rules *Rules) addForManifest(manifest *unstructured.Unstructured) error {
 
 	rules.Add(
 		&Rule{
-			Group:    manifest.GroupVersionKind().Group,
-			Resource: getResourceForRBAC(kind),
+			Group:    getGroup(manifest.GroupVersionKind().Group),
+			Resource: getResource(kind),
 			Verbs:    defaultResourceVerbs(),
 		},
 	)

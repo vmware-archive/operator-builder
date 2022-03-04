@@ -4,9 +4,15 @@
 package rbac
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/vmware-tanzu-labs/operator-builder/internal/utils"
+)
+
+var (
+	ErrorProcessRoleRule      = errors.New("error processing role rule")
+	ErrorProcessRoleRuleField = errors.New("error processing role rule field")
 )
 
 // RoleRule contains the info needed to create the kubebuilder:rbac markers
@@ -56,7 +62,7 @@ func (roleRule *RoleRule) processRaw(rule interface{}) error {
 
 	for objectField, fieldKey := range fields {
 		if err := objectField.setValues(rule, fieldKey); err != nil {
-			return fmt.Errorf("%w; error processing raw fule %v", err, rule)
+			return fmt.Errorf("%w; %s: %v", err, ErrorProcessRoleRule, rule)
 		}
 	}
 
@@ -72,7 +78,7 @@ func (field *RoleRuleField) setValues(rule interface{}, fieldKey string) error {
 
 	fieldValues, err := utils.ToArrayString(fieldValue)
 	if err != nil {
-		return fmt.Errorf("%w; error converting rbac field key %s for rule %v", err, fieldKey, rule)
+		return fmt.Errorf("%w; %s: [%s]", err, ErrorProcessRoleRuleField, fieldKey)
 	}
 
 	*field = fieldValues
@@ -81,28 +87,32 @@ func (field *RoleRuleField) setValues(rule interface{}, fieldKey string) error {
 }
 
 // toRules will convert a role rule into a set of regular rules.
-func (roleRule *RoleRule) toRules() []*Rule {
-	rules := []*Rule{}
-
+func (roleRule *RoleRule) toRules() (rules []*Rule) {
 	// we must have verbs to create our rbac
 	if len(roleRule.Verbs) == 0 {
 		return rules
 	}
 
 	// we either need to have groups/resources or urls
-	if len(roleRule.Groups) == 0 || len(roleRule.Resources) == 0 {
-		if len(roleRule.URLs) == 0 {
-			return rules
-		}
+	if len(roleRule.Groups) > 0 && len(roleRule.Resources) > 0 {
+		return roleRule.groupResourceRules()
+	} else if len(roleRule.URLs) > 0 {
+		return roleRule.nonResourceRules()
 	}
 
+	return rules
+}
+
+// groupResourceRules will return a set of rules given a role rule which contains
+// both a group and a resource.
+func (roleRule *RoleRule) groupResourceRules() (rules []*Rule) {
 	// assign a new rule for each group and kind match
 	for _, rbacGroup := range roleRule.Groups {
 		for _, rbacKind := range roleRule.Resources {
 			rules = append(rules,
 				&Rule{
-					Group:    rbacGroupFromGroup(rbacGroup),
-					Resource: getResourceForRBAC(rbacKind),
+					Group:    getGroup(rbacGroup),
+					Resource: getResource(rbacKind),
 					Verbs:    roleRule.Verbs,
 					URLs:     roleRule.URLs,
 				},
@@ -111,4 +121,15 @@ func (roleRule *RoleRule) toRules() []*Rule {
 	}
 
 	return rules
+}
+
+// nonResourceRules will return a set of rules given a role rule which does not
+// contain a group and a resource and instead contains non resource urls.
+func (roleRule *RoleRule) nonResourceRules() []*Rule {
+	return []*Rule{
+		{
+			Verbs: roleRule.Verbs,
+			URLs:  roleRule.URLs,
+		},
+	}
 }

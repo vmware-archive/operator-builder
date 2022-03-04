@@ -12,19 +12,17 @@ import (
 type Rule struct {
 	Group    string
 	Resource string
-	Verbs    []string
 	URLs     []string
+	Verbs    []string
 }
 
 // ToMarker will return a specific marker in string format.
 func (rule *Rule) ToMarker() string {
-	const kubebuilderPrefix = "// +kubebuilder:rbac"
-
 	if len(rule.URLs) > 0 {
 		return fmt.Sprintf("%s:verbs=%s,urls=%s",
 			kubebuilderPrefix,
-			rbacFieldsToString(rule.Verbs),
-			rbacFieldsToString(rule.URLs),
+			getFieldString(rule.Verbs),
+			getFieldString(rule.URLs),
 		)
 	}
 
@@ -32,7 +30,7 @@ func (rule *Rule) ToMarker() string {
 		kubebuilderPrefix,
 		rule.Group,
 		rule.Resource,
-		rbacFieldsToString(rule.Verbs),
+		getFieldString(rule.Verbs),
 	)
 }
 
