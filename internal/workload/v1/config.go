@@ -185,7 +185,7 @@ func parseConfig(workloadConfig string) (map[WorkloadKind][]WorkloadIdentifier, 
 
 	file, err := utils.ReadStream(workloadConfig)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w; error reading file %s", err, workloadConfig)
 	}
 
 	defer utils.CloseFile(file)
@@ -255,7 +255,7 @@ func parseCollectionComponents(workload *WorkloadCollection, workloadConfig stri
 	for _, componentFile := range workload.Spec.ComponentFiles {
 		componentPaths, err := utils.Glob(filepath.Join(filepath.Dir(workloadConfig), componentFile))
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%w; error globbing workload config at path %s", err, componentFile)
 		}
 
 		for _, componentPath := range componentPaths {

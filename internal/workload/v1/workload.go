@@ -175,7 +175,12 @@ func (ws *WorkloadSpec) processManifests(markerTypes ...markers.MarkerType) erro
 			// add the rules for this manifest
 			rules, err := rbac.ForManifest(&manifestObject)
 			if err != nil {
-				return formatProcessError(manifestFile.FileName, err)
+				return fmt.Errorf(
+					"%w; error generating rbac for kind [%s] with name [%s]",
+					formatProcessError(manifestFile.FileName, err),
+					manifestObject.GetKind(),
+					manifestObject.GetName(),
+				)
 			}
 
 			ws.RBACRules.Add(rules)
@@ -191,7 +196,12 @@ func (ws *WorkloadSpec) processManifests(markerTypes ...markers.MarkerType) erro
 			// generate the object source code
 			resourceDefinition, err := generate.Generate([]byte(manifest), "resourceObj")
 			if err != nil {
-				return formatProcessError(manifestFile.FileName, err)
+				return fmt.Errorf(
+					"%w; error generating resource definition for kind [%s] with name [%s]",
+					formatProcessError(manifestFile.FileName, err),
+					manifestObject.GetKind(),
+					manifestObject.GetName(),
+				)
 			}
 
 			// add the source code to the resource
@@ -364,7 +374,7 @@ func (ws *WorkloadSpec) needsCollectionRef() bool {
 }
 
 func formatProcessError(manifestFile string, err error) error {
-	return fmt.Errorf("error processing file %s; %w", manifestFile, err)
+	return fmt.Errorf("%w; error processing file %s", err, manifestFile)
 }
 
 func generateUniqueResourceName(object unstructured.Unstructured) string {
