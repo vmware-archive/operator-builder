@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 
@@ -91,6 +92,13 @@ func (s *Inspector) inspectYAMLComments(nodes ...*yaml.Node) (results []*YAMLRes
 	var markers []*parser.Result
 
 	for _, node := range nodes {
+		// hack: the parse method should theoretically handle proper parsing, however we found situations in which
+		// other markers (e.g. kubebuilder markers) conflict with our own defined markers which return an error.  This
+		// is a quick fix for now until we figure out a way to avoid parsing comflicts.
+		if !s.hasMarkerText(node) {
+			continue
+		}
+
 		markers = append(markers, s.parse(fmt.Sprintf("%s\n%s\n%s", node.HeadComment, node.LineComment, node.FootComment))...)
 	}
 
@@ -104,4 +112,19 @@ func (s *Inspector) inspectYAMLComments(nodes ...*yaml.Node) (results []*YAMLRes
 	}
 
 	return results
+}
+
+func (s *Inspector) hasMarkerText(node *yaml.Node) bool {
+	for _, markerText := range s.Registry.MarkerStrings() {
+		switch {
+		case strings.Contains(node.HeadComment, markerText):
+			return true
+		case strings.Contains(node.FootComment, markerText):
+			return true
+		case strings.Contains(node.LineComment, markerText):
+			return true
+		}
+	}
+
+	return false
 }
