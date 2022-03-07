@@ -40,13 +40,3 @@ func (r *Registry) GetDefinition(name string) parser.Definition {
 
 	return &marker
 }
-
-func (r *Registry) MarkerStrings() []string {
-	markers := []string{}
-
-	for markerText := range r.registry {
-		markers = append(markers, markerText)
-	}
-
-	return markers
-}
