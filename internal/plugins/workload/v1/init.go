@@ -12,6 +12,9 @@ import (
 
 	"github.com/vmware-tanzu-labs/operator-builder/internal/plugins/workload/v1/scaffolds"
 	workloadv1 "github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1"
+	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/commands/subcommand"
+	workloadconfig "github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/config"
+	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/kinds"
 )
 
 type initSubcommand struct {
@@ -20,7 +23,7 @@ type initSubcommand struct {
 	workloadConfigPath string
 	cliRootCommandName string
 
-	workload workloadv1.WorkloadInitializer
+	workload kinds.Workload
 }
 
 var _ plugin.InitSubcommand = &initSubcommand{}
@@ -53,20 +56,16 @@ func (p *initSubcommand) InjectConfig(c config.Config) error {
 }
 
 func (p *initSubcommand) PreScaffold(machinery.Filesystem) error {
-	// load the workload config
-	workload, err := workloadv1.ProcessInitConfig(
-		p.workloadConfigPath,
-	)
+	processor, err := workloadconfig.Parse(p.workloadConfigPath)
 	if err != nil {
 		return fmt.Errorf("unable to scaffold initial config for %s, %w", p.workloadConfigPath, err)
 	}
 
-	// validate the workload config
-	if err := workload.Validate(); err != nil {
-		return fmt.Errorf("unable to validate configuration for %s, %w", p.workloadConfigPath, err)
+	if err := subcommand.Init(processor); err != nil {
+		return err
 	}
 
-	p.workload = workload
+	p.workload = processor.Workload
 
 	return nil
 }

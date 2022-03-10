@@ -12,11 +12,12 @@ import (
 	"sigs.k8s.io/kubebuilder/v3/pkg/model/resource"
 	"sigs.k8s.io/kubebuilder/v3/pkg/plugin"
 
-	workloadv1 "github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1"
+	workloadconfig "github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/config"
 )
 
 type createAPISubcommand struct {
 	workloadConfigPath string
+	processor          *workloadconfig.Processor
 }
 
 var _ plugin.CreateAPISubcommand = &createAPISubcommand{}
@@ -26,43 +27,38 @@ func (p *createAPISubcommand) BindFlags(fs *pflag.FlagSet) {
 }
 
 func (p *createAPISubcommand) InjectConfig(c config.Config) error {
-	workload, err := workloadv1.ProcessInitConfig(
-		p.workloadConfigPath,
-	)
+	processor, err := workloadconfig.Parse(p.workloadConfigPath)
 	if err != nil {
 		return fmt.Errorf("unable to inject config into %s, %w", p.workloadConfigPath, err)
 	}
 
-	pluginConfig := workloadv1.PluginConfig{
+	p.processor = processor
+
+	pluginConfig := workloadconfig.Plugin{
 		WorkloadConfigPath: p.workloadConfigPath,
-		CliRootCommandName: workload.GetRootCommand().Name,
+		CliRootCommandName: processor.Workload.GetRootCommand().Name,
 	}
 
-	if err := c.EncodePluginConfig(workloadv1.PluginConfigKey, pluginConfig); err != nil {
-		return fmt.Errorf("unable to encode plugin config at key %s, %w", workloadv1.PluginConfigKey, err)
+	if err := c.EncodePluginConfig(workloadconfig.PluginKey, pluginConfig); err != nil {
+		return fmt.Errorf("unable to encode plugin config at key %s, %w", workloadconfig.PluginKey, err)
 	}
 
 	return nil
 }
 
 func (p *createAPISubcommand) InjectResource(res *resource.Resource) error {
-	workload, err := workloadv1.ProcessAPIConfig(p.workloadConfigPath)
-	if err != nil {
-		return fmt.Errorf("unable to inject resource into %s, %w", p.workloadConfigPath, err)
-	}
-
 	// set from config file if not provided with command line flag
 	if res.Group == "" {
-		res.Group = workload.GetAPIGroup()
+		res.Group = p.processor.Workload.GetAPIGroup()
 	}
 
 	if res.Version == "" {
-		res.Version = workload.GetAPIVersion()
+		res.Version = p.processor.Workload.GetAPIVersion()
 	}
 
 	if res.Kind == "" {
-		res.Kind = workload.GetAPIKind()
-		res.Plural = resource.RegularPlural(workload.GetAPIKind())
+		res.Kind = p.processor.Workload.GetAPIKind()
+		res.Plural = resource.RegularPlural(p.processor.Workload.GetAPIKind())
 	}
 
 	return nil

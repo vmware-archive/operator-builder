@@ -1,7 +1,7 @@
 // Copyright 2021 VMware, Inc.
 // SPDX-License-Identifier: MIT
 
-package v1
+package kinds
 
 import (
 	"errors"
@@ -22,7 +22,7 @@ const (
 	WorkloadKindComponent
 )
 
-func Decode(wk WorkloadKind, dc *yaml.Decoder) (WorkloadAPIBuilder, error) {
+func Decode(wk WorkloadKind, dc *yaml.Decoder) (Workload, error) {
 	switch wk {
 	case WorkloadKindStandalone:
 		return decodeStandalone(dc)

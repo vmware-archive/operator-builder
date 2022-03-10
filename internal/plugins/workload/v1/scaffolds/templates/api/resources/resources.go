@@ -10,7 +10,7 @@ import (
 	"sigs.k8s.io/kubebuilder/v3/pkg/machinery"
 
 	"github.com/vmware-tanzu-labs/operator-builder/internal/plugins/workload/v1/scaffolds/templates/config/samples"
-	workloadv1 "github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1"
+	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/kinds"
 )
 
 var _ machinery.Template = &Resources{}
@@ -23,10 +23,10 @@ type Resources struct {
 	machinery.ResourceMixin
 
 	// input fields
-	Builder workloadv1.WorkloadAPIBuilder
+	Builder kinds.Workload
 
 	// template fields
-	SpecFields      *workloadv1.APIFields
+	SpecFields      *kinds.APIFields
 	IsClusterScoped bool
 	CreateFuncNames []string
 	InitFuncNames   []string
