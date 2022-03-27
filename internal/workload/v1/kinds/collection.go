@@ -16,12 +16,6 @@ import (
 	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/resources"
 )
 
-const (
-	defaultCollectionSubcommandName         = "collection"
-	defaultCollectionSubcommandDescription  = `Manage %s workload`
-	defaultCollectionRootcommandDescription = `Manage %s collection and components`
-)
-
 var ErrMissingRequiredFields = errors.New("missing required fields")
 
 // WorkloadCollectionSpec defines the attributes for a workload collection.
@@ -268,13 +262,13 @@ func (c *WorkloadCollection) GetSubCommand() *companion.CLI {
 func (c *WorkloadCollection) LoadManifests(workloadPath string) error {
 	manifests, err := resources.ExpandManifests(workloadPath, c.Spec.Manifests)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w; %s for collection %s", err, ErrLoadManifests, c.Name)
 	}
 
 	c.Spec.Manifests = manifests
 	for _, manifest := range c.Spec.Manifests {
 		if err := manifest.LoadContent(c.IsCollection()); err != nil {
-			return err
+			return fmt.Errorf("%w; %s for collection %s", err, ErrLoadManifests, c.Name)
 		}
 	}
 

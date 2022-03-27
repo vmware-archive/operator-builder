@@ -23,7 +23,7 @@ type Resources struct {
 	machinery.ResourceMixin
 
 	// input fields
-	Builder kinds.Workload
+	Builder kinds.WorkloadBuilder
 
 	// template fields
 	SpecFields      *kinds.APIFields

@@ -224,13 +224,13 @@ func (s *StandaloneWorkload) GetSubCommand() *companion.CLI {
 func (s *StandaloneWorkload) LoadManifests(workloadPath string) error {
 	manifests, err := resources.ExpandManifests(workloadPath, s.Spec.Manifests)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w; %s for standalone workload %s", err, ErrLoadManifests, s.Name)
 	}
 
 	s.Spec.Manifests = manifests
 	for _, manifest := range s.Spec.Manifests {
 		if err := manifest.LoadContent(s.IsCollection()); err != nil {
-			return err
+			return fmt.Errorf("%w; %s for standalone workload %s", err, ErrLoadManifests, s.Name)
 		}
 	}
 

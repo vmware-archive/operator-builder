@@ -6,9 +6,6 @@ package config
 import (
 	"errors"
 
-	"sigs.k8s.io/kubebuilder/v3/pkg/config"
-	"sigs.k8s.io/kubebuilder/v3/pkg/model/resource"
-
 	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/kinds"
 )
 
@@ -22,12 +19,8 @@ type Processor struct {
 	// Workload represents the top-level configuration (e.g. as passed in via the --workload-config) flag
 	// from the command line, while Children represents subordinate configurations that the parent files such
 	// as the componentFiles field.
-	Workload kinds.Workload
+	Workload kinds.WorkloadBuilder
 	Children []*Processor
-
-	// The following are used by the scaffolder interface.
-	KubebuilderConfig   *config.Config
-	KubebuilderResource *resource.Resource
 }
 
 // NewProcessor will return a new workload config processor given a path.  An error is returned if the workload config
@@ -38,4 +31,39 @@ func NewProcessor(configPath string) (*Processor, error) {
 	}
 
 	return &Processor{Path: configPath}, nil
+}
+
+// GetWorkloads gets all of the workloads for a config processor in a flattened
+// fashion.
+func (processor *Processor) GetWorkloads() []kinds.WorkloadBuilder {
+	workloads := []kinds.WorkloadBuilder{processor.Workload}
+
+	// return the array with the single workload if we have no children
+	if len(processor.Children) == 0 {
+		return workloads
+	}
+
+	// get the workloads for a child and append it to the array
+	for i := range processor.Children {
+		workloads = append(workloads, processor.Children[i].GetWorkloads()...)
+	}
+
+	return workloads
+}
+
+// GetProcessors gets all of the processors to include the parent and children processors.
+func (processor *Processor) GetProcessors() []*Processor {
+	processors := []*Processor{processor}
+
+	// return array with single processor if we have no children
+	if len(processor.Children) == 0 {
+		return processors
+	}
+
+	// get the processors for a child and append it to the array
+	for i := range processor.Children {
+		processors = append(processors, processor.Children[i].GetProcessors()...)
+	}
+
+	return processors
 }

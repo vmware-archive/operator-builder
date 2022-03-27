@@ -29,10 +29,10 @@ const (
 type InitConfigOptions struct {
 	Path           string
 	Force          bool
-	WorkloadConfig kinds.Workload
+	WorkloadConfig kinds.WorkloadBuilder
 }
 
-func WriteConfig(options *InitConfigOptions) error {
+func InitConfig(options *InitConfigOptions) error {
 	// validate the configuration
 	if err := options.WorkloadConfig.Validate(); err != nil {
 		return fmt.Errorf("%w; invalid configuration", err)
@@ -87,7 +87,7 @@ func outputFile(options *InitConfigOptions, data []byte) error {
 	return nil
 }
 
-func mutateConfig(workloadConfig kinds.Workload) ([]byte, error) {
+func mutateConfig(workloadConfig kinds.WorkloadBuilder) ([]byte, error) {
 	// convert to bytes
 	rawData, err := yaml.Marshal(&workloadConfig)
 	if err != nil {

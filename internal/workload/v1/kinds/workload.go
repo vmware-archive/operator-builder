@@ -5,12 +5,12 @@ package kinds
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/vmware-tanzu-labs/object-code-generator-for-k8s/pkg/generate"
-
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -33,8 +33,8 @@ const (
 	SampleWorkloadAPIVersion = "v1alpha1"
 )
 
-// Workload defines an interface for identifying any workload.
-type Workload interface {
+// WorkloadBuilder defines an interface for identifying any workload.
+type WorkloadBuilder interface {
 	IsClusterScoped() bool
 	IsStandalone() bool
 	IsCollection() bool
@@ -70,6 +70,10 @@ type Workload interface {
 	LoadManifests(workloadPath string) error
 	Validate() error
 }
+
+var (
+	ErrLoadManifests = errors.New("error loading manifests")
+)
 
 // WorkloadAPISpec contains fields shared by all workload specs.
 type WorkloadAPISpec struct {
@@ -242,7 +246,7 @@ func (ws *WorkloadSpec) processManifests(markerTypes ...markers.MarkerType) erro
 
 			ws.RBACRules.Add(rules)
 
-			resource := resources.Child{
+			childResource := resources.Child{
 				Name:       manifestObject.GetName(),
 				UniqueName: generateUniqueResourceName(manifestObject),
 				Group:      manifestObject.GetObjectKind().GroupVersionKind().Group,
@@ -262,10 +266,10 @@ func (ws *WorkloadSpec) processManifests(markerTypes ...markers.MarkerType) erro
 			}
 
 			// add the source code to the resource
-			resource.SourceCode = resourceDefinition
-			resource.StaticContent = manifest
+			childResource.SourceCode = resourceDefinition
+			childResource.StaticContent = manifest
 
-			childResources = append(childResources, resource)
+			childResources = append(childResources, childResource)
 		}
 
 		sourceFile.Children = childResources
@@ -316,18 +320,6 @@ func (ws *WorkloadSpec) processMarkers(manifestFile *resources.Manifest, markerT
 		// find & replace collection markers with field markers
 		manifestFile.Content = []byte(strings.ReplaceAll(string(manifestFile.Content), "!!var collection", "!!var parent"))
 		manifestFile.Content = []byte(strings.ReplaceAll(string(manifestFile.Content), "!!start collection", "!!start parent"))
-	}
-
-	return nil
-}
-
-func (ws *WorkloadSpec) processResourceMarkers(markerCollection *markers.MarkerCollection) error {
-	for _, sourceFile := range *ws.SourceFiles {
-		for i := range sourceFile.Children {
-			if err := sourceFile.Children[i].ProcessResourceMarkers(markerCollection); err != nil {
-				return err
-			}
-		}
 	}
 
 	return nil

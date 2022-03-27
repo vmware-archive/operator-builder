@@ -4,6 +4,7 @@
 package v1
 
 import (
+	"errors"
 	"fmt"
 
 	"sigs.k8s.io/kubebuilder/v3/pkg/config"
@@ -11,7 +12,6 @@ import (
 	"sigs.k8s.io/kubebuilder/v3/pkg/plugin"
 
 	"github.com/vmware-tanzu-labs/operator-builder/internal/plugins/workload/v1/scaffolds"
-	workloadv1 "github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1"
 	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/commands/subcommand"
 	workloadconfig "github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/config"
 	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/kinds"
@@ -23,8 +23,10 @@ type initSubcommand struct {
 	workloadConfigPath string
 	cliRootCommandName string
 
-	workload kinds.Workload
+	workload kinds.WorkloadBuilder
 }
+
+var ErrScaffoldInit = errors.New("unable to scaffold initial config")
 
 var _ plugin.InitSubcommand = &initSubcommand{}
 
@@ -44,8 +46,8 @@ func (p *initSubcommand) InjectConfig(c config.Config) error {
 		return fmt.Errorf("unable to enable multigroup apis, %w", err)
 	}
 
-	var pluginConfig workloadv1.PluginConfig
-	if err := c.DecodePluginConfig(workloadv1.PluginConfigKey, &pluginConfig); err != nil {
+	var pluginConfig workloadconfig.Plugin
+	if err := c.DecodePluginConfig(workloadconfig.PluginKey, &pluginConfig); err != nil {
 		return fmt.Errorf("unable to decode operatorbuilder config key for %s, %w", p.workloadConfigPath, err)
 	}
 
@@ -58,11 +60,11 @@ func (p *initSubcommand) InjectConfig(c config.Config) error {
 func (p *initSubcommand) PreScaffold(machinery.Filesystem) error {
 	processor, err := workloadconfig.Parse(p.workloadConfigPath)
 	if err != nil {
-		return fmt.Errorf("unable to scaffold initial config for %s, %w", p.workloadConfigPath, err)
+		return fmt.Errorf("%s for %s, %w", ErrScaffoldInit, p.workloadConfigPath, err)
 	}
 
 	if err := subcommand.Init(processor); err != nil {
-		return err
+		return fmt.Errorf("%s for %s, %w", ErrScaffoldInit, p.workloadConfigPath, err)
 	}
 
 	p.workload = processor.Workload
@@ -79,7 +81,7 @@ func (p *initSubcommand) Scaffold(fs machinery.Filesystem) error {
 	scaffolder.InjectFS(fs)
 
 	if err := scaffolder.Scaffold(); err != nil {
-		return fmt.Errorf("unable to scaffold initial configuration, %w", err)
+		return fmt.Errorf("%s for %s, %w", ErrScaffoldInit, p.workloadConfigPath, err)
 	}
 
 	return nil

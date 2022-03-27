@@ -30,7 +30,7 @@ type createAPIProcessor struct {
 // used during scaffolding.
 func CreateAPI(processor *config.Processor) error {
 	// run through pre-processing to gather the collection and the components
-	apiProcessor := &createAPIProcessor{configProcessors: config.GetProcessors(processor)}
+	apiProcessor := &createAPIProcessor{configProcessors: processor.GetProcessors()}
 	if err := apiProcessor.preProcess(); err != nil {
 		return fmt.Errorf("%w; %s", err, ErrCreateAPIPreProcess)
 	}

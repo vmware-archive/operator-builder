@@ -22,7 +22,7 @@ const (
 	WorkloadKindComponent
 )
 
-func Decode(wk WorkloadKind, dc *yaml.Decoder) (Workload, error) {
+func Decode(wk WorkloadKind, dc *yaml.Decoder) (WorkloadBuilder, error) {
 	switch wk {
 	case WorkloadKindStandalone:
 		return decodeStandalone(dc)

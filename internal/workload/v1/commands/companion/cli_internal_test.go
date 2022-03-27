@@ -1,5 +1,5 @@
-// Copyright 2021 VMware, Inc.
-// SPDX-License-Identifier: MIT
+// // Copyright 2021 VMware, Inc.
+// // SPDX-License-Identifier: MIT
 
 package companion
 
@@ -9,12 +9,13 @@ package companion
 // 	"testing"
 
 // 	"github.com/stretchr/testify/assert"
+// 	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/kinds"
 // )
 
-// func TestCliCommand_SetDefaults(t *testing.T) {
+// func TestCLI_SetDefaults(t *testing.T) {
 // 	t.Parallel()
 
-// 	apiTestSpec := NewSampleAPISpec()
+// 	apiTestSpec := kinds.NewSampleAPISpec()
 
 // 	type fields struct {
 // 		Name          string
@@ -26,7 +27,7 @@ package companion
 // 	}
 
 // 	type args struct {
-// 		workload     WorkloadAPIBuilder
+// 		workload     kinds.Workload
 // 		isSubcommand bool
 // 	}
 
@@ -34,21 +35,21 @@ package companion
 // 		name         string
 // 		fields       fields
 // 		args         args
-// 		expected     *CliCommand
+// 		expected     *CLI
 // 		isSubcommand bool
 // 	}{
 // 		{
 // 			name:   "ensure collection fields are properly defaulted",
 // 			fields: fields{},
 // 			args: args{
-// 				workload: NewWorkloadCollection(
+// 				workload: kinds.NewWorkloadCollection(
 // 					"needs-defaulted",
 // 					*apiTestSpec,
 // 					[]string{},
 // 				),
 // 				isSubcommand: true,
 // 			},
-// 			expected: &CliCommand{
+// 			expected: &CLI{
 // 				Name:          defaultCollectionSubcommandName,
 // 				Description:   fmt.Sprintf("Manage %s workload", strings.ToLower(apiTestSpec.Kind)),
 // 				IsSubcommand:  true,
@@ -59,7 +60,7 @@ package companion
 // 			name:   "ensure component fields are properly defaulted",
 // 			fields: fields{},
 // 			args: args{
-// 				workload: NewComponentWorkload(
+// 				workload: kinds.NewComponentWorkload(
 // 					"needs-defaulted",
 // 					*apiTestSpec,
 // 					[]string{},
@@ -67,7 +68,7 @@ package companion
 // 				),
 // 				isSubcommand: true,
 // 			},
-// 			expected: &CliCommand{
+// 			expected: &CLI{
 // 				Name:          strings.ToLower(apiTestSpec.Kind),
 // 				Description:   fmt.Sprintf("Manage %s workload", strings.ToLower(apiTestSpec.Kind)),
 // 				IsSubcommand:  true,
@@ -78,14 +79,14 @@ package companion
 // 			name:   "ensure standalone fields are properly defaulted",
 // 			fields: fields{},
 // 			args: args{
-// 				workload: NewStandaloneWorkload(
+// 				workload: kinds.NewStandaloneWorkload(
 // 					"needs-defaulted",
 // 					*apiTestSpec,
 // 					[]string{},
 // 				),
 // 				isSubcommand: true,
 // 			},
-// 			expected: &CliCommand{
+// 			expected: &CLI{
 // 				Name:          strings.ToLower(apiTestSpec.Kind),
 // 				Description:   fmt.Sprintf("Manage %s workload", strings.ToLower(apiTestSpec.Kind)),
 // 				IsSubcommand:  true,
@@ -99,14 +100,14 @@ package companion
 // 				Description: "remain-persistent",
 // 			},
 // 			args: args{
-// 				workload: NewWorkloadCollection(
+// 				workload: kinds.NewWorkloadCollection(
 // 					"remain-persistent",
 // 					*apiTestSpec,
 // 					[]string{},
 // 				),
 // 				isSubcommand: true,
 // 			},
-// 			expected: &CliCommand{
+// 			expected: &CLI{
 // 				Name:          "remain-persistent",
 // 				Description:   "remain-persistent",
 // 				IsSubcommand:  true,
@@ -120,14 +121,14 @@ package companion
 // 				Description: "sub-root-for-sub",
 // 			},
 // 			args: args{
-// 				workload: NewWorkloadCollection(
+// 				workload: kinds.NewWorkloadCollection(
 // 					"remain-persistent",
 // 					*apiTestSpec,
 // 					[]string{},
 // 				),
 // 				isSubcommand: true,
 // 			},
-// 			expected: &CliCommand{
+// 			expected: &CLI{
 // 				Name:          "sub-root-for-sub",
 // 				Description:   "sub-root-for-sub",
 // 				IsSubcommand:  true,
@@ -141,14 +142,14 @@ package companion
 // 				Description: "sub-root-for-root",
 // 			},
 // 			args: args{
-// 				workload: NewWorkloadCollection(
+// 				workload: kinds.NewWorkloadCollection(
 // 					"remain-persistent",
 // 					*apiTestSpec,
 // 					[]string{},
 // 				),
 // 				isSubcommand: false,
 // 			},
-// 			expected: &CliCommand{
+// 			expected: &CLI{
 // 				Name:          "sub-root-for-root",
 // 				Description:   "sub-root-for-root",
 // 				IsSubcommand:  false,
@@ -161,7 +162,7 @@ package companion
 // 		tt := tt
 // 		t.Run(tt.name, func(t *testing.T) {
 // 			t.Parallel()
-// 			cli := &CliCommand{
+// 			cli := &CLI{
 // 				Name:          tt.fields.Name,
 // 				Description:   tt.fields.Description,
 // 				VarName:       tt.fields.VarName,
@@ -175,10 +176,10 @@ package companion
 // 	}
 // }
 
-// func TestCliCommand_getDefaultName(t *testing.T) {
+// func TestCLI_getDefaultName(t *testing.T) {
 // 	t.Parallel()
 
-// 	apiTestSpec := NewSampleAPISpec()
+// 	apiTestSpec := kinds.NewSampleAPISpec()
 
 // 	type fields struct {
 // 		Name          string
@@ -190,7 +191,7 @@ package companion
 // 	}
 
 // 	type args struct {
-// 		workload WorkloadAPIBuilder
+// 		workload kinds.Workload
 // 	}
 
 // 	tests := []struct {
@@ -207,7 +208,7 @@ package companion
 // 				IsRootcommand: true,
 // 			},
 // 			args: args{
-// 				workload: NewWorkloadCollection(
+// 				workload: kinds.NewWorkloadCollection(
 // 					"collection-root",
 // 					*apiTestSpec,
 // 					[]string{},
@@ -223,7 +224,7 @@ package companion
 // 				IsSubcommand: true,
 // 			},
 // 			args: args{
-// 				workload: NewWorkloadCollection(
+// 				workload: kinds.NewWorkloadCollection(
 // 					"collection-sub",
 // 					*apiTestSpec,
 // 					[]string{},
@@ -239,7 +240,7 @@ package companion
 // 				IsSubcommand: true,
 // 			},
 // 			args: args{
-// 				workload: NewComponentWorkload(
+// 				workload: kinds.NewComponentWorkload(
 // 					"component-sub",
 // 					*apiTestSpec,
 // 					[]string{},
@@ -256,7 +257,7 @@ package companion
 // 				IsRootcommand: true,
 // 			},
 // 			args: args{
-// 				workload: NewStandaloneWorkload(
+// 				workload: kinds.NewStandaloneWorkload(
 // 					"standalone-root",
 // 					*apiTestSpec,
 // 					[]string{},
@@ -270,7 +271,7 @@ package companion
 // 		tt := tt
 // 		t.Run(tt.name, func(t *testing.T) {
 // 			t.Parallel()
-// 			cli := &CliCommand{
+// 			cli := &CLI{
 // 				Name:          tt.fields.Name,
 // 				Description:   tt.fields.Description,
 // 				VarName:       tt.fields.VarName,
@@ -279,16 +280,16 @@ package companion
 // 				IsRootcommand: tt.fields.IsRootcommand,
 // 			}
 // 			if got := cli.getDefaultName(tt.args.workload); got != tt.want {
-// 				t.Errorf("CliCommand.getDefaultName() = %v, want %v", got, tt.want)
+// 				t.Errorf("CLI.getDefaultName() = %v, want %v", got, tt.want)
 // 			}
 // 		})
 // 	}
 // }
 
-// func TestCliCommand_getDefaultDescription(t *testing.T) {
+// func TestCLI_getDefaultDescription(t *testing.T) {
 // 	t.Parallel()
 
-// 	apiTestSpec := NewSampleAPISpec()
+// 	apiTestSpec := kinds.NewSampleAPISpec()
 // 	lowerKind := strings.ToLower(apiTestSpec.Kind)
 
 // 	type fields struct {
@@ -301,7 +302,7 @@ package companion
 // 	}
 
 // 	type args struct {
-// 		workload WorkloadAPIBuilder
+// 		workload kinds.Workload
 // 	}
 
 // 	tests := []struct {
@@ -318,7 +319,7 @@ package companion
 // 				IsRootcommand: true,
 // 			},
 // 			args: args{
-// 				workload: NewWorkloadCollection(
+// 				workload: kinds.NewWorkloadCollection(
 // 					"collection-root",
 // 					*apiTestSpec,
 // 					[]string{},
@@ -334,7 +335,7 @@ package companion
 // 				IsSubcommand: true,
 // 			},
 // 			args: args{
-// 				workload: NewWorkloadCollection(
+// 				workload: kinds.NewWorkloadCollection(
 // 					"collection-sub",
 // 					*apiTestSpec,
 // 					[]string{},
@@ -350,7 +351,7 @@ package companion
 // 				IsSubcommand: true,
 // 			},
 // 			args: args{
-// 				workload: NewComponentWorkload(
+// 				workload: kinds.NewComponentWorkload(
 // 					"component-sub",
 // 					*apiTestSpec,
 // 					[]string{},
@@ -367,7 +368,7 @@ package companion
 // 				IsRootcommand: true,
 // 			},
 // 			args: args{
-// 				workload: NewStandaloneWorkload(
+// 				workload: kinds.NewStandaloneWorkload(
 // 					"standalone-root",
 // 					*apiTestSpec,
 // 					[]string{},
@@ -381,7 +382,7 @@ package companion
 // 		tt := tt
 // 		t.Run(tt.name, func(t *testing.T) {
 // 			t.Parallel()
-// 			cli := &CliCommand{
+// 			cli := &CLI{
 // 				Name:          tt.fields.Name,
 // 				Description:   tt.fields.Description,
 // 				VarName:       tt.fields.VarName,
@@ -390,13 +391,13 @@ package companion
 // 				IsRootcommand: tt.fields.IsRootcommand,
 // 			}
 // 			if got := cli.getDefaultDescription(tt.args.workload); got != tt.want {
-// 				t.Errorf("CliCommand.getDefaultDescription() = %v, want %v", got, tt.want)
+// 				t.Errorf("CLI.getDefaultDescription() = %v, want %v", got, tt.want)
 // 			}
 // 		})
 // 	}
 // }
 
-// func TestCliCommand_setCommonValues(t *testing.T) {
+// func TestCLI_SetCommonValues(t *testing.T) {
 // 	t.Parallel()
 
 // 	type fields struct {
@@ -409,7 +410,7 @@ package companion
 // 	}
 
 // 	type args struct {
-// 		workload     WorkloadAPIBuilder
+// 		workload     kinds.Workload
 // 		isSubcommand bool
 // 	}
 
@@ -417,7 +418,7 @@ package companion
 // 		name     string
 // 		fields   fields
 // 		args     args
-// 		expected *CliCommand
+// 		expected *CLI
 // 	}{
 // 		{
 // 			name: "ensure varname and filename fields are set",
@@ -428,14 +429,14 @@ package companion
 // 				IsRootcommand: false,
 // 			},
 // 			args: args{
-// 				workload: NewWorkloadCollection(
+// 				workload: kinds.NewWorkloadCollection(
 // 					"missing-description",
-// 					*NewSampleAPISpec(),
+// 					*kinds.NewSampleAPISpec(),
 // 					[]string{},
 // 				),
 // 				isSubcommand: true,
 // 			},
-// 			expected: &CliCommand{
+// 			expected: &CLI{
 // 				Name:          "mycommand",
 // 				VarName:       "Mycommand",
 // 				FileName:      "mycommand",
@@ -450,7 +451,7 @@ package companion
 // 		tt := tt
 // 		t.Run(tt.name, func(t *testing.T) {
 // 			t.Parallel()
-// 			cli := &CliCommand{
+// 			cli := &CLI{
 // 				Name:          tt.fields.Name,
 // 				Description:   tt.fields.Description,
 // 				VarName:       tt.fields.VarName,
@@ -458,73 +459,73 @@ package companion
 // 				IsSubcommand:  tt.fields.IsSubcommand,
 // 				IsRootcommand: tt.fields.IsRootcommand,
 // 			}
-// 			cli.setCommonValues(tt.args.workload, tt.args.isSubcommand)
+// 			cli.SetCommonValues(tt.args.workload, tt.args.isSubcommand)
 // 			assert.Equal(t, tt.expected, cli)
 // 		})
 // 	}
 // }
 
-// func Test_hasName(t *testing.T) {
+// func Test_HasName(t *testing.T) {
 // 	t.Parallel()
 
 // 	for _, tt := range []struct {
 // 		name     string
-// 		input    CliCommand
+// 		input    CLI
 // 		expected bool
 // 	}{
 // 		{
 // 			name: "command has a name field",
-// 			input: CliCommand{
+// 			input: CLI{
 // 				Name: "HasNameField",
 // 			},
 // 			expected: true,
 // 		},
 // 		{
 // 			name:     "command does not have a name field",
-// 			input:    CliCommand{},
+// 			input:    CLI{},
 // 			expected: false,
 // 		},
 // 	} {
 // 		tt := tt
 // 		t.Run(tt.name, func(t *testing.T) {
 // 			t.Parallel()
-// 			hasName := tt.input.hasName()
+// 			hasName := tt.input.HasName()
 // 			assert.Equal(t, tt.expected, hasName)
 // 		})
 // 	}
 // }
 
-// func Test_hasDescription(t *testing.T) {
+// func Test_HasDescription(t *testing.T) {
 // 	t.Parallel()
 
 // 	for _, tt := range []struct {
 // 		name     string
-// 		input    CliCommand
+// 		input    CLI
 // 		expected bool
 // 	}{
 // 		{
 // 			name: "command has a description field",
-// 			input: CliCommand{
+// 			input: CLI{
 // 				Description: "HasDescriptionField",
 // 			},
 // 			expected: true,
 // 		},
 // 		{
 // 			name:     "command does not have a description field",
-// 			input:    CliCommand{},
+// 			input:    CLI{},
 // 			expected: false,
 // 		},
 // 	} {
 // 		tt := tt
 // 		t.Run(tt.name, func(t *testing.T) {
 // 			t.Parallel()
-// 			hasDescription := tt.input.hasDescription()
+// 			hasDescription := tt.input.HasDescription()
 // 			assert.Equal(t, tt.expected, hasDescription)
 // 		})
 // 	}
 // }
 
-// func TestCliCommand_GetSubCmdRelativeFileName(t *testing.T) {
+// func TestCLI_GetSubCmdRelativeFileName(t *testing.T) {
 // 	t.Parallel()
 
 // 	type fields struct {
@@ -573,7 +574,7 @@ package companion
 // 		tt := tt
 // 		t.Run(tt.name, func(t *testing.T) {
 // 			t.Parallel()
-// 			cli := &CliCommand{
+// 			cli := &CLI{
 // 				Name:          tt.fields.Name,
 // 				Description:   tt.fields.Description,
 // 				VarName:       tt.fields.VarName,
@@ -582,7 +583,7 @@ package companion
 // 				IsRootcommand: tt.fields.IsRootcommand,
 // 			}
 // 			if got := cli.GetSubCmdRelativeFileName(tt.args.rootCmdName, tt.args.subCommandFolder, tt.args.group, tt.args.fileName); got != tt.want {
-// 				t.Errorf("CliCommand.GetSubCmdRelativeFileName() = %v, want %v", got, tt.want)
+// 				t.Errorf("CLI.GetSubCmdRelativeFileName() = %v, want %v", got, tt.want)
 // 			}
 // 		})
 // 	}

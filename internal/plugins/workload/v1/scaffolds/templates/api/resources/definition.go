@@ -22,7 +22,7 @@ type Definition struct {
 	machinery.ResourceMixin
 
 	// input fields
-	Builder    kinds.Workload
+	Builder    kinds.WorkloadBuilder
 	SourceFile resources.SourceFile
 }
 
@@ -47,14 +47,8 @@ const definitionTemplate = `{{ .Boilerplate }}
 package {{ .Builder.GetPackageName }}
 
 import (
-	{{ if .SourceFile.HasStatic }}
-	"text/template"
-	{{ end }}
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	{{- if .SourceFile.HasStatic }}
-	k8s_yaml "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
-	{{ end }}
 
 	{{ .Resource.ImportAlias }} "{{ .Resource.Path }}"
 	{{- if .Builder.IsComponent }}

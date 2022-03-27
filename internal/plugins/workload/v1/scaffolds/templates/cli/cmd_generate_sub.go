@@ -37,7 +37,7 @@ type CmdGenerateSub struct {
 	machinery.ResourceMixin
 
 	// input fields
-	Builder kinds.Workload
+	Builder kinds.WorkloadBuilder
 
 	// template fields
 	cmdGenerateSubCommon
@@ -104,7 +104,7 @@ type CmdGenerateSubUpdater struct { //nolint:maligned
 	machinery.ResourceMixin
 
 	// input fields
-	Builder kinds.Workload
+	Builder kinds.WorkloadBuilder
 
 	// template fields
 	cmdGenerateSubCommon

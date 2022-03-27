@@ -33,7 +33,7 @@ type CmdVersionSub struct {
 	machinery.RepositoryMixin
 
 	// input fields
-	Builder kinds.Workload
+	Builder kinds.WorkloadBuilder
 
 	// template fields
 	cmdVersionSubCommon
@@ -75,7 +75,7 @@ type CmdVersionSubUpdater struct { //nolint:maligned
 	machinery.ResourceMixin
 
 	// input fields
-	Builder kinds.Workload
+	Builder kinds.WorkloadBuilder
 
 	// template fields
 	cmdVersionSubCommon

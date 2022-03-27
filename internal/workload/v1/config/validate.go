@@ -18,14 +18,12 @@ var (
 )
 
 type inlineValidator struct {
-	names           map[string]bool
-	kindsInGroups   map[string][]string
-	foundCollection bool
-	foundStandalone bool
+	names         map[string]bool
+	kindsInGroups map[string][]string
 }
 
 // validate validates a workload inline during processing.
-func (validator *inlineValidator) validate(workload kinds.Workload, processor *Processor) error {
+func (validator *inlineValidator) validate(workload kinds.WorkloadBuilder, processor *Processor) error {
 	// validate that a workload is a struct
 	validate := structvalidator.New()
 	if err := validate.Struct(workload); err != nil {
@@ -73,15 +71,6 @@ func (validator *inlineValidator) validateKind(group, kind string) error {
 		if existingKinds[i] == kind {
 			return fmt.Errorf("%s already exists in group %s - %w", kind, group, ErrUniqueKinds)
 		}
-	}
-
-	return nil
-}
-
-// validateKinds validates that there are no overlapping kinds.
-func (validator *inlineValidator) validateKinds(group, kind string) error {
-	if validator.foundCollection && validator.foundStandalone {
-		return ErrMultipleConfigs
 	}
 
 	return nil

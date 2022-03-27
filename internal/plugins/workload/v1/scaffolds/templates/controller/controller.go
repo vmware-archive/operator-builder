@@ -23,7 +23,7 @@ type Controller struct {
 	machinery.ResourceMixin
 
 	// input fields
-	Builder kinds.Workload
+	Builder kinds.WorkloadBuilder
 
 	// template fields
 	BaseImports     []string
@@ -103,7 +103,7 @@ func (f *Controller) setInternalImports() {
 	}
 }
 
-func (f *Controller) getAPITypesPath(builder kinds.Workload) string {
+func (f *Controller) getAPITypesPath(builder kinds.WorkloadBuilder) string {
 	return fmt.Sprintf(`%s%s "%s/apis/%s/%s"`,
 		builder.GetAPIGroup(),
 		builder.GetAPIVersion(),

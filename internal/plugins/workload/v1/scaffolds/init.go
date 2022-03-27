@@ -23,7 +23,7 @@ var _ plugins.Scaffolder = &initScaffolder{}
 type initScaffolder struct {
 	config             config.Config
 	boilerplatePath    string
-	workload           kinds.Workload
+	workload           kinds.WorkloadBuilder
 	cliRootCommandName string
 
 	fs machinery.Filesystem
@@ -32,7 +32,7 @@ type initScaffolder struct {
 // NewInitScaffolder returns a new Scaffolder for project initialization operations.
 func NewInitScaffolder(
 	cfg config.Config,
-	workload kinds.Workload,
+	workload kinds.WorkloadBuilder,
 	cliRootCommandName string,
 ) plugins.Scaffolder {
 	return &initScaffolder{

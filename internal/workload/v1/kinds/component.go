@@ -237,13 +237,13 @@ func (c *ComponentWorkload) GetSubCommand() *companion.CLI {
 func (c *ComponentWorkload) LoadManifests(workloadPath string) error {
 	manifests, err := resources.ExpandManifests(workloadPath, c.Spec.Manifests)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w; %s for component %s", err, ErrLoadManifests, c.Name)
 	}
 
 	c.Spec.Manifests = manifests
 	for _, manifest := range c.Spec.Manifests {
 		if err := manifest.LoadContent(c.IsCollection()); err != nil {
-			return err
+			return fmt.Errorf("%w; %s for component %s", err, ErrLoadManifests, c.Name)
 		}
 	}
 

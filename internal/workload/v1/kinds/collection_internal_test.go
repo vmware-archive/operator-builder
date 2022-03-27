@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
 	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/commands/companion"
 )
 

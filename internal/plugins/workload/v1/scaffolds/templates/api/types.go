@@ -25,7 +25,7 @@ type Types struct {
 	machinery.ResourceMixin
 
 	// input fields
-	Builder kinds.Workload
+	Builder kinds.WorkloadBuilder
 }
 
 // SetTemplateDefaults implements file.Template.

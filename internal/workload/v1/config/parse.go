@@ -17,15 +17,14 @@ import (
 )
 
 var (
-	ErrParseConfig        = errors.New("error parsing workload config")
-	ErrCollectionRequired = errors.New("a WorkloadCollection is required when using WorkloadComponents")
-
-	//ErrNamesMustBeUnique = errors.New("each workload name must be unique")
-	//ErrConfigMustExist     = errors.New("no workload config provided - workload config required")
-	ErrMultipleConfigs = errors.New("multiple configs found - please provide only one standalone or collection workload")
-	// ErrCollectionRequired  = errors.New("a WorkloadCollection is required when using WorkloadComponents")
-	ErrMissingWorkload     = errors.New("could not find either standalone or collection workload, please provide one")
-	ErrMissingDependencies = errors.New("missing dependencies - no workload config provided")
+	ErrParseConfig          = errors.New("error parsing workload config")
+	ErrParseComponentConfig = errors.New("error parsing workload component config")
+	ErrConvertComponent     = errors.New("error converting workload to component workload")
+	ErrConvertCollection    = errors.New("error converting workload to collection")
+	ErrCollectionRequired   = errors.New("a WorkloadCollection is required when using WorkloadComponents")
+	ErrMultipleConfigs      = errors.New("multiple configs found - please provide only one standalone or collection workload")
+	ErrMissingWorkload      = errors.New("could not find either standalone or collection workload, please provide one")
+	ErrMissingDependencies  = errors.New("missing dependencies - no workload config provided")
 )
 
 // Parse will parse and individual workload config given the path at which it exists.  It also
@@ -56,8 +55,8 @@ func Parse(configPath string) (*Processor, error) {
 	// finally, we must ensure that any dependencies specified exist within this configuration
 	// bundle.
 	for _, component := range processor.Children {
-		if err := setDependencies(component.Workload, GetWorkloads(processor)); err != nil {
-			return nil, fmt.Errorf("unable to set dependencies for component: %s", component.Workload.GetName())
+		if err := setDependencies(component.Workload, processor.GetWorkloads()); err != nil {
+			return nil, fmt.Errorf("%w; unable to set dependencies for component: %s", err, component.Workload.GetName())
 		}
 	}
 
@@ -81,7 +80,10 @@ func (processor *Processor) parse() error {
 
 	kindDecoder.KnownFields(true)
 
-	validator := &inlineValidator{}
+	validator := &inlineValidator{
+		names:         make(map[string]bool),
+		kindsInGroups: make(map[string][]string),
+	}
 
 	for {
 		var workloadID kinds.WorkloadShared
@@ -116,7 +118,12 @@ func (processor *Processor) parse() error {
 
 		// parse the child components
 		if workload.IsCollection() {
-			if err := processor.parseComponents(workload.GetCollection(), processor.Path); err != nil {
+			collection, ok := workload.(*kinds.WorkloadCollection)
+			if !ok {
+				return fmt.Errorf("%w for workload %s labeled as collection", ErrConvertCollection, workload.GetName())
+			}
+
+			if err := processor.parseComponents(collection, processor.Path); err != nil {
 				return err
 			}
 		}
@@ -142,8 +149,9 @@ func (processor *Processor) parseComponents(workload *kinds.WorkloadCollection, 
 
 			// add the component processor as a child
 			processor.Children = append(processor.Children, componentProcessor)
+
 			if err := componentProcessor.parse(); err != nil {
-				return err
+				return fmt.Errorf("%w; %s at path %s", err, ErrParseComponentConfig, componentPath)
 			}
 
 			// set the config path
@@ -158,10 +166,10 @@ func (processor *Processor) parseComponents(workload *kinds.WorkloadCollection, 
 }
 
 // setDependencies will set the dependencies for a particular workload.
-func setDependencies(workload kinds.Workload, workloads []kinds.Workload) error {
+func setDependencies(workload kinds.WorkloadBuilder, workloads []kinds.WorkloadBuilder) error {
 	component, ok := workload.(*kinds.ComponentWorkload)
 	if !ok {
-		return fmt.Errorf("unable to convert workload %s to component workload", workload.GetName())
+		return fmt.Errorf("%w for workload [%s]", ErrConvertComponent, workload.GetName())
 	}
 
 	component.Spec.ComponentDependencies = []*kinds.ComponentWorkload{}
@@ -180,14 +188,14 @@ func setDependencies(workload kinds.Workload, workloads []kinds.Workload) error 
 	}
 
 	if len(missing) > 0 {
-		return fmt.Errorf("unable to find dependencies: %v for component: %s", missing, component.Name)
+		return fmt.Errorf("%w; missing [%v] for component: [%s]", ErrMissingDependencies, missing, component.Name)
 	}
 
 	return nil
 }
 
 // getDependency returns a dependency as a component workload.
-func getDependency(name string, workloads []kinds.Workload) *kinds.ComponentWorkload {
+func getDependency(name string, workloads []kinds.WorkloadBuilder) *kinds.ComponentWorkload {
 	for this := range workloads {
 		if workloads[this].GetName() == name {
 			component, ok := workloads[this].(*kinds.ComponentWorkload)

@@ -25,7 +25,7 @@ type CmdRoot struct {
 	machinery.RepositoryMixin
 
 	// input variables
-	Initializer kinds.Workload
+	Initializer kinds.WorkloadBuilder
 
 	// template variables
 	RootCmd      companion.CLI
@@ -56,7 +56,7 @@ type CmdRootUpdater struct { //nolint:maligned
 	machinery.ResourceMixin
 
 	// input variables
-	Builder         kinds.Workload
+	Builder         kinds.WorkloadBuilder
 	InitCommand     bool
 	GenerateCommand bool
 	VersionCommand  bool

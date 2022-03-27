@@ -33,7 +33,7 @@ type CmdInitSub struct {
 	machinery.RepositoryMixin
 
 	// input fields
-	Builder kinds.Workload
+	Builder kinds.WorkloadBuilder
 
 	// template fields
 	cmdInitSubCommon
@@ -79,7 +79,7 @@ type CmdInitSubUpdater struct { //nolint:maligned
 	machinery.ResourceMixin
 
 	// input fields
-	Builder kinds.Workload
+	Builder kinds.WorkloadBuilder
 
 	// template fields
 	cmdInitSubCommon

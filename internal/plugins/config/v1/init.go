@@ -16,7 +16,6 @@ import (
 
 type initSubcommand struct {
 	workloadConfigPath string
-	processor          *workloadconfig.Processor
 }
 
 var _ plugin.InitSubcommand = &initSubcommand{}

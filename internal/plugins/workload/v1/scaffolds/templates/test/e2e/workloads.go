@@ -32,7 +32,7 @@ type WorkloadTest struct {
 	machinery.ResourceMixin
 
 	// input fields
-	Builder kinds.Workload
+	Builder kinds.WorkloadBuilder
 
 	// template fields
 	TesterName                string
@@ -185,7 +185,7 @@ func getTesterSamplePath(r *resource.Resource) string {
 	)
 }
 
-func getTesterNamespace(builder kinds.Workload) (namespace string) {
+func getTesterNamespace(builder kinds.WorkloadBuilder) (namespace string) {
 	if !builder.IsClusterScoped() {
 		namespaceElements := []string{
 			"test",

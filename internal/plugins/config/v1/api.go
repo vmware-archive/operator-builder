@@ -13,11 +13,12 @@ import (
 	"sigs.k8s.io/kubebuilder/v3/pkg/plugin"
 
 	workloadconfig "github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/config"
+	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/kinds"
 )
 
 type createAPISubcommand struct {
 	workloadConfigPath string
-	processor          *workloadconfig.Processor
+	workload           kinds.WorkloadBuilder
 }
 
 var _ plugin.CreateAPISubcommand = &createAPISubcommand{}
@@ -32,7 +33,7 @@ func (p *createAPISubcommand) InjectConfig(c config.Config) error {
 		return fmt.Errorf("unable to inject config into %s, %w", p.workloadConfigPath, err)
 	}
 
-	p.processor = processor
+	p.workload = processor.Workload
 
 	pluginConfig := workloadconfig.Plugin{
 		WorkloadConfigPath: p.workloadConfigPath,
@@ -49,16 +50,16 @@ func (p *createAPISubcommand) InjectConfig(c config.Config) error {
 func (p *createAPISubcommand) InjectResource(res *resource.Resource) error {
 	// set from config file if not provided with command line flag
 	if res.Group == "" {
-		res.Group = p.processor.Workload.GetAPIGroup()
+		res.Group = p.workload.GetAPIGroup()
 	}
 
 	if res.Version == "" {
-		res.Version = p.processor.Workload.GetAPIVersion()
+		res.Version = p.workload.GetAPIVersion()
 	}
 
 	if res.Kind == "" {
-		res.Kind = p.processor.Workload.GetAPIKind()
-		res.Plural = resource.RegularPlural(p.processor.Workload.GetAPIKind())
+		res.Kind = p.workload.GetAPIKind()
+		res.Plural = resource.RegularPlural(p.workload.GetAPIKind())
 	}
 
 	return nil

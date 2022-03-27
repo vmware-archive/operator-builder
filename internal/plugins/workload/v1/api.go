@@ -4,6 +4,7 @@
 package v1
 
 import (
+	"errors"
 	"fmt"
 
 	"sigs.k8s.io/kubebuilder/v3/pkg/config"
@@ -24,8 +25,10 @@ type createAPISubcommand struct {
 
 	workloadConfigPath string
 	cliRootCommandName string
-	workload           kinds.Workload
+	workload           kinds.WorkloadBuilder
 }
+
+var ErrScaffoldCreateAPI = errors.New("unable to scaffold api")
 
 var _ plugin.CreateAPISubcommand = &createAPISubcommand{}
 
@@ -60,11 +63,11 @@ func (p *createAPISubcommand) InjectResource(res *resource.Resource) error {
 func (p *createAPISubcommand) PreScaffold(machinery.Filesystem) error {
 	processor, err := workloadconfig.Parse(p.workloadConfigPath)
 	if err != nil {
-		return fmt.Errorf("unable to inject config into %s, %w", p.workloadConfigPath, err)
+		return fmt.Errorf("%s for %s, %w", ErrScaffoldCreateAPI, p.workloadConfigPath, err)
 	}
 
 	if err := subcommand.CreateAPI(processor); err != nil {
-		return err
+		return fmt.Errorf("%s for %s, %w", ErrScaffoldCreateAPI, p.workloadConfigPath, err)
 	}
 
 	p.workload = processor.Workload
@@ -82,7 +85,7 @@ func (p *createAPISubcommand) Scaffold(fs machinery.Filesystem) error {
 	scaffolder.InjectFS(fs)
 
 	if err := scaffolder.Scaffold(); err != nil {
-		return fmt.Errorf("unable to scaffold api, %w", err)
+		return fmt.Errorf("%s for %s, %w", ErrScaffoldInit, p.workloadConfigPath, err)
 	}
 
 	return nil

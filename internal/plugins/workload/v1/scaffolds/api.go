@@ -56,7 +56,7 @@ type apiScaffolder struct {
 	config             config.Config
 	resource           *resource.Resource
 	boilerplate        string
-	workload           kinds.Workload
+	workload           kinds.WorkloadBuilder
 	cliRootCommandName string
 }
 
@@ -64,7 +64,7 @@ type apiScaffolder struct {
 func NewAPIScaffolder(
 	cfg config.Config,
 	res *resource.Resource,
-	workload kinds.Workload,
+	workload kinds.WorkloadBuilder,
 	cliRootCommandName string,
 ) plugins.Scaffolder {
 	return &apiScaffolder{
@@ -108,7 +108,7 @@ func (s *apiScaffolder) Scaffold() error {
 // scaffoldWorkload performs the execution of the scaffold for an individual workload.
 func (s *apiScaffolder) scaffoldWorkload(
 	scaffold *machinery.Scaffold,
-	workload kinds.Workload,
+	workload kinds.WorkloadBuilder,
 ) error {
 	// override the scaffold if we have a component.  this will allow the Resource
 	// attribute of the scaffolder to be set appropriately so that things like Group,
@@ -195,7 +195,7 @@ func (s *apiScaffolder) scaffoldWorkload(
 // scaffoldAPI runs the specific logic to scaffold anything existing in the apis directory.
 func (s *apiScaffolder) scaffoldAPI(
 	scaffold *machinery.Scaffold,
-	workload kinds.Workload,
+	workload kinds.WorkloadBuilder,
 ) error {
 	// scaffold the base api types
 	if err := scaffold.Execute(
@@ -238,7 +238,7 @@ func (s *apiScaffolder) scaffoldAPI(
 // individual workload.
 func (s *apiScaffolder) scaffoldCLI(
 	scaffold *machinery.Scaffold,
-	workload kinds.Workload,
+	workload kinds.WorkloadBuilder,
 ) error {
 	// scaffold init subcommand
 	if err := scaffold.Execute(
