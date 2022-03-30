@@ -72,7 +72,8 @@ type WorkloadBuilder interface {
 }
 
 var (
-	ErrLoadManifests = errors.New("error loading manifests")
+	ErrLoadManifests   = errors.New("error loading manifests")
+	ErrProcessManifest = errors.New("error proessing manifest file")
 )
 
 // WorkloadAPISpec contains fields shared by all workload specs.
@@ -103,6 +104,17 @@ type WorkloadSpec struct {
 	RBACRules              *rbac.Rules                      `json:",omitempty" yaml:",omitempty" validate:"omitempty"`
 }
 
+// NewSampleAPISpec returns a new instance of a sample api specification.
+func NewSampleAPISpec() *WorkloadAPISpec {
+	return &WorkloadAPISpec{
+		Domain:        SampleWorkloadAPIDomain,
+		Group:         SampleWorkloadAPIGroup,
+		Kind:          SampleWorkloadAPIKind,
+		Version:       SampleWorkloadAPIVersion,
+		ClusterScoped: false,
+	}
+}
+
 // ProcessResourceMarkers processes a collection of field markers, associates them with
 // their respective resource markers, and generates the source code needed for that particular
 // resource marker.
@@ -110,7 +122,7 @@ func (ws *WorkloadSpec) ProcessResourceMarkers(markerCollection *markers.MarkerC
 	for _, sourceFile := range *ws.SourceFiles {
 		for i := range sourceFile.Children {
 			if err := sourceFile.Children[i].ProcessResourceMarkers(markerCollection); err != nil {
-				return err
+				return fmt.Errorf("%w", err)
 			}
 		}
 	}
@@ -199,14 +211,8 @@ func (ws *WorkloadSpec) appendCollectionRef() {
 	ws.APISpecFields.Children = append(ws.APISpecFields.Children, collectionField)
 }
 
-func NewSampleAPISpec() *WorkloadAPISpec {
-	return &WorkloadAPISpec{
-		Domain:        SampleWorkloadAPIDomain,
-		Group:         SampleWorkloadAPIGroup,
-		Kind:          SampleWorkloadAPIKind,
-		Version:       SampleWorkloadAPIVersion,
-		ClusterScoped: false,
-	}
+func processManifestError(err error, manifest *resources.Manifest) error {
+	return fmt.Errorf("%w; %s [%s]", err, ErrProcessManifest, manifest.Filename)
 }
 
 func (ws *WorkloadSpec) processManifests(markerTypes ...markers.MarkerType) error {
@@ -230,17 +236,23 @@ func (ws *WorkloadSpec) processManifests(markerTypes ...markers.MarkerType) erro
 			decoder := serializer.NewCodecFactory(scheme.Scheme).UniversalDecoder()
 
 			if err := runtime.DecodeInto(decoder, []byte(manifest), &manifestObject); err != nil {
-				return resources.ProcessManifestError(manifestFile, err)
+				return fmt.Errorf(
+					"%w; %s - unable to decode object in manifest file %s",
+					err,
+					ErrProcessManifest,
+					manifestFile.Filename,
+				)
 			}
 
 			// add the rules for this manifest
 			rules, err := rbac.ForManifest(&manifestObject)
 			if err != nil {
-				return fmt.Errorf(
-					"%w; error generating rbac for kind [%s] with name [%s]",
-					resources.ProcessManifestError(manifestFile, err),
-					manifestObject.GetKind(),
-					manifestObject.GetName(),
+				return processManifestError(
+					fmt.Errorf(
+						"%w; error generating rbac for resource kind [%s] with name [%s]",
+						err, manifestObject.GetKind(), manifestObject.GetName(),
+					),
+					manifestFile,
 				)
 			}
 
@@ -257,11 +269,12 @@ func (ws *WorkloadSpec) processManifests(markerTypes ...markers.MarkerType) erro
 			// generate the object source code
 			resourceDefinition, err := generate.Generate([]byte(manifest), "resourceObj")
 			if err != nil {
-				return fmt.Errorf(
-					"%w; error generating resource definition for kind [%s] with name [%s]",
-					resources.ProcessManifestError(manifestFile, err),
-					manifestObject.GetKind(),
-					manifestObject.GetName(),
+				return processManifestError(
+					fmt.Errorf(
+						"%w; error generating resource definition for resource kind [%s] with name [%s]",
+						err, manifestObject.GetKind(), manifestObject.GetName(),
+					),
+					manifestFile,
 				)
 			}
 
@@ -290,7 +303,7 @@ func (ws *WorkloadSpec) processManifests(markerTypes ...markers.MarkerType) erro
 func (ws *WorkloadSpec) processMarkers(manifestFile *resources.Manifest, markerTypes ...markers.MarkerType) error {
 	nodes, markerResults, err := markers.InspectForYAML(manifestFile.Content, markerTypes...)
 	if err != nil {
-		return resources.ProcessManifestError(manifestFile, err)
+		return processManifestError(err, manifestFile)
 	}
 
 	buf := bytes.Buffer{}
@@ -298,7 +311,7 @@ func (ws *WorkloadSpec) processMarkers(manifestFile *resources.Manifest, markerT
 	for _, node := range nodes {
 		m, err := yaml.Marshal(node)
 		if err != nil {
-			return resources.ProcessManifestError(manifestFile, err)
+			return processManifestError(err, manifestFile)
 		}
 
 		mustWrite(buf.WriteString("---\n"))
@@ -308,7 +321,7 @@ func (ws *WorkloadSpec) processMarkers(manifestFile *resources.Manifest, markerT
 	manifestFile.Content = buf.Bytes()
 
 	if err = ws.processMarkerResults(markerResults); err != nil {
-		return resources.ProcessManifestError(manifestFile, err)
+		return processManifestError(err, manifestFile)
 	}
 
 	// If processing manifests for collection resources there is no case

@@ -31,6 +31,7 @@ type StandaloneWorkload struct {
 	Spec           StandaloneWorkloadSpec `json:"spec" yaml:"spec" validate:"required"`
 }
 
+// NewStandaloneWorkload returns a new standalone workload object.
 func NewStandaloneWorkload(
 	name string,
 	spec WorkloadAPISpec,

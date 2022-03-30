@@ -36,6 +36,7 @@ type ComponentWorkload struct {
 	Spec           ComponentWorkloadSpec `json:"spec" yaml:"spec" validate:"required"`
 }
 
+// NewComponentWorkload returns a new component workload object.
 func NewComponentWorkload(
 	name string,
 	spec WorkloadAPISpec,

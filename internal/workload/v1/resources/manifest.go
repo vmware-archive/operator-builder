@@ -26,12 +26,6 @@ type Manifest struct {
 	Content  []byte `json:",omitempty" yaml:",omitempty" validate:"omitempty"`
 }
 
-// ProcessManifestError is a helper method which returns a consistent format for an
-// error when processing a particular manifest file.
-func ProcessManifestError(manifest *Manifest, err error) error {
-	return fmt.Errorf("%w; %s %s", err, ErrProcessManifest, manifest.Filename)
-}
-
 // UnmarshalYAML unmarshals the resources field of a workload configuration.
 func (manifest *Manifest) UnmarshalYAML(node *yaml.Node) error {
 	manifest.Filename = node.Value
@@ -43,7 +37,7 @@ func (manifest *Manifest) UnmarshalYAML(node *yaml.Node) error {
 func (manifest *Manifest) LoadContent(isCollection bool) error {
 	manifestContent, err := os.ReadFile(manifest.Filename)
 	if err != nil {
-		return ProcessManifestError(manifest, err)
+		return fmt.Errorf("%w; %s for manifest file %s", err, ErrProcessManifest, manifest.Filename)
 	}
 
 	if isCollection {

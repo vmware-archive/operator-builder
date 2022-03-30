@@ -34,6 +34,7 @@ type WorkloadCollection struct {
 	Spec           WorkloadCollectionSpec `json:"spec" yaml:"spec" validate:"required"`
 }
 
+// NewWorkloadCollection returns a new workload collection object.
 func NewWorkloadCollection(
 	name string,
 	spec WorkloadAPISpec,
