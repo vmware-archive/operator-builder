@@ -35,8 +35,14 @@ func Parse(configPath string) (*Processor, error) {
 		return nil, fmt.Errorf("%s - error creating new processor - %w", ErrParseConfig, err)
 	}
 
+	// create the validator we need to track workloads as they are parsed and fail fast
+	validator := &inlineValidator{
+		names:         make(map[string]bool),
+		kindsInGroups: make(map[string][]string),
+	}
+
 	// parse the workload configuration from the newly created object
-	if err := processor.parse(); err != nil {
+	if err := processor.parse(validator); err != nil {
 		return nil, fmt.Errorf("%s at config path %s - %w", ErrParseConfig, configPath, err)
 	}
 
@@ -65,7 +71,7 @@ func Parse(configPath string) (*Processor, error) {
 
 // parse will parse a given workload config into its appropriate workload object
 // definitions.
-func (processor *Processor) parse() error {
+func (processor *Processor) parse(validator *inlineValidator) error {
 	file, err := utils.ReadStream(processor.Path)
 	if err != nil {
 		return fmt.Errorf("%w; error reading file %s", err, processor.Path)
@@ -79,11 +85,6 @@ func (processor *Processor) parse() error {
 	sharedDecoder, kindDecoder := yaml.NewDecoder(reader), yaml.NewDecoder(&kindReader)
 
 	kindDecoder.KnownFields(true)
-
-	validator := &inlineValidator{
-		names:         make(map[string]bool),
-		kindsInGroups: make(map[string][]string),
-	}
 
 	for {
 		var workloadID kinds.WorkloadShared
@@ -123,7 +124,7 @@ func (processor *Processor) parse() error {
 				return fmt.Errorf("%w for workload %s labeled as collection", ErrConvertCollection, workload.GetName())
 			}
 
-			if err := processor.parseComponents(collection, processor.Path); err != nil {
+			if err := processor.parseComponents(collection, processor.Path, validator); err != nil {
 				return err
 			}
 		}
@@ -132,7 +133,11 @@ func (processor *Processor) parse() error {
 	return nil
 }
 
-func (processor *Processor) parseComponents(workload *kinds.WorkloadCollection, workloadConfig string) error {
+func (processor *Processor) parseComponents(
+	workload *kinds.WorkloadCollection,
+	workloadConfig string,
+	validator *inlineValidator,
+) error {
 	for _, componentFile := range workload.Spec.ComponentFiles {
 		// get each of the component paths for a glob pattern
 		componentPaths, err := utils.Glob(filepath.Join(filepath.Dir(workloadConfig), componentFile))
@@ -150,7 +155,7 @@ func (processor *Processor) parseComponents(workload *kinds.WorkloadCollection, 
 			// add the component processor as a child
 			processor.Children = append(processor.Children, componentProcessor)
 
-			if err := componentProcessor.parse(); err != nil {
+			if err := componentProcessor.parse(validator); err != nil {
 				return fmt.Errorf("%w; %s at path %s", err, ErrParseComponentConfig, componentPath)
 			}
 
