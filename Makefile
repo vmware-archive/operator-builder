@@ -53,7 +53,7 @@ test-commit:
 #
 # debug testing with delve
 #
-TEST_WORKLOAD_PATH ?= test/cases/application
+TEST_WORKLOAD_PATH ?= test/cases/standalone
 
 debug-clean:
 	rm -rf $(TEST_WORKLOAD_PATH)/*

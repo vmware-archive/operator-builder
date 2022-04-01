@@ -9,12 +9,12 @@
 		"args": [
 			"init",
 			"--workload-config",
-			"${workspaceFolder}/test/cases/platform/.workloadConfig/workload.yaml",
+			"${workspaceFolder}/test/cases/collection/.workloadConfig/workload.yaml",
 			"--repo",
 			"github.com/acme/acme-cnp-mgr",
 			"--skip-go-version-check"
 		],
-		"cwd": "${workspaceFolder}/test/cases/platform",
+		"cwd": "${workspaceFolder}/test/cases/collection",
 	},
 	{
 		"name": "Test Platform Create",
@@ -26,11 +26,11 @@
 			"create",
 			"api",
 			"--workload-config",
-			"${workspaceFolder}/test/cases/platform/.workloadConfig/workload.yaml",
+			"${workspaceFolder}/test/cases/collection/.workloadConfig/workload.yaml",
 			"--controller",
 			"--resource"
 		],
-		"cwd": "${workspaceFolder}/test/cases/platform",
+		"cwd": "${workspaceFolder}/test/cases/collection",
 	},
 	{
 		"name": "Test Application Init",
@@ -41,12 +41,12 @@
 		"args": [
 			"init",
 			"--workload-config",
-			"${workspaceFolder}/test/cases/application/.workloadConfig/workload.yaml",
+			"${workspaceFolder}/test/cases/standalone/.workloadConfig/workload.yaml",
 			"--repo",
 			"github.com/acme/acme-webstore-mgr",
 			"--skip-go-version-check"
 		],
-		"cwd": "${workspaceFolder}/test/cases/application",
+		"cwd": "${workspaceFolder}/test/cases/standalone",
 	},
 	{
 		"name": "Test Application Create",
@@ -58,11 +58,11 @@
 			"create",
 			"api",
 			"--workload-config",
-			"${workspaceFolder}/test/cases/application/.workloadConfig/workload.yaml",
+			"${workspaceFolder}/test/cases/standalone/.workloadConfig/workload.yaml",
 			"--controller",
 			"--resource"
 		],
-		"cwd": "${workspaceFolder}/test/cases/application",
+		"cwd": "${workspaceFolder}/test/cases/standalone",
 	},
 	{
 		"name": "Test Edge Standalone Init",
