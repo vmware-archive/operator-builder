@@ -198,6 +198,7 @@ func (api *APIFields) generateStructName(path string) {
 	mustWrite(buf.WriteString("Spec"))
 
 	for _, part := range strings.Split(path, ".") {
+		//nolint:staticcheck //strings.Title deprecated in 1.18 for text/cases but implementation is goofy - fix this later
 		mustWrite(buf.WriteString(strings.Title(part)))
 
 		if part == api.manifestName {
@@ -288,6 +289,7 @@ func (api *APIFields) setCommentsAndDefault(comments []string, sampleVal interfa
 
 func (api *APIFields) newChild(name string, fieldType markers.FieldType, sample interface{}) *APIFields {
 	child := &APIFields{
+		//nolint:staticcheck //strings.Title deprecated in 1.18 for text/cases but implementation is goofy - fix this later
 		Name:         strings.Title(name),
 		manifestName: name,
 		Type:         fieldType,

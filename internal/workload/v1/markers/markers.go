@@ -164,6 +164,7 @@ func reservedMarkers() []string {
 // the fieldName as a string, is reserved for internal purposes.
 func isReserved(fieldName string) bool {
 	for _, reserved := range reservedMarkers() {
+		//nolint:staticcheck //strings.Title deprecated in 1.18 for text/cases but implementation is goofy - fix this later
 		if strings.Title(fieldName) == strings.Title(reserved) {
 			return true
 		}
@@ -182,6 +183,7 @@ func getSourceCodeFieldVariable(marker FieldMarkerProcessor) string {
 // getSourceCodeVariable gets a full variable name for a marker as it is intended to be
 // scaffolded in the source code.
 func getSourceCodeVariable(marker MarkerProcessor) string {
+	//nolint:staticcheck //strings.Title deprecated in 1.18 for text/cases but implementation is goofy - fix this later
 	return fmt.Sprintf("%s.%s", marker.GetSpecPrefix(), strings.Title((marker.GetName())))
 }
 

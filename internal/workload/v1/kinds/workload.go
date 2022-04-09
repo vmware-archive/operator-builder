@@ -436,6 +436,7 @@ func (ws *WorkloadSpec) needsCollectionRef() bool {
 }
 
 func generateUniqueResourceName(object unstructured.Unstructured) string {
+	//nolint:staticcheck //strings.Title deprecated in 1.18 for text/cases but implementation is goofy - fix this later
 	resourceName := strings.ReplaceAll(strings.Title(object.GetName()), "-", "")
 	resourceName = strings.ReplaceAll(resourceName, ".", "")
 	resourceName = strings.ReplaceAll(resourceName, ":", "")
@@ -445,6 +446,7 @@ func generateUniqueResourceName(object unstructured.Unstructured) string {
 	resourceName = strings.ReplaceAll(resourceName, "CollectionSpec", "")
 	resourceName = strings.ReplaceAll(resourceName, " ", "")
 
+	//nolint:staticcheck //strings.Title deprecated in 1.18 for text/cases but implementation is goofy - fix this later
 	namespaceName := strings.ReplaceAll(strings.Title(object.GetNamespace()), "-", "")
 	namespaceName = strings.ReplaceAll(namespaceName, ".", "")
 	namespaceName = strings.ReplaceAll(namespaceName, ":", "")
