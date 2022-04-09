@@ -13,7 +13,8 @@ import (
 	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/commands/companion"
 	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/markers"
 	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/rbac"
-	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/resources"
+	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/resources/input"
+	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/resources/output"
 )
 
 var ErrMissingRequiredFields = errors.New("missing required fields")
@@ -194,12 +195,12 @@ func (c *WorkloadCollection) GetComponents() []*ComponentWorkload {
 	return c.Spec.Components
 }
 
-func (c *WorkloadCollection) GetSourceFiles() *[]resources.SourceFile {
+func (c *WorkloadCollection) GetSourceFiles() *[]output.SourceFile {
 	return c.Spec.SourceFiles
 }
 
 func (c *WorkloadCollection) GetFuncNames() (createFuncNames, initFuncNames []string) {
-	return resources.GetFuncNames(*c.GetSourceFiles())
+	return output.GetFuncNames(*c.GetSourceFiles())
 }
 
 func (c *WorkloadCollection) GetAPISpecFields() *APIFields {
@@ -261,7 +262,7 @@ func (c *WorkloadCollection) GetSubCommand() *companion.CLI {
 }
 
 func (c *WorkloadCollection) LoadManifests(workloadPath string) error {
-	manifests, err := resources.ExpandManifests(workloadPath, c.Spec.Manifests)
+	manifests, err := input.ExpandManifests(workloadPath, c.Spec.Manifests)
 	if err != nil {
 		return fmt.Errorf("%w; %s for collection %s", err, ErrLoadManifests, c.Name)
 	}

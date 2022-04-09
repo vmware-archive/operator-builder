@@ -1,7 +1,7 @@
 // Copyright 2021 VMware, Inc.
 // SPDX-License-Identifier: MIT
 
-package resources
+package output
 
 import (
 	"fmt"
@@ -9,24 +9,25 @@ import (
 	"strings"
 
 	"github.com/vmware-tanzu-labs/operator-builder/internal/utils"
+	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/resources/input"
 )
 
 // SourceFile represents a golang source code file that contains one or more
 // child resource objects.
 type SourceFile struct {
 	Filename string
-	Children []Child
+	Children []input.ChildResource
 }
 
 // NewSourceFile creates a new source code file given the file path of an input manifest.
-func NewSourceFile(manifest *Manifest) *SourceFile {
+func NewSourceFile(manifest *input.Manifest) *SourceFile {
 	return &SourceFile{
 		Filename: uniqueName(manifest),
 	}
 }
 
 // uniqueName returns the unique file name for a source file.
-func uniqueName(manifest *Manifest) (name string) {
+func uniqueName(manifest *input.Manifest) (name string) {
 	name = filepath.Clean(manifest.RelativeFileName)
 	name = strings.ReplaceAll(name, "/", "_")               // get filename from path
 	name = strings.ReplaceAll(name, filepath.Ext(name), "") // strip ".yaml"

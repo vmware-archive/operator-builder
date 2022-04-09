@@ -13,7 +13,8 @@ import (
 	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/commands/companion"
 	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/markers"
 	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/rbac"
-	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/resources"
+	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/resources/input"
+	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/resources/output"
 )
 
 var ErrNoComponentsOnComponent = errors.New("cannot set component workloads on a component workload - only on collections")
@@ -50,7 +51,7 @@ func NewComponentWorkload(
 		Spec: ComponentWorkloadSpec{
 			API: *NewSampleAPISpec(),
 			WorkloadSpec: WorkloadSpec{
-				Manifests: resources.GetManifests(manifestFiles),
+				Manifests: input.GetManifests(manifestFiles),
 			},
 			Dependencies: dependencies,
 		},
@@ -170,12 +171,12 @@ func (*ComponentWorkload) GetComponents() []*ComponentWorkload {
 	return []*ComponentWorkload{}
 }
 
-func (c *ComponentWorkload) GetSourceFiles() *[]resources.SourceFile {
+func (c *ComponentWorkload) GetSourceFiles() *[]output.SourceFile {
 	return c.Spec.SourceFiles
 }
 
 func (c *ComponentWorkload) GetFuncNames() (createFuncNames, initFuncNames []string) {
-	return resources.GetFuncNames(*c.GetSourceFiles())
+	return output.GetFuncNames(*c.GetSourceFiles())
 }
 
 func (c *ComponentWorkload) GetAPISpecFields() *APIFields {
@@ -236,7 +237,7 @@ func (c *ComponentWorkload) GetSubCommand() *companion.CLI {
 }
 
 func (c *ComponentWorkload) LoadManifests(workloadPath string) error {
-	manifests, err := resources.ExpandManifests(workloadPath, c.Spec.Manifests)
+	manifests, err := input.ExpandManifests(workloadPath, c.Spec.Manifests)
 	if err != nil {
 		return fmt.Errorf("%w; %s for component %s", err, ErrLoadManifests, c.Name)
 	}

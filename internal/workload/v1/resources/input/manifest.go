@@ -1,7 +1,7 @@
 // Copyright 2021 VMware, Inc.
 // SPDX-License-Identifier: MIT
 
-package resources
+package input
 
 import (
 	"errors"

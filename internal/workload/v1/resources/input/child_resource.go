@@ -1,7 +1,7 @@
 // Copyright 2021 VMware, Inc.
 // SPDX-License-Identifier: MIT
 
-package resources
+package input
 
 import (
 	"errors"
@@ -15,12 +15,12 @@ var (
 	ErrChildResourceResourceMarkerProcess = errors.New("error processing resource markers for child resource")
 )
 
-// Child contains attributes for resources created by the custom resource.
+// ChildResource contains attributes for resources created by the custom resource.
 // These definitions are inferred from the resource manifests.  They can be thought
 // of as the individual resources which are managed by the controller during
 // reconciliation and represent all resources which are passed in via the `spec.resources`
 // field of the workload configuration.
-type Child struct {
+type ChildResource struct {
 	Name          string
 	UniqueName    string
 	Group         string
@@ -32,14 +32,14 @@ type Child struct {
 }
 
 //nolint:gocritic // needed to satisfy the stringer interface
-func (child Child) String() string {
+func (child ChildResource) String() string {
 	return fmt.Sprintf(
 		"{Group: %s, Version: %s, Kind: %s, Name: %s}",
 		child.Group, child.Version, child.Kind, child.Name,
 	)
 }
 
-func (child *Child) ProcessResourceMarkers(markerCollection *markers.MarkerCollection) error {
+func (child *ChildResource) ProcessResourceMarkers(markerCollection *markers.MarkerCollection) error {
 	// obtain the marker results from the child resource input yaml
 	_, markerResults, err := markers.InspectForYAML([]byte(child.StaticContent), markers.ResourceMarkerType)
 	if err != nil {

@@ -21,7 +21,8 @@ import (
 	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/commands/companion"
 	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/markers"
 	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/rbac"
-	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/resources"
+	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/resources/input"
+	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/resources/output"
 )
 
 // WorkloadAPISpec sample fields which may be used in things like testing or
@@ -54,7 +55,7 @@ type WorkloadBuilder interface {
 	GetDependencies() []*ComponentWorkload
 	GetCollection() *WorkloadCollection
 	GetComponents() []*ComponentWorkload
-	GetSourceFiles() *[]resources.SourceFile
+	GetSourceFiles() *[]output.SourceFile
 	GetAPISpecFields() *APIFields
 	GetRBACRules() *[]rbac.Rule
 	GetComponentResource(domain, repo string, clusterScoped bool) *resource.Resource
@@ -94,13 +95,13 @@ type WorkloadShared struct {
 
 // WorkloadSpec contains information required to generate source code.
 type WorkloadSpec struct {
-	Manifests              []*resources.Manifest            `json:"resources" yaml:"resources"`
+	Manifests              []*input.Manifest                `json:"resources" yaml:"resources"`
 	FieldMarkers           []*markers.FieldMarker           `json:",omitempty" yaml:",omitempty" validate:"omitempty"`
 	CollectionFieldMarkers []*markers.CollectionFieldMarker `json:",omitempty" yaml:",omitempty" validate:"omitempty"`
 	ForCollection          bool                             `json:",omitempty" yaml:",omitempty" validate:"omitempty"`
 	Collection             *WorkloadCollection              `json:",omitempty" yaml:",omitempty" validate:"omitempty"`
 	APISpecFields          *APIFields                       `json:",omitempty" yaml:",omitempty" validate:"omitempty"`
-	SourceFiles            *[]resources.SourceFile          `json:",omitempty" yaml:",omitempty" validate:"omitempty"`
+	SourceFiles            *[]output.SourceFile             `json:",omitempty" yaml:",omitempty" validate:"omitempty"`
 	RBACRules              *rbac.Rules                      `json:",omitempty" yaml:",omitempty" validate:"omitempty"`
 }
 
@@ -144,7 +145,7 @@ func (ws *WorkloadSpec) init() {
 	}
 
 	ws.RBACRules = &rbac.Rules{}
-	ws.SourceFiles = &[]resources.SourceFile{}
+	ws.SourceFiles = &[]output.SourceFile{}
 }
 
 func (ws *WorkloadSpec) appendCollectionRef() {
@@ -211,7 +212,7 @@ func (ws *WorkloadSpec) appendCollectionRef() {
 	ws.APISpecFields.Children = append(ws.APISpecFields.Children, collectionField)
 }
 
-func processManifestError(err error, manifest *resources.Manifest) error {
+func processManifestError(err error, manifest *input.Manifest) error {
 	return fmt.Errorf("%w; %s [%s]", err, ErrProcessManifest, manifest.Filename)
 }
 
@@ -225,9 +226,9 @@ func (ws *WorkloadSpec) processManifests(markerTypes ...markers.MarkerType) erro
 		}
 
 		// determine sourceFile filename
-		sourceFile := resources.NewSourceFile(manifestFile)
+		sourceFile := output.NewSourceFile(manifestFile)
 
-		var childResources []resources.Child
+		var childResources []input.ChildResource
 
 		for _, manifest := range manifestFile.ExtractManifests() {
 			// decode manifest into unstructured data type
@@ -258,7 +259,7 @@ func (ws *WorkloadSpec) processManifests(markerTypes ...markers.MarkerType) erro
 
 			ws.RBACRules.Add(rules)
 
-			childResource := resources.Child{
+			childResource := input.ChildResource{
 				Name:       manifestObject.GetName(),
 				UniqueName: generateUniqueResourceName(manifestObject),
 				Group:      manifestObject.GetObjectKind().GroupVersionKind().Group,
@@ -288,7 +289,7 @@ func (ws *WorkloadSpec) processManifests(markerTypes ...markers.MarkerType) erro
 		sourceFile.Children = childResources
 
 		if ws.SourceFiles == nil {
-			ws.SourceFiles = &[]resources.SourceFile{}
+			ws.SourceFiles = &[]output.SourceFile{}
 		}
 
 		*ws.SourceFiles = append(*ws.SourceFiles, *sourceFile)
@@ -300,7 +301,7 @@ func (ws *WorkloadSpec) processManifests(markerTypes ...markers.MarkerType) erro
 	return nil
 }
 
-func (ws *WorkloadSpec) processMarkers(manifestFile *resources.Manifest, markerTypes ...markers.MarkerType) error {
+func (ws *WorkloadSpec) processMarkers(manifestFile *input.Manifest, markerTypes ...markers.MarkerType) error {
 	nodes, markerResults, err := markers.InspectForYAML(manifestFile.Content, markerTypes...)
 	if err != nil {
 		return processManifestError(err, manifestFile)

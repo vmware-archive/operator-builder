@@ -9,7 +9,7 @@ import (
 	"sigs.k8s.io/kubebuilder/v3/pkg/machinery"
 
 	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/kinds"
-	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/resources"
+	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/resources/output"
 )
 
 var _ machinery.Template = &Definition{}
@@ -23,7 +23,7 @@ type Definition struct {
 
 	// input fields
 	Builder    kinds.WorkloadBuilder
-	SourceFile resources.SourceFile
+	SourceFile output.SourceFile
 }
 
 func (f *Definition) SetTemplateDefaults() error {
