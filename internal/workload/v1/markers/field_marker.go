@@ -120,6 +120,7 @@ func (fm *FieldMarker) SetOriginalValue(value string) {
 
 		return
 	}
+
 	fm.originalValue = &value
 }
 
