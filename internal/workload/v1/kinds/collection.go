@@ -11,10 +11,9 @@ import (
 
 	"github.com/vmware-tanzu-labs/operator-builder/internal/utils"
 	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/commands/companion"
+	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/manifests"
 	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/markers"
 	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/rbac"
-	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/resources/input"
-	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/resources/output"
 )
 
 var ErrMissingRequiredFields = errors.New("missing required fields")
@@ -161,7 +160,7 @@ func (c *WorkloadCollection) SetResources(workloadPath string) error {
 	}
 
 	for _, cpt := range c.Spec.Components {
-		for _, csr := range cpt.Spec.Manifests {
+		for _, csr := range *cpt.Spec.Manifests {
 			// add to spec fields if not present
 			err := c.Spec.processMarkers(csr, markers.CollectionMarkerType)
 			if err != nil {
@@ -184,7 +183,7 @@ func (c *WorkloadCollection) SetComponents(components []*ComponentWorkload) erro
 }
 
 func (c *WorkloadCollection) HasChildResources() bool {
-	return len(c.Spec.Manifests) > 0
+	return len(*c.Spec.Manifests) > 0
 }
 
 func (c *WorkloadCollection) GetCollection() *WorkloadCollection {
@@ -195,16 +194,12 @@ func (c *WorkloadCollection) GetComponents() []*ComponentWorkload {
 	return c.Spec.Components
 }
 
-func (c *WorkloadCollection) GetSourceFiles() *[]output.SourceFile {
-	return c.Spec.SourceFiles
-}
-
-func (c *WorkloadCollection) GetFuncNames() (createFuncNames, initFuncNames []string) {
-	return output.GetFuncNames(*c.GetSourceFiles())
-}
-
 func (c *WorkloadCollection) GetAPISpecFields() *APIFields {
 	return c.Spec.APISpecFields
+}
+
+func (c *WorkloadCollection) GetManifests() *manifests.Manifests {
+	return c.Spec.Manifests
 }
 
 func (c *WorkloadCollection) GetRBACRules() *[]rbac.Rule {
@@ -262,13 +257,13 @@ func (c *WorkloadCollection) GetSubCommand() *companion.CLI {
 }
 
 func (c *WorkloadCollection) LoadManifests(workloadPath string) error {
-	manifests, err := input.ExpandManifests(workloadPath, c.Spec.Manifests)
+	expanded, err := manifests.ExpandManifests(workloadPath, c.Spec.Resources)
 	if err != nil {
 		return fmt.Errorf("%w; %s for collection %s", err, ErrLoadManifests, c.Name)
 	}
 
-	c.Spec.Manifests = manifests
-	for _, manifest := range c.Spec.Manifests {
+	c.Spec.Manifests = expanded
+	for _, manifest := range *c.Spec.Manifests {
 		if err := manifest.LoadContent(c.IsCollection()); err != nil {
 			return fmt.Errorf("%w; %s for collection %s", err, ErrLoadManifests, c.Name)
 		}

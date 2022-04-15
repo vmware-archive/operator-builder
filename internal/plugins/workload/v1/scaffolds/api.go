@@ -223,9 +223,9 @@ func (s *apiScaffolder) scaffoldAPI(
 
 	// child resource definition files
 	// these are the resources defined in the static yaml manifests
-	for _, sourceFile := range *workload.GetSourceFiles() {
+	for _, manifest := range *workload.GetManifests() {
 		if err := scaffold.Execute(
-			&resources.Definition{Builder: workload, SourceFile: sourceFile},
+			&resources.Definition{Builder: workload, Manifest: manifest},
 		); err != nil {
 			return fmt.Errorf("%w; %s", err, ErrScaffoldAPIChildResources)
 		}

@@ -11,10 +11,9 @@ import (
 
 	"github.com/vmware-tanzu-labs/operator-builder/internal/utils"
 	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/commands/companion"
+	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/manifests"
 	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/markers"
 	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/rbac"
-	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/resources/input"
-	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/resources/output"
 )
 
 var ErrNoComponentsOnStandalone = errors.New("cannot set component workloads on a component workload - only on collections")
@@ -46,7 +45,7 @@ func NewStandaloneWorkload(
 		Spec: StandaloneWorkloadSpec{
 			API: spec,
 			WorkloadSpec: WorkloadSpec{
-				Manifests: input.GetManifests(manifestFiles),
+				Manifests: manifests.FromFiles(manifestFiles),
 			},
 		},
 	}
@@ -168,7 +167,7 @@ func (*StandaloneWorkload) SetComponents(components []*ComponentWorkload) error 
 }
 
 func (s *StandaloneWorkload) HasChildResources() bool {
-	return len(s.Spec.Manifests) > 0
+	return len(*s.Spec.Manifests) > 0
 }
 
 func (s *StandaloneWorkload) GetCollection() *WorkloadCollection {
@@ -180,16 +179,12 @@ func (s *StandaloneWorkload) GetComponents() []*ComponentWorkload {
 	return []*ComponentWorkload{}
 }
 
-func (s *StandaloneWorkload) GetSourceFiles() *[]output.SourceFile {
-	return s.Spec.SourceFiles
-}
-
-func (s *StandaloneWorkload) GetFuncNames() (createFuncNames, initFuncNames []string) {
-	return output.GetFuncNames(*s.GetSourceFiles())
-}
-
 func (s *StandaloneWorkload) GetAPISpecFields() *APIFields {
 	return s.Spec.APISpecFields
+}
+
+func (s *StandaloneWorkload) GetManifests() *manifests.Manifests {
+	return s.Spec.Manifests
 }
 
 func (s *StandaloneWorkload) GetRBACRules() *[]rbac.Rule {
@@ -224,13 +219,13 @@ func (s *StandaloneWorkload) GetSubCommand() *companion.CLI {
 }
 
 func (s *StandaloneWorkload) LoadManifests(workloadPath string) error {
-	manifests, err := input.ExpandManifests(workloadPath, s.Spec.Manifests)
+	expanded, err := manifests.ExpandManifests(workloadPath, s.Spec.Resources)
 	if err != nil {
 		return fmt.Errorf("%w; %s for standalone workload %s", err, ErrLoadManifests, s.Name)
 	}
 
-	s.Spec.Manifests = manifests
-	for _, manifest := range s.Spec.Manifests {
+	s.Spec.Manifests = expanded
+	for _, manifest := range *s.Spec.Manifests {
 		if err := manifest.LoadContent(s.IsCollection()); err != nil {
 			return fmt.Errorf("%w; %s for standalone workload %s", err, ErrLoadManifests, s.Name)
 		}

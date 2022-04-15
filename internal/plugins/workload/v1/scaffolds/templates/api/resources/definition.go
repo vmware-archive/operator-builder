@@ -9,7 +9,7 @@ import (
 	"sigs.k8s.io/kubebuilder/v3/pkg/machinery"
 
 	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/kinds"
-	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/resources/output"
+	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/manifests"
 )
 
 var _ machinery.Template = &Definition{}
@@ -22,8 +22,8 @@ type Definition struct {
 	machinery.ResourceMixin
 
 	// input fields
-	Builder    kinds.WorkloadBuilder
-	SourceFile output.SourceFile
+	Builder  kinds.WorkloadBuilder
+	Manifest *manifests.Manifest
 }
 
 func (f *Definition) SetTemplateDefaults() error {
@@ -32,7 +32,7 @@ func (f *Definition) SetTemplateDefaults() error {
 		f.Resource.Group,
 		f.Resource.Version,
 		f.Builder.GetPackageName(),
-		f.SourceFile.Filename,
+		f.Manifest.SourceFilename,
 	)
 
 	f.TemplateBody = definitionTemplate
@@ -56,9 +56,9 @@ import (
 	{{ end -}}
 )
 
-{{ range .SourceFile.Children }}
-// Create{{ .UniqueName }} creates the {{ .Name }} {{ .Kind }} resource.
-func Create{{ .UniqueName }} (
+{{ range .Manifest.ChildResources }}
+// {{ .CreateFuncName }} creates the {{ .Name }} {{ .Kind }} resource.
+func {{ .CreateFuncName }} (
 	parent *{{ $.Resource.ImportAlias }}.{{ $.Resource.Kind }},
 	{{ if $.Builder.IsComponent -}}
 	collection *{{ $.Builder.GetCollection.Spec.API.Group }}{{ $.Builder.GetCollection.Spec.API.Version }}.{{ $.Builder.GetCollection.Spec.API.Kind }},

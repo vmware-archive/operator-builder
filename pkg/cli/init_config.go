@@ -11,7 +11,7 @@ import (
 
 	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/commands/subcommand"
 	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/kinds"
-	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/resources/input"
+	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/manifests"
 )
 
 var (
@@ -139,7 +139,7 @@ func newCollectionConfigSample() *kinds.WorkloadCollection {
 
 	sample.Spec.CompanionCliRootcmd.SetDefaults(sample, false)
 	sample.Spec.CompanionCliSubcmd.SetDefaults(sample, true)
-	sample.Spec.Manifests = input.GetManifests([]string{sampleResourceFile})
+	sample.Spec.Manifests = manifests.FromFiles([]string{sampleResourceFile})
 
 	return sample
 }

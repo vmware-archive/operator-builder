@@ -11,10 +11,9 @@ import (
 
 	"github.com/vmware-tanzu-labs/operator-builder/internal/utils"
 	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/commands/companion"
+	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/manifests"
 	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/markers"
 	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/rbac"
-	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/resources/input"
-	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/resources/output"
 )
 
 var ErrNoComponentsOnComponent = errors.New("cannot set component workloads on a component workload - only on collections")
@@ -51,7 +50,7 @@ func NewComponentWorkload(
 		Spec: ComponentWorkloadSpec{
 			API: *NewSampleAPISpec(),
 			WorkloadSpec: WorkloadSpec{
-				Manifests: input.GetManifests(manifestFiles),
+				Manifests: manifests.FromFiles(manifestFiles),
 			},
 			Dependencies: dependencies,
 		},
@@ -160,7 +159,7 @@ func (*ComponentWorkload) SetComponents(components []*ComponentWorkload) error {
 }
 
 func (c *ComponentWorkload) HasChildResources() bool {
-	return len(c.Spec.Manifests) > 0
+	return len(*c.Spec.Manifests) > 0
 }
 
 func (c *ComponentWorkload) GetCollection() *WorkloadCollection {
@@ -171,16 +170,12 @@ func (*ComponentWorkload) GetComponents() []*ComponentWorkload {
 	return []*ComponentWorkload{}
 }
 
-func (c *ComponentWorkload) GetSourceFiles() *[]output.SourceFile {
-	return c.Spec.SourceFiles
-}
-
-func (c *ComponentWorkload) GetFuncNames() (createFuncNames, initFuncNames []string) {
-	return output.GetFuncNames(*c.GetSourceFiles())
-}
-
 func (c *ComponentWorkload) GetAPISpecFields() *APIFields {
 	return c.Spec.APISpecFields
+}
+
+func (c *ComponentWorkload) GetManifests() *manifests.Manifests {
+	return c.Spec.Manifests
 }
 
 func (c *ComponentWorkload) GetRBACRules() *[]rbac.Rule {
@@ -237,13 +232,13 @@ func (c *ComponentWorkload) GetSubCommand() *companion.CLI {
 }
 
 func (c *ComponentWorkload) LoadManifests(workloadPath string) error {
-	manifests, err := input.ExpandManifests(workloadPath, c.Spec.Manifests)
+	expanded, err := manifests.ExpandManifests(workloadPath, c.Spec.Resources)
 	if err != nil {
 		return fmt.Errorf("%w; %s for component %s", err, ErrLoadManifests, c.Name)
 	}
 
-	c.Spec.Manifests = manifests
-	for _, manifest := range c.Spec.Manifests {
+	c.Spec.Manifests = expanded
+	for _, manifest := range *c.Spec.Manifests {
 		if err := manifest.LoadContent(c.IsCollection()); err != nil {
 			return fmt.Errorf("%w; %s for component %s", err, ErrLoadManifests, c.Name)
 		}

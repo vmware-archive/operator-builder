@@ -34,7 +34,7 @@ type Resources struct {
 
 func (f *Resources) SetTemplateDefaults() error {
 	// set template fields
-	f.CreateFuncNames, f.InitFuncNames = f.Builder.GetFuncNames()
+	f.CreateFuncNames, f.InitFuncNames = f.Builder.GetManifests().FuncNames()
 	f.SpecFields = f.Builder.GetAPISpecFields()
 	f.IsClusterScoped = f.Builder.IsClusterScoped()
 
@@ -68,7 +68,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/nukleros/operator-builder-tools/pkg/controller/workload"
-	
+
 	{{ .Resource.ImportAlias }} "{{ .Resource.Path }}"
 	{{- if .Builder.IsComponent }}
 	{{ .Builder.GetCollection.Spec.API.Group }}{{ .Builder.GetCollection.Spec.API.Version }} "{{ .Repo }}/apis/{{ .Builder.GetCollection.Spec.API.Group }}/{{ .Builder.GetCollection.Spec.API.Version }}"
@@ -90,11 +90,11 @@ func Sample(requiredOnly bool) string {
 	return sample{{ .Resource.Kind }}
 }
 
-// Generate returns the child resources that are associated with this workload given 
+// Generate returns the child resources that are associated with this workload given
 // appropriate structured inputs.
 {{ if .Builder.IsComponent -}}
 func Generate(
-	workloadObj {{ .Resource.ImportAlias }}.{{ .Resource.Kind }}, 
+	workloadObj {{ .Resource.ImportAlias }}.{{ .Resource.Kind }},
 	collectionObj {{ .Builder.GetCollection.Spec.API.Group }}{{ .Builder.GetCollection.Spec.API.Version }}.{{ .Builder.GetCollection.Spec.API.Kind }},
 ) ([]client.Object, error) {
 {{ else if .Builder.IsCollection -}}

@@ -19,10 +19,9 @@ import (
 
 	"github.com/vmware-tanzu-labs/operator-builder/internal/markers/inspect"
 	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/commands/companion"
+	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/manifests"
 	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/markers"
 	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/rbac"
-	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/resources/input"
-	"github.com/vmware-tanzu-labs/operator-builder/internal/workload/v1/resources/output"
 )
 
 // WorkloadAPISpec sample fields which may be used in things like testing or
@@ -55,13 +54,12 @@ type WorkloadBuilder interface {
 	GetDependencies() []*ComponentWorkload
 	GetCollection() *WorkloadCollection
 	GetComponents() []*ComponentWorkload
-	GetSourceFiles() *[]output.SourceFile
 	GetAPISpecFields() *APIFields
 	GetRBACRules() *[]rbac.Rule
 	GetComponentResource(domain, repo string, clusterScoped bool) *resource.Resource
-	GetFuncNames() (createFuncNames, initFuncNames []string)
 	GetRootCommand() *companion.CLI
 	GetSubCommand() *companion.CLI
+	GetManifests() *manifests.Manifests
 
 	SetNames()
 	SetRBAC()
@@ -95,13 +93,14 @@ type WorkloadShared struct {
 
 // WorkloadSpec contains information required to generate source code.
 type WorkloadSpec struct {
-	Manifests              []*input.Manifest                `json:"resources" yaml:"resources"`
+	Resources []string `json:"resources" yaml:"resources"`
+
+	Manifests              *manifests.Manifests             `json:",omitempty" yaml:",omitempty" validate:"omitempty"`
 	FieldMarkers           []*markers.FieldMarker           `json:",omitempty" yaml:",omitempty" validate:"omitempty"`
 	CollectionFieldMarkers []*markers.CollectionFieldMarker `json:",omitempty" yaml:",omitempty" validate:"omitempty"`
 	ForCollection          bool                             `json:",omitempty" yaml:",omitempty" validate:"omitempty"`
 	Collection             *WorkloadCollection              `json:",omitempty" yaml:",omitempty" validate:"omitempty"`
 	APISpecFields          *APIFields                       `json:",omitempty" yaml:",omitempty" validate:"omitempty"`
-	SourceFiles            *[]output.SourceFile             `json:",omitempty" yaml:",omitempty" validate:"omitempty"`
 	RBACRules              *rbac.Rules                      `json:",omitempty" yaml:",omitempty" validate:"omitempty"`
 }
 
@@ -120,9 +119,9 @@ func NewSampleAPISpec() *WorkloadAPISpec {
 // their respective resource markers, and generates the source code needed for that particular
 // resource marker.
 func (ws *WorkloadSpec) ProcessResourceMarkers(markerCollection *markers.MarkerCollection) error {
-	for _, sourceFile := range *ws.SourceFiles {
-		for i := range sourceFile.Children {
-			if err := sourceFile.Children[i].ProcessResourceMarkers(markerCollection); err != nil {
+	for _, manifest := range *ws.Manifests {
+		for i := range manifest.ChildResources {
+			if err := manifest.ChildResources[i].ProcessResourceMarkers(markerCollection); err != nil {
 				return fmt.Errorf("%w", err)
 			}
 		}
@@ -145,7 +144,6 @@ func (ws *WorkloadSpec) init() {
 	}
 
 	ws.RBACRules = &rbac.Rules{}
-	ws.SourceFiles = &[]output.SourceFile{}
 }
 
 func (ws *WorkloadSpec) appendCollectionRef() {
@@ -212,23 +210,20 @@ func (ws *WorkloadSpec) appendCollectionRef() {
 	ws.APISpecFields.Children = append(ws.APISpecFields.Children, collectionField)
 }
 
-func processManifestError(err error, manifest *input.Manifest) error {
+func processManifestError(err error, manifest *manifests.Manifest) error {
 	return fmt.Errorf("%w; %s [%s]", err, ErrProcessManifest, manifest.Filename)
 }
 
 func (ws *WorkloadSpec) processManifests(markerTypes ...markers.MarkerType) error {
 	ws.init()
 
-	for _, manifestFile := range ws.Manifests {
+	for _, manifestFile := range *ws.Manifests {
 		err := ws.processMarkers(manifestFile, markerTypes...)
 		if err != nil {
 			return err
 		}
 
-		// determine sourceFile filename
-		sourceFile := output.NewSourceFile(manifestFile)
-
-		var childResources []input.ChildResource
+		var childResources []manifests.ChildResource
 
 		for _, manifest := range manifestFile.ExtractManifests() {
 			// decode manifest into unstructured data type
@@ -259,13 +254,7 @@ func (ws *WorkloadSpec) processManifests(markerTypes ...markers.MarkerType) erro
 
 			ws.RBACRules.Add(rules)
 
-			childResource := input.ChildResource{
-				Name:       manifestObject.GetName(),
-				UniqueName: generateUniqueResourceName(manifestObject),
-				Group:      manifestObject.GetObjectKind().GroupVersionKind().Group,
-				Version:    manifestObject.GetObjectKind().GroupVersionKind().Version,
-				Kind:       manifestObject.GetKind(),
-			}
+			childResource := manifests.NewChildResource(manifestObject)
 
 			// generate the object source code
 			resourceDefinition, err := generate.Generate([]byte(manifest), "resourceObj")
@@ -283,16 +272,10 @@ func (ws *WorkloadSpec) processManifests(markerTypes ...markers.MarkerType) erro
 			childResource.SourceCode = resourceDefinition
 			childResource.StaticContent = manifest
 
-			childResources = append(childResources, childResource)
+			childResources = append(childResources, *childResource)
 		}
 
-		sourceFile.Children = childResources
-
-		if ws.SourceFiles == nil {
-			ws.SourceFiles = &[]output.SourceFile{}
-		}
-
-		*ws.SourceFiles = append(*ws.SourceFiles, *sourceFile)
+		manifestFile.ChildResources = childResources
 	}
 
 	// ensure no duplicate file names exist within the source files
@@ -301,7 +284,7 @@ func (ws *WorkloadSpec) processManifests(markerTypes ...markers.MarkerType) erro
 	return nil
 }
 
-func (ws *WorkloadSpec) processMarkers(manifestFile *input.Manifest, markerTypes ...markers.MarkerType) error {
+func (ws *WorkloadSpec) processMarkers(manifestFile *manifests.Manifest, markerTypes ...markers.MarkerType) error {
 	nodes, markerResults, err := markers.InspectForYAML(manifestFile.Content, markerTypes...)
 	if err != nil {
 		return processManifestError(err, manifestFile)
@@ -397,13 +380,10 @@ func (ws *WorkloadSpec) processMarkerResults(markerResults []*inspect.YAMLResult
 func (ws *WorkloadSpec) deduplicateFileNames() {
 	// create a slice to track existing fileNames and preallocate an existing
 	// known conflict
-	fileNames := make([]string, len(*ws.SourceFiles)+1)
+	fileNames := make([]string, len(*ws.Manifests)+1)
 	fileNames[len(fileNames)-1] = "resources.go"
 
-	// dereference the sourcefiles
-	sourceFiles := *ws.SourceFiles
-
-	for i, sourceFile := range sourceFiles {
+	for i, manifest := range *ws.Manifests {
 		var count int
 
 		// deduplicate the file names
@@ -412,17 +392,17 @@ func (ws *WorkloadSpec) deduplicateFileNames() {
 				continue
 			}
 
-			if sourceFile.Filename == fileName {
+			if manifest.SourceFilename == fileName {
 				// increase the count which serves as an index to append
 				count++
 
 				// adjust the filename
-				fields := strings.Split(sourceFile.Filename, ".go")
-				sourceFiles[i].Filename = fmt.Sprintf("%s_%v.go", fields[0], count)
+				fields := strings.Split(manifest.SourceFilename, ".go")
+				manifest.SourceFilename = fmt.Sprintf("%s_%v.go", fields[0], count)
 			}
 		}
 
-		fileNames[i] = sourceFile.Filename
+		fileNames[i] = manifest.Filename
 	}
 }
 
@@ -433,30 +413,4 @@ func (ws *WorkloadSpec) deduplicateFileNames() {
 // unsupported.
 func (ws *WorkloadSpec) needsCollectionRef() bool {
 	return ws.Collection != nil && !ws.ForCollection
-}
-
-func generateUniqueResourceName(object unstructured.Unstructured) string {
-	//nolint:staticcheck //strings.Title deprecated in 1.18 for text/cases but implementation is goofy - fix this later
-	resourceName := strings.ReplaceAll(strings.Title(object.GetName()), "-", "")
-	resourceName = strings.ReplaceAll(resourceName, ".", "")
-	resourceName = strings.ReplaceAll(resourceName, ":", "")
-	resourceName = strings.ReplaceAll(resourceName, "!!Start", "")
-	resourceName = strings.ReplaceAll(resourceName, "!!End", "")
-	resourceName = strings.ReplaceAll(resourceName, "ParentSpec", "")
-	resourceName = strings.ReplaceAll(resourceName, "CollectionSpec", "")
-	resourceName = strings.ReplaceAll(resourceName, " ", "")
-
-	//nolint:staticcheck //strings.Title deprecated in 1.18 for text/cases but implementation is goofy - fix this later
-	namespaceName := strings.ReplaceAll(strings.Title(object.GetNamespace()), "-", "")
-	namespaceName = strings.ReplaceAll(namespaceName, ".", "")
-	namespaceName = strings.ReplaceAll(namespaceName, ":", "")
-	namespaceName = strings.ReplaceAll(namespaceName, "!!Start", "")
-	namespaceName = strings.ReplaceAll(namespaceName, "!!End", "")
-	namespaceName = strings.ReplaceAll(namespaceName, "ParentSpec", "")
-	namespaceName = strings.ReplaceAll(namespaceName, "CollectionSpec", "")
-	namespaceName = strings.ReplaceAll(namespaceName, " ", "")
-
-	resourceName = fmt.Sprintf("%s%s%s", object.GetKind(), namespaceName, resourceName)
-
-	return resourceName
 }
