@@ -30,7 +30,7 @@ runs:
           echo "found kubectl executable at $(which kubectl)...not installing"
         fi
       env:
-        KIND_VERSION: v0.10.0
+        KIND_VERSION: v0.9.0
         KUBECTL_VERSION: v1.20.0
 
     - name: Setup KIND Cluster
