@@ -33,6 +33,7 @@ spec:
     http:
       paths:
       - path: /
+        pathType: Exact
         backend:
           serviceName: webstorep-svc
           servicePort: 80
