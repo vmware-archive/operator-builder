@@ -59,7 +59,7 @@ import (
 {{ range .Manifest.ChildResources }}
 {{ range .RBAC }}
 {{- .ToMarker }}
-{{ end -}}
+{{ end }}
 {{ if ne .NameConstant "" }}const {{ .UniqueName }} = "{{ .NameConstant }}"{{ end }}
 
 // {{ .CreateFuncName }} creates the {{ .Name }} {{ .Kind }} resource.
