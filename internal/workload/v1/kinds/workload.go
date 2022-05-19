@@ -72,7 +72,7 @@ type WorkloadBuilder interface {
 
 var (
 	ErrLoadManifests   = errors.New("error loading manifests")
-	ErrProcessManifest = errors.New("error proessing manifest file")
+	ErrProcessManifest = errors.New("error processing manifest file")
 )
 
 // WorkloadAPISpec contains fields shared by all workload specs.
