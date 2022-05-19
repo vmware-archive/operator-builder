@@ -73,6 +73,7 @@ type WorkloadBuilder interface {
 var (
 	ErrLoadManifests   = errors.New("error loading manifests")
 	ErrProcessManifest = errors.New("error processing manifest file")
+	ErrUniqueName      = errors.New("child resource unique name error")
 )
 
 // WorkloadAPISpec contains fields shared by all workload specs.
@@ -217,6 +218,9 @@ func processManifestError(err error, manifest *manifests.Manifest) error {
 func (ws *WorkloadSpec) processManifests(markerTypes ...markers.MarkerType) error {
 	ws.init()
 
+	// track the unique names so that we can handle when we have an overlap
+	uniqueNames := map[string]bool{}
+
 	for _, manifestFile := range *ws.Manifests {
 		err := ws.processMarkers(manifestFile, markerTypes...)
 		if err != nil {
@@ -254,7 +258,19 @@ func (ws *WorkloadSpec) processManifests(markerTypes ...markers.MarkerType) erro
 
 			ws.RBACRules.Add(rules)
 
+			// create the new child resource and validate its unique name
 			childResource := manifests.NewChildResource(manifestObject)
+			if uniqueNames[childResource.UniqueName] {
+				return processManifestError(
+					fmt.Errorf(
+						"%w; error generating resource definition for resource kind [%s] with name [%s]",
+						ErrUniqueName, manifestObject.GetKind(), manifestObject.GetName(),
+					),
+					manifestFile,
+				)
+			}
+
+			uniqueNames[childResource.UniqueName] = true
 
 			// generate the object source code
 			resourceDefinition, err := generate.Generate([]byte(manifest), "resourceObj")
