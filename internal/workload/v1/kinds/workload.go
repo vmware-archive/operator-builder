@@ -244,22 +244,12 @@ func (ws *WorkloadSpec) processManifests(markerTypes ...markers.MarkerType) erro
 				)
 			}
 
-			// add the rules for this manifest
-			rules, err := rbac.ForManifest(&manifestObject)
+			// create the new child resource and validate its unique name
+			childResource, err := manifests.NewChildResource(manifestObject)
 			if err != nil {
-				return processManifestError(
-					fmt.Errorf(
-						"%w; error generating rbac for resource kind [%s] with name [%s]",
-						err, manifestObject.GetKind(), manifestObject.GetName(),
-					),
-					manifestFile,
-				)
+				return processManifestError(err, manifestFile)
 			}
 
-			ws.RBACRules.Add(rules)
-
-			// create the new child resource and validate its unique name
-			childResource := manifests.NewChildResource(manifestObject)
 			if uniqueNames[childResource.UniqueName] {
 				return processManifestError(
 					fmt.Errorf(
